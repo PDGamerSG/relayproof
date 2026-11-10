@@ -59,8 +59,8 @@ const (
 // contextKeyMode carries the per-request override parsed from ShadowHeader.
 const contextKeyMode schemas.BifrostContextKey = "bf-shadow-mode"
 
-// contextKeySampled marks a request as mirrored, for the response header.
-const contextKeySampled schemas.BifrostContextKey = "bf-shadow-sampled"
+// requestIDHeader is the gateway response header carrying the request ID.
+const requestIDHeader = "x-bifrost-request-id"
 
 // staleCaptureAge is how long an unfinished capture is kept before the janitor
 // drops it (a primary whose post-hook never ran, e.g. a dropped connection).
@@ -135,6 +135,12 @@ type Plugin struct {
 
 	captures sync.Map // requestID -> *capture
 	active   atomic.Int64
+
+	// marks remembers sampled request IDs until the response-headers hook runs;
+	// the gateway runs LLM hooks on a child context, so a context value set in
+	// PreLLMHook is not visible there.
+	marks  sync.Map // requestID -> time.Time
+	marked atomic.Int64
 
 	queue  chan *job
 	ctx    context.Context
@@ -258,11 +264,21 @@ func (p *Plugin) HTTPTransportPostHook(_ *schemas.BifrostContext, _ *schemas.HTT
 }
 
 // HTTPTransportResponseHeadersHook marks mirrored responses with x-bf-shadow: sampled.
+// The request is matched by the gateway's request-id header, falling back to the
+// context, because LLM hooks may run on a child of the transport context.
 func (p *Plugin) HTTPTransportResponseHeadersHook(ctx *schemas.BifrostContext, _ *schemas.HTTPRequest, resp *schemas.HTTPResponseMetadata) error {
-	if resp == nil || resp.Headers == nil {
+	if resp == nil || resp.Headers == nil || p.marked.Load() == 0 {
 		return nil
 	}
-	if sampled, _ := ctx.Value(contextKeySampled).(bool); sampled {
+	requestID := resp.Header(requestIDHeader)
+	if requestID == "" {
+		requestID, _ = ctx.Value(schemas.BifrostContextKeyRequestID).(string)
+	}
+	if requestID == "" {
+		return nil
+	}
+	if _, ok := p.marks.LoadAndDelete(requestID); ok {
+		p.marked.Add(-1)
 		resp.Headers[ResponseHeader] = "sampled"
 	}
 	return nil
@@ -343,7 +359,9 @@ func (p *Plugin) PreLLMHook(ctx *schemas.BifrostContext, req *schemas.BifrostReq
 	p.captures.Store(requestID, c)
 	p.active.Add(1)
 	p.sampled.Add(1)
-	ctx.SetValue(contextKeySampled, true)
+	if _, loaded := p.marks.LoadOrStore(requestID, c.createdAt); !loaded {
+		p.marked.Add(1)
+	}
 	return req, nil, nil
 }
 
@@ -502,7 +520,9 @@ func (p *Plugin) janitor() {
 		case <-p.ctx.Done():
 			return
 		case <-ticker.C:
-			p.sweepCaptures(p.now().Add(-staleCaptureAge))
+			cutoff := p.now().Add(-staleCaptureAge)
+			p.sweepCaptures(cutoff)
+			p.sweepMarks(cutoff)
 		}
 	}
 }
@@ -513,6 +533,22 @@ func (p *Plugin) sweepCaptures(cutoff time.Time) int {
 		if value.(*capture).createdAt.Before(cutoff) {
 			p.dropCapture(key.(string))
 			removed++
+		}
+		return true
+	})
+	return removed
+}
+
+// sweepMarks forgets sampled markers whose response-headers hook never ran
+// (Go SDK callers, or requests that failed before headers were written).
+func (p *Plugin) sweepMarks(cutoff time.Time) int {
+	removed := 0
+	p.marks.Range(func(key, value any) bool {
+		if value.(time.Time).Before(cutoff) {
+			if _, ok := p.marks.LoadAndDelete(key); ok {
+				p.marked.Add(-1)
+				removed++
+			}
 		}
 		return true
 	})

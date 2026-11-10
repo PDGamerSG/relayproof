@@ -464,6 +464,36 @@ func TestShadowHeaderOverrides(t *testing.T) {
 	assert.Equal(t, 1, p.store.len())
 }
 
+// The HTTP gateway runs transport hooks on a shared request context but LLM hooks
+// on a child of it, so a value set in PreLLMHook is not visible to the
+// response-headers hook. The sampled marker must survive that split.
+func TestShadowResponseHeaderAcrossContexts(t *testing.T) {
+	cfg := baseConfig()
+	p := newTestPlugin(t, cfg)
+	p.randFloat = func() float64 { return 0 }
+	fc := &fakeClient{candidateText: "ok"}
+	p.SetExecutors(fc.chat, nil, nil)
+
+	transportCtx := schemas.NewBifrostContext(context.Background(), schemas.NoDeadline)
+	_, err := p.HTTPTransportPreHook(transportCtx, &schemas.HTTPRequest{Headers: map[string]string{}})
+	require.NoError(t, err)
+	llmCtx := schemas.NewBifrostContext(transportCtx, schemas.NoDeadline)
+	llmCtx.SetValue(schemas.BifrostContextKeyRequestID, "req-split")
+	_, _, _ = p.PreLLMHook(llmCtx, chatRequest(false, "openai", primaryModel, "hi"))
+	_, _, _ = p.PostLLMHook(llmCtx, chatResponse("openai", primaryModel, "ok", 1, 1, 1), nil)
+
+	headers := map[string]string{"X-Bifrost-Request-Id": "req-split"}
+	require.NoError(t, p.HTTPTransportResponseHeadersHook(transportCtx, nil, &schemas.HTTPResponseMetadata{Headers: headers}))
+	assert.Equal(t, "sampled", headers[ResponseHeader])
+	assert.Equal(t, int64(0), p.marked.Load(), "the marker is consumed by the header hook")
+
+	// An unsampled request on the same split gets no header.
+	headers = map[string]string{"X-Bifrost-Request-Id": "req-other"}
+	require.NoError(t, p.HTTPTransportResponseHeadersHook(transportCtx, nil, &schemas.HTTPResponseMetadata{Headers: headers}))
+	assert.Empty(t, headers[ResponseHeader])
+	waitForRecords(t, p, 1)
+}
+
 func TestShadowSampleRate(t *testing.T) {
 	cfg := baseConfig()
 	cfg.SampleRate = 0.25
@@ -595,6 +625,12 @@ func TestJanitorSweepsStaleCaptures(t *testing.T) {
 	assert.Equal(t, 0, p.sweepCaptures(time.Now().Add(-time.Hour)))
 	assert.Equal(t, 1, p.sweepCaptures(time.Now().Add(time.Hour)))
 	assert.Equal(t, int64(0), p.active.Load())
+
+	// The response-header marker is swept the same way when no HTTP response follows.
+	assert.Equal(t, int64(1), p.marked.Load())
+	assert.Equal(t, 0, p.sweepMarks(time.Now().Add(-time.Hour)))
+	assert.Equal(t, 1, p.sweepMarks(time.Now().Add(time.Hour)))
+	assert.Equal(t, int64(0), p.marked.Load())
 }
 
 func TestRetriedAttemptReplacesCapture(t *testing.T) {
@@ -814,6 +850,18 @@ func BenchmarkPostLLMHookNoCapture(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _, _ = p.PostLLMHook(ctx, resp, nil)
+	}
+}
+
+func BenchmarkResponseHeadersHookNotSampled(b *testing.B) {
+	p, _ := Init(context.Background(), baseConfig(), testLogger)
+	defer p.Cleanup()
+	ctx := requestCtx("bench")
+	resp := &schemas.HTTPResponseMetadata{Headers: map[string]string{"X-Bifrost-Request-Id": "bench"}}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = p.HTTPTransportResponseHeadersHook(ctx, nil, resp)
 	}
 }
 
