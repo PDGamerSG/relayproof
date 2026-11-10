@@ -1,0 +1,48 @@
+All Programs
+Profile
+My Programs
+Host
+Global AI Hackathon
+
+Program Dashboard
+
+Overview
+Details & Updates
+Manage Team
+Invite & Collaborate
+Submissions
+All Submission Phases
+Announcements
+Organizer updates
+Program Details
+View program page
+Back to My Programs
+Problem Statements & Prototype Submission
+Elimination Round
+
+READ THIS IN FULL Problem statements go live on 1 Nov, and the prototype submission window opens at the same time. Choose your challenge, build your AI-powered solution, and submit your working prototype within the two-week building window. Project Submission Instructions
+
+Select your primary problem statement from the Theme dropdown.
+
+You can build a project using Bifrost by Maxim AI, Tavily, or both technologies together. However, you are also allowed to submit 2 separate projects on the 2 technologies.
+
+If you're building a merged project that addresses a Bifrost challenge along with a Tavily challenge, select the Bifrost challenge as your primary problem statement and use the optional Tavily integration checkbox to indicate the additional challenge.
+
+If you're building only a Tavily project, simply select the relevant Tavily problem statement as your primary theme. And if you're submitting for both the technologies, make sure that you go ahead and submit the provided submission form in full, providing the details for both the projects.
+
+Your GitHub repository must be public and include a detailed README covering your project, installation steps, implementation, and technologies used.
+
+Your pitch deck should explain the problem, your solution, technical architecture, and working prototype. If you've combined both technologies, clearly demonstrate how each contributes to your project.
+
+A deployed application is not mandatory, but you're welcome to share a live demo or demonstration video.
+
+Read more
+Nov 1, 2026, 12:00 AM – Nov 15, 2026, 11:59 PM
+Time Left:
+5d 3h 52m 41s
+Problem Statements & Prototype Submission
+Judging Round
+Upcoming
+Team Leader Access
+
+Only your team leader can create and manage submissions for this phase. You will be able to view once submitted.

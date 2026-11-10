@@ -1,0 +1,38 @@
+PAGE 1
+GLOBAL AI HACKATHON
+ BIFROST BY MAXIM AI
+PROBLEM STATEMENT 02
+Build a Benchmarking Platform for
+AI Agents, Not Just Models
+Traditional AI benchmarks measure model performance, but they rarely explain how well an entire AI agent
+performs. Two agents using the same model can produce very different results because of their prompts,
+tools, memory, and retry strategies: one may complete a task in a handful of calls, while another consumes
+significantly more resources and still fails.
+Developers need a consistent way to compare agent performance beyond successful demos.
+GOAL
+Build a framework-independent benchmarking platform that evaluates agents of a selected
+category (coding, research, or customer support) against identical tasks and measurable
+performance criteria.
+MANDATORY REQUIREMENTS
+/ Framework independence: Support agents built using
+different frameworks, or no framework, without requiring
+them to be rewritten.
+/ Consistent evaluation: Run agents against the same tasks
+and record success, steps, tool calls, tokens, cost, and
+execution time.
+/ Repeatability: Execute tasks multiple times to measure
+reliability rather than depending on a single successful run.
+/ Failure testing: Introduce controlled failures such as
+unavailable models, broken tools, or misleading instructions,
+and evaluate agent behavior.
+/ Inspection & comparison: Provide a comparison interface
+with detailed, step-by-step execution records for individual
+runs.
+EXPECTED OUTCOME
+A functioning benchmarking platform that allows developers to compare AI agents objectively, understand
+differences in performance, and inspect how agents behave under normal and failure conditions.
+OPTIONAL IMPLEMENTATION GUIDANCE
+Consider a leaderboard, repeatable task suites, execution traces, and comparative dashboards. Bifrost can provide gateway-level
+visibility into model requests and operational metrics; additional instrumentation may be needed to capture agent-specific steps and tool
+execution.
+BUILD 1–15 NOV 2026 TEAM 1–4 FORMAT ONLINE · GLOBAL JUDGING 29 NOV 2026 INTEGRATE BIFROST + TAVILY 02 / 05

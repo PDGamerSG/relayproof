@@ -1,0 +1,656 @@
+{
+  "url": "https://docs.getbifrost.ai/features/compat-plugin",
+  "title": "Compatibility Plugin - Bifrost",
+  "text": "Open Source Features\nCompatibility Plugin\n\nRequest and response transformations for LiteLLM proxy/SDK compatibility.\n\n​\nCompatibility Transformations\nThe LiteLLM compatibility plugin provides two transformations:\nText-to-Chat Conversion - Automatically converts text completion requests to chat completion format for models that only support chat APIs\nChat-to-Responses Conversion - Automatically converts chat completion requests to responses format for models that only support responses APIs\nDrop Unsupported Params - Automatically drops unsupported parameters if the model doesn’t support them. A reasoning.summary value the datasheet marks unsupported (supports_reasoning_summary_detailed, supports_reasoning_summary_concise or supports_reasoning_summary_auto set to false) becomes auto when the model accepts auto, and is dropped otherwise. Reasoning effort is always kept\nUnsupported Parameter Conversion - Automatically converts unsupported parameters to their supported equivalents\nReasoning-Only Models to Responses - Routes chat completion requests to the Responses API for models that cannot reason alongside tool calls on chat completions\nDecision-to-Responses Emulation - Answers decision requests for models without a native decisions endpoint by prompting the model through the Responses API (off by default)\nWhen either transformation is applied, responses include extra_fields.converted_request_type: <transformed_request_type>. If request parameters are dropped, the keys are added in extra_fields.dropped_compat_plugin_params.\n​\n1. Text-to-Chat Conversion\nMany modern AI models (like GPT-3.5-turbo, GPT-4, Claude, etc.) only support the chat completion API and don’t have native text completion endpoints. LiteLLM compatibility mode automatically handles this by:\nChecking if the model supports text completion natively (using the model catalog)\nIf not supported, converting your text prompt to chat message format\nCalling the chat completion endpoint internally\nTransforming the response back to text completion format\nReturning content in choices[0].text instead of choices[0].message.content\nSmart Conversion: The conversion only happens when the model doesn’t support text completions natively. If a model has native text completion support (like OpenAI’s davinci models), Bifrost uses the text completion endpoint directly without any conversion.\nThis allows you to use a unified text completion interface across all providers, even those that only support chat completions.\n​\nHow It Works\nWhen LiteLLM compatibility is enabled and you make a text completion request, Bifrost first checks if the model supports text completion:\n\nYes\n\nNo\n\nText Completion Request\n\nModel Supports Text Completion?\n\nCall Text Completion API\n\nConvert to Chat Message\n\nCall Chat Completion API\n\nTransform Response\n\nText Completion Response\n\nRequest Transformation:\nYour text prompt becomes a user message: {\"role\": \"user\", \"content\": \"your prompt\"}\nParameters like max_tokens, temperature, top_p are mapped to chat equivalents\nFallbacks are preserved\nResponse Transformation:\nchoices[0].message.content → choices[0].text\nobject: \"chat.completion\" → object: \"text_completion\"\nUsage statistics and metadata are preserved\n​\n2. Chat-to-Responses Conversion\nSome AI models (like OpenAI o1-pro) only support the responses API and don’t support native chat completion endpoints. LiteLLM compatibility mode automatically handles this by:\nChecking if the model supports chat completion natively (using the model catalog)\nIf not supported, converting your chat message to responses API format\nCalling the responses endpoint internally\nTransforming the response back to chat completion format\nSmart Conversion: The conversion only happens when the model doesn’t support chat completions natively. If a model has native chat completion support (like OpenAI’s gpt-4 models), Bifrost uses the chat completion endpoint directly without any conversion.\nThis allows you to use a unified chat completion interface across all providers, even those that only support responses API.\n​\nHow It Works\nWhen LiteLLM compatibility is enabled and you make a chat completion request, Bifrost first checks if the model supports chat completion:\n\nYes\n\nNo\n\nChat Completion Request\n\nModel Supports Chat Completion?\n\nCall Chat Completion API\n\nConvert to Responses Message\n\nCall Responses API\n\nTransform Response\n\nChat Completion Response\n\n​\n3. Reasoning-Only Models to Responses\nSome models (for example several GPT-5 series models) do not support reasoning together with tool calls on the chat completions API. Their datasheet entry sets supports_reasoning_with_tool_calls: false. For any chat completion request on such a model, with or without tools, Bifrost:\nCalls the Responses API instead, where reasoning and tools work together\nTransforms the response back to chat completion format\nWith force_reasoning_only_models_to_responses off, the request stays on chat completions. What happens to reasoning then depends on should_drop_params:\nshould_drop_params on: when the request carries tools, reasoning is turned off (dropped, or set to none when the model supports it).\nshould_drop_params off: the request is sent with its reasoning setting unchanged.\nControlled by force_reasoning_only_models_to_responses (on by default).\n​\n4. Decision-to-Responses Emulation\nDecision requests (/v1/decisions, /openai/v1/decisions, /typesafe/v1/systemone) are served natively only by decision models. With this setting off, a decision request for any other model, such as openai/gpt-4o, fails with HTTP 400 and code unsupported_operation:\ndecisions is not supported by openai provider\n\nWith convert_decision_to_responses on, Bifrost instead:\nChecks whether the model is a native decisions model: its supports_decisions datasheet entry, or without one the models Bifrost recognizes by name:\nOpenAI’s gpt-6-luna family on openai and azure (another provider hosting it, such as OpenRouter, serves it as a chat model)\nTypesafe’s typesafe/ models, and every model on the typesafe provider\nclef models (clef, clef-flash, clef-omni, by bare name or @cf/cloudflare/ ID) on cloudflare\npplx-decider-* on perplexity\nnimble, tev1, clef, clef-flash, and laya (any tag) on ollama\nMicrosoft-Decision-1 on azure\nai_decide and System One models (system.ai.openjev-* and system.ai.typesafeai-jev-*) on databricks\nIf it is, calls the provider’s decisions endpoint without any conversion\nIf not, encodes the questions as a forced function tool, sends the input to the model’s Responses API, and maps the call’s arguments back to typed answers\nWhy it breaks custom providers. The check relies on the model catalog, which has no entries for custom providers. With the setting on, a custom provider serving decisions, such as Laya or Nimble on the Typesafe base format, or gpt-6-luna behind a custom provider on the OpenAI base format, is emulated through a Responses API it may not serve instead of answered natively. This applies to Complexity Router classification too.\nWe recommend keeping this setting off and sending decisions to a model that serves them natively. An emulated answer is a chat model’s guess, not a calibrated judgment, and it costs a full chat call.\nBehavior notes:\nThe check runs on every attempt, fallbacks included.\nAn emulated response reports extra_fields.converted_request_type: \"responses\" and is billed as the chat call it is.\nA request with an image or other non-text part is rejected, as are passthrough extra params (x-bf-passthrough-extra-params).\nPer request, the header x-bf-compat: [\"convert_decision_to_responses\"] turns it on for that request only.\nIn the Go SDK, it is on when the compat plugin is registered with compat.Config{ConvertDecisionToResponses: true}.\n​\nEnabling LiteLLM Compatibility\nGateway UI\nConfiguration File\nOpen the Bifrost dashboard\nNavigate to Settings → Compatibility\nThere you can enable the features you need:\nConvert Text to Chat - converts text completion requests to chat for models that only support chat\nConvert Chat to Responses - converts chat completion requests to responses for models that only support responses\nDrop Unsupported Params - drops unsupported parameters based on model catalog allowlist\nConvert Unsupported Params Values - converts parameter values the model cannot accept, such as a token cap above the model limit, to values it can. See the list of supported parameters below.\nAzure DeepSeek - converts Azure DeepSeek responses requests to chat completions so reasoning is preserved for coding harnesses\nReasoning-only models to Responses - routes chat completion requests to the Responses API for models that cannot reason with tool calls on chat completions\nEmulate Decisions API on non-decision models - answers decision requests for models without a native decisions endpoint through the Responses API\nSave your configuration\n​\nSupported Parameters\nThe following parameter values are converted to values the model accepts:\nParameter\tOriginal Value\tTransformed Value\tProvider\nmax_completion_tokens / max_tokens (chat), max_output_tokens (responses), max_tokens (text)\tAbove the model’s max_output_tokens\tThe model’s max_output_tokens\tEvery model with a known output limit\nSame as above\tBelow the model’s min_output_tokens\tThe model’s min_output_tokens\tModels whose catalog row sets min_output_tokens\nreasoning.max_tokens\tSent with a token cap that was lowered\tScaled by the same ratio as the cap\tEvery model with a known output limit\nreasoning.max_tokens\tOutside the model’s thinking-budget range\tThe nearest end of the range\tClaude, Gemini 2.5, and models whose catalog row sets reasoning_budget\nreasoning.max_tokens\tAt or above the lowered cap, or the model’s max_output_tokens when no cap was sent\tOne below that cap\tEvery model with a known output limit\nLimits come from the model catalog, with built-in fallbacks for Claude output limits and Claude and Gemini 2.5 thinking budgets. Only values present in the request are changed; none are added. Budgets of 0 and -1 are left as sent. The conversion runs again for each fallback, so every fallback model is fitted to its own limits. Each conversion is logged as a warning on the request, for example max_output_tokens: 1000000 -> 65536.\ndeveloper role messages are mapped to system by the Gemini, Vertex and Bedrock providers themselves, so that works without this setting.\nNamespace-scoped tools are no longer handled by this plugin. Bifrost core flattens them for every provider whose wire does not support the namespace tool type, renames each nested function to <namespace>__<function> so names stay unique, and maps returned function_call items back to the original name plus namespace.\n​\nSupported Providers\nText completion to chat completion conversion works with any provider that supports chat completions but lacks native text completion support:\nProvider\tNative Text Completion\tWith Fallback\nOpenAI (GPT-4, GPT-3.5-turbo)\tNo\tYes\nAnthropic (Claude)\tNo\tYes\nGroq\tNo\tYes\nGemini\tNo\tYes\nMistral\tNo\tYes\nBedrock\tVaries by model\tYes\nChat completion to responses conversion works with any provider that supports responses but lacks native chat completion support:\nProvider\tNative Chat Completion\tWith Fallback\nOpenAI (o1-pro)\tNo\tYes\n​\nBehavior Details\nModel Capability Detection:\nBifrost uses the model catalog to check if a model supports text completion\nIf the model has a “completion” mode in its pricing data, it supports text completion\nConversion only happens when the model lacks native text completion support\n​\nTransformations Reference\n​\nTransformation 1: Text-to-Chat Conversion\nApplies to: Text completion requests on chat-only models\nPhase\tOriginal\tTransformed\nRequest\tText prompt (string)\tChat message with role: \"user\"\nRequest\tArray prompts\tConcatenated into text content blocks\nRequest\ttext_completion request type\tchat_completion request type\nRequest\tmax_tokens, temperature, top_p\tMapped to chat equivalents\nResponse\tchoices[0].message.content\tchoices[0].text\nResponse\tobject: \"chat.completion\"\tobject: \"text_completion\"\n​\nTransformation 2: Chat-to-Responses Conversion\nApplies to: Chat completion requests on responses-only models\nPhase\tOriginal\tTransformed\nRequest\tChat message with role: \"user\"\tResponses input with role: \"user\"\nRequest\tchat_completion request type\tresponses request type\n​\nMetadata Set on Transformed Responses\nWhen either transformation is applied:\nextra_fields.request_type: Reflects the original request type\nextra_fields.original_model_requested: The originally requested model\nextra_fields.resolved_model_used: The actual provider API identifier used (equals original_model_requested when no alias mapping exists)\n​\nError Handling\nWhen errors occur on transformed requests:\nOriginal request type and model are preserved in error metadata\nextra_fields.converted_request_type: Set to type of request that was converted to (i.e., chat_completion or responses)\nextra_fields.provider: The provider that handled the request\nextra_fields.original_model_requested: The originally requested model\nextra_fields.dropped_compat_plugin_params: If any unsupported parameters were dropped, the keys are added here\n​\nHeader Overrides\nTo enable compat plugins per request, you can use x-bf-compat header:\nWhen x-bf-compat: true or x-bf-compat: [\"*\"], enables all compat plugins options\nWhen x-bf-compat: [\"<setting1>\",\"<setting2>\"], enables the specified settings (available settings: convert_text_to_chat, convert_chat_to_responses, should_drop_params, should_convert_params, azure_deepseek, force_reasoning_only_models_to_responses, convert_decision_to_responses)\n​\nWhat’s Preserved\nModel selection and fallback chain\nTemperature, top_p, max_tokens, and other generation parameters\nStop sequences and frequency/presence penalties\nUsage statistics and token counts\n​\nWhen to Use This\nGood Use Cases:\nMigrating from LiteLLM to Bifrost without code changes\nMaintaining backward compatibility with text completion interfaces or chat completion interfaces\nUsing a unified API across providers with different capabilities\nConsider Alternatives When:\nYou need chat-specific features (system messages, conversation history)\nYou want explicit control over message formatting\nPerformance is critical (direct chat requests avoid conversion overhead)\n​\nRelated Features\nFallbacks - Automatic provider failover\nDrop-in Replacement - Use existing SDKs with Bifrost\nLiteLLM Integration - Using LiteLLM SDK with Bifrost\n\nWas this page helpful?\n\nYes\nNo\nWarp\nLoad Balance",
+  "links": [
+    {
+      "text": "/llms.txt",
+      "href": "https://docs.getbifrost.ai/llms.txt"
+    },
+    {
+      "text": "Skip to main content",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#content-area"
+    },
+    {
+      "text": "Bifrost home page",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "Request License",
+      "href": "https://www.getmaxim.ai/enterprise?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar#free-license"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar"
+    },
+    {
+      "text": "OSS",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Enterprise",
+      "href": "https://docs.getbifrost.ai/enterprise/overview"
+    },
+    {
+      "text": "Edge",
+      "href": "https://docs.getbifrost.ai/edge/overview"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.getbifrost.ai/runbooks/claude-code-bedrock"
+    },
+    {
+      "text": "Deployment Guides",
+      "href": "https://docs.getbifrost.ai/deployment-guides/overview"
+    },
+    {
+      "text": "API",
+      "href": "https://docs.getbifrost.ai/api/procuring-api-keys"
+    },
+    {
+      "text": "Contributing",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo"
+    },
+    {
+      "text": "Benchmarks",
+      "href": "https://docs.getbifrost.ai/benchmarking/getting-started"
+    },
+    {
+      "text": "Discord",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "GitHub",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Try Enterprise",
+      "href": "https://www.getmaxim.ai/bifrost/enterprise"
+    },
+    {
+      "text": "Bifrost AI Gateway",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Release Cadence",
+      "href": "https://docs.getbifrost.ai/release-cadence"
+    },
+    {
+      "text": "Migrating to v2.0.0",
+      "href": "https://docs.getbifrost.ai/migration-guides/v2.0.0"
+    },
+    {
+      "text": "Migrating to v1.5.0",
+      "href": "https://docs.getbifrost.ai/migration-guides/v1.5.0"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://docs.getbifrost.ai/migration-guides/litellm"
+    },
+    {
+      "text": "What is an integration?",
+      "href": "https://docs.getbifrost.ai/integrations/what-is-an-integration"
+    },
+    {
+      "text": "Routing Rules",
+      "href": "https://docs.getbifrost.ai/providers/routing-rules"
+    },
+    {
+      "text": "Provider Routing",
+      "href": "https://docs.getbifrost.ai/providers/provider-routing"
+    },
+    {
+      "text": "Session Affinity",
+      "href": "https://docs.getbifrost.ai/providers/session-affinity"
+    },
+    {
+      "text": "Aliasing Models",
+      "href": "https://docs.getbifrost.ai/providers/aliasing-models"
+    },
+    {
+      "text": "Reasoning",
+      "href": "https://docs.getbifrost.ai/providers/reasoning"
+    },
+    {
+      "text": "Performance Tuning",
+      "href": "https://docs.getbifrost.ai/providers/performance"
+    },
+    {
+      "text": "Custom Providers",
+      "href": "https://docs.getbifrost.ai/providers/custom-providers"
+    },
+    {
+      "text": "Self-Hosted Decision Models",
+      "href": "https://docs.getbifrost.ai/providers/self-hosted-decision-models"
+    },
+    {
+      "text": "Custom Pricing",
+      "href": "https://docs.getbifrost.ai/providers/custom-pricing"
+    },
+    {
+      "text": "Request Options",
+      "href": "https://docs.getbifrost.ai/providers/request-options"
+    },
+    {
+      "text": "Response Headers",
+      "href": "https://docs.getbifrost.ai/providers/response-headers"
+    },
+    {
+      "text": "Test Harness Coverage",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/mcp/overview"
+    },
+    {
+      "text": "Connecting to Servers",
+      "href": "https://docs.getbifrost.ai/mcp/connecting-to-servers"
+    },
+    {
+      "text": "OpenAPI Specs",
+      "href": "https://docs.getbifrost.ai/mcp/openapi-servers"
+    },
+    {
+      "text": "Connections & States",
+      "href": "https://docs.getbifrost.ai/mcp/connections"
+    },
+    {
+      "text": "Virtual MCPs",
+      "href": "https://docs.getbifrost.ai/mcp/virtual-mcps"
+    },
+    {
+      "text": "Per-Caller Discovery",
+      "href": "https://docs.getbifrost.ai/mcp/per-caller-discovery"
+    },
+    {
+      "text": "Sessions",
+      "href": "https://docs.getbifrost.ai/mcp/sessions"
+    },
+    {
+      "text": "Tool Execution",
+      "href": "https://docs.getbifrost.ai/mcp/tool-execution"
+    },
+    {
+      "text": "Resources & Prompts",
+      "href": "https://docs.getbifrost.ai/mcp/resources-and-prompts"
+    },
+    {
+      "text": "Agent Mode",
+      "href": "https://docs.getbifrost.ai/mcp/agent-mode"
+    },
+    {
+      "text": "Code Mode",
+      "href": "https://docs.getbifrost.ai/mcp/code-mode"
+    },
+    {
+      "text": "Gateway Authentication",
+      "href": "https://docs.getbifrost.ai/mcp/gateway-auth"
+    },
+    {
+      "text": "Tool Hosting",
+      "href": "https://docs.getbifrost.ai/mcp/tool-hosting"
+    },
+    {
+      "text": "Filtering",
+      "href": "https://docs.getbifrost.ai/mcp/filtering"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/overview"
+    },
+    {
+      "text": "Register your first agent",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/registration"
+    },
+    {
+      "text": "Authentication",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/authentication"
+    },
+    {
+      "text": "Agent access",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/access-control"
+    },
+    {
+      "text": "Messages, tasks, and events",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/messages-and-tasks"
+    },
+    {
+      "text": "Connect model and tool calls",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/integrating-your-agent"
+    },
+    {
+      "text": "Read Agent Logs",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/observability"
+    },
+    {
+      "text": "Gateway settings and transports",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/configuration"
+    },
+    {
+      "text": "Transport selection and recovery",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/transports-and-recovery"
+    },
+    {
+      "text": "Push notifications",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/push-notifications"
+    },
+    {
+      "text": "Export agent telemetry",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/connectors"
+    },
+    {
+      "text": "Troubleshooting",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/troubleshooting"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/relays/overview"
+    },
+    {
+      "text": "Create a relay",
+      "href": "https://docs.getbifrost.ai/relays/configuration"
+    },
+    {
+      "text": "Routes",
+      "href": "https://docs.getbifrost.ai/relays/routes"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://docs.getbifrost.ai/relays/pricing"
+    },
+    {
+      "text": "Troubleshooting",
+      "href": "https://docs.getbifrost.ai/relays/troubleshooting"
+    },
+    {
+      "text": "Getting Started",
+      "href": "https://docs.getbifrost.ai/plugins/getting-started"
+    },
+    {
+      "text": "Building Dynamically Linked Bifrost Binary",
+      "href": "https://docs.getbifrost.ai/plugins/building-dynamic-binary"
+    },
+    {
+      "text": "Plugin Sequencing",
+      "href": "https://docs.getbifrost.ai/plugins/sequencing"
+    },
+    {
+      "text": "Plugin Migration Guide",
+      "href": "https://docs.getbifrost.ai/plugins/migration-guide"
+    },
+    {
+      "text": "Drop-in Replacement",
+      "href": "https://docs.getbifrost.ai/features/drop-in-replacement"
+    },
+    {
+      "text": "Retries & Fallbacks",
+      "href": "https://docs.getbifrost.ai/features/retries-and-fallbacks"
+    },
+    {
+      "text": "Complexity Router\nBeta",
+      "href": "https://docs.getbifrost.ai/features/complexity-router"
+    },
+    {
+      "text": "Warp\nAlpha",
+      "href": "https://docs.getbifrost.ai/features/warp"
+    },
+    {
+      "text": "Compatibility Plugin",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin"
+    },
+    {
+      "text": "Load Balance",
+      "href": "https://docs.getbifrost.ai/features/keys-management"
+    },
+    {
+      "text": "Async Inference",
+      "href": "https://docs.getbifrost.ai/features/async-inference"
+    },
+    {
+      "text": "Webhooks",
+      "href": "https://docs.getbifrost.ai/features/webhooks"
+    },
+    {
+      "text": "News Feeds",
+      "href": "https://docs.getbifrost.ai/features/news-feeds"
+    },
+    {
+      "text": "Telemetry",
+      "href": "https://docs.getbifrost.ai/features/telemetry"
+    },
+    {
+      "text": "OpenTelemetry",
+      "href": "https://docs.getbifrost.ai/features/otel"
+    },
+    {
+      "text": "Content Logging",
+      "href": "https://docs.getbifrost.ai/features/observability/content-logging"
+    },
+    {
+      "text": "Latency & Overhead Breakdown",
+      "href": "https://docs.getbifrost.ai/features/observability/latency-breakdown"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching"
+    },
+    {
+      "text": "Auto Prompt Caching",
+      "href": "https://docs.getbifrost.ai/features/prompt-caching"
+    },
+    {
+      "text": "Skills Repository",
+      "href": "https://docs.getbifrost.ai/features/skills-repository"
+    },
+    {
+      "text": "Compatibility Transformations",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#compatibility-transformations"
+    },
+    {
+      "text": "1. Text-to-Chat Conversion",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#1-text-to-chat-conversion"
+    },
+    {
+      "text": "How It Works",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#how-it-works"
+    },
+    {
+      "text": "2. Chat-to-Responses Conversion",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#2-chat-to-responses-conversion"
+    },
+    {
+      "text": "How It Works",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#how-it-works-2"
+    },
+    {
+      "text": "3. Reasoning-Only Models to Responses",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#3-reasoning-only-models-to-responses"
+    },
+    {
+      "text": "4. Decision-to-Responses Emulation",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#4-decision-to-responses-emulation"
+    },
+    {
+      "text": "Enabling LiteLLM Compatibility",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#enabling-litellm-compatibility"
+    },
+    {
+      "text": "Supported Parameters",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#supported-parameters"
+    },
+    {
+      "text": "Supported Providers",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#supported-providers"
+    },
+    {
+      "text": "Behavior Details",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#behavior-details"
+    },
+    {
+      "text": "Transformations Reference",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#transformations-reference"
+    },
+    {
+      "text": "Transformation 1: Text-to-Chat Conversion",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#transformation-1-text-to-chat-conversion"
+    },
+    {
+      "text": "Transformation 2: Chat-to-Responses Conversion",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#transformation-2-chat-to-responses-conversion"
+    },
+    {
+      "text": "Metadata Set on Transformed Responses",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#metadata-set-on-transformed-responses"
+    },
+    {
+      "text": "Error Handling",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#error-handling"
+    },
+    {
+      "text": "Header Overrides",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#header-overrides"
+    },
+    {
+      "text": "What’s Preserved",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#what%E2%80%99s-preserved"
+    },
+    {
+      "text": "When to Use This",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#when-to-use-this"
+    },
+    {
+      "text": "Related Features",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#related-features"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#compatibility-transformations"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#1-text-to-chat-conversion"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#how-it-works"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#2-chat-to-responses-conversion"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#how-it-works-2"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#3-reasoning-only-models-to-responses"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#4-decision-to-responses-emulation"
+    },
+    {
+      "text": "Laya or Nimble",
+      "href": "https://docs.getbifrost.ai/providers/self-hosted-decision-models"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#enabling-litellm-compatibility"
+    },
+    {
+      "text": "supported parameters",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#supported-parameters"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#supported-parameters"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#supported-providers"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#behavior-details"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#transformations-reference"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#transformation-1-text-to-chat-conversion"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#transformation-2-chat-to-responses-conversion"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#metadata-set-on-transformed-responses"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#error-handling"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#header-overrides"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#what%E2%80%99s-preserved"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#when-to-use-this"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin#related-features"
+    },
+    {
+      "text": "Fallbacks",
+      "href": "https://docs.getbifrost.ai/features/fallbacks"
+    },
+    {
+      "text": "Drop-in Replacement",
+      "href": "https://docs.getbifrost.ai/features/drop-in-replacement"
+    },
+    {
+      "text": "LiteLLM Integration",
+      "href": "https://docs.getbifrost.ai/integrations/litellm-sdk"
+    },
+    {
+      "text": "Warp",
+      "href": "https://docs.getbifrost.ai/features/warp"
+    },
+    {
+      "text": "Load Balance",
+      "href": "https://docs.getbifrost.ai/features/keys-management"
+    },
+    {
+      "text": "Bifrost home page",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "x",
+      "href": "https://x.com/getbifrost"
+    },
+    {
+      "text": "linkedin",
+      "href": "https://linkedin.com/company/maxim-ai"
+    },
+    {
+      "text": "github",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Partner Program",
+      "href": "https://www.getmaxim.ai/partners-program?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Contact Us",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Security",
+      "href": "https://docs.getbifrost.ai/security"
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.getmaxim.ai/"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "https://www.getmaxim.ai/terms-of-service?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.getmaxim.ai/privacy-policy?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway",
+      "href": "https://www.getmaxim.ai/llm-gateway?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Gateway",
+      "href": "https://www.getmaxim.ai/mcp-gateway?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Governance",
+      "href": "https://www.getmaxim.ai/ai-governance?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Guardrails",
+      "href": "https://www.getmaxim.ai/ai-guardrails?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Observability",
+      "href": "https://www.getmaxim.ai/ai-observability?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Bifrost Edge",
+      "href": "https://www.getmaxim.ai/edge?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Bifrost Enterprise",
+      "href": "https://www.getmaxim.ai/enterprise?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Performance Benchmarks",
+      "href": "https://www.getmaxim.ai/bifrost/resources/benchmarks?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway Buyer's Guide",
+      "href": "https://www.getmaxim.ai/bifrost/resources/buyers-guide?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Claude Code Integration",
+      "href": "https://www.getmaxim.ai/bifrost/resources/claude-code?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://www.getmaxim.ai/bifrost/resources/migrating-from-litellm?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Blogs",
+      "href": "https://www.getmaxim.ai/bifrost/blog?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "llms-full.txt",
+      "href": "https://docs.getbifrost.ai/llms-full.txt"
+    },
+    {
+      "text": "llms.txt",
+      "href": "https://docs.getbifrost.ai/llms.txt"
+    },
+    {
+      "text": "llm-info",
+      "href": "https://www.getmaxim.ai/llm-info?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Powered by\nThis documentation is built and hosted on Mintlify, a developer documentation platform",
+      "href": "https://www.mintlify.com/?utm_campaign=poweredBy&utm_medium=referral&utm_source=bifrost"
+    },
+    {
+      "text": "Join Discord instead",
+      "href": "https://getmax.im/bifrost-discord"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:46:45.357Z"
+}

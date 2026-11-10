@@ -1,0 +1,424 @@
+{
+  "url": "https://github.com/maximhq/bifrost/issues/8983",
+  "title": "[Bug]: Responses-family streams lose token usage on the span (cost is set) when no plugin calls ProcessStreamingChunk · Issue #8983 · maximhq/bifrost",
+  "text": "maximhq\nbifrost\nRepository navigation\nCode\nIssues\n628\n (628)\nPull requests\n879\n (879)\nDiscussions\nActions\nSecurity and quality\n3\n (3)\nInsights\n[Bug]: Responses-family streams lose token usage on the span (cost is set) when no plugin calls ProcessStreamingChunk\n #8983\nNew issue\nOpen\n#9001\nDescription\ngrmorozov\nopened \nPrerequisites\nI have searched existing issues and discussions to avoid duplicates (several phrasings of \"stream usage / NormalizedUsage / ResponsesStreamResponse / tokens missing\" in maximhq/bifrost; nothing matching. [Bug]: Bedrock invoke routes drop tool cache_control when converting to Converse, disabling prompt caching (full prefix re-billed every turn) #5629 is a different problem: Bedrock invoke streaming message_start usage.)\nI am using the latest version (or have tested against main/nightly)\nDescription\n\nWhen no plugin calls Tracer.ProcessStreamingChunk (for example, the logging plugin is not loaded), a successful stream on a Responses-family route ends with a span that has gen_ai.usage.cost but no gen_ai.usage.input_tokens / output_tokens / total_tokens.\n\nCause:\n\nOnly Tracer.ProcessStreamingChunk (framework/tracing/tracer.go) calls SetAccumulatedResponse. Its callers in the tree are plugins/logging and plugins/maxim. Core calls Tracer.AddStreamingChunk for every chunk, which records only TTFT and chunk count. The comment near tracer.go:886 already says the accumulated response is nil \"when no plugin calls ProcessStreamingChunk\".\ncompleteDeferredSpan (core/providers/utils/utils.go) then falls back to the processed final chunk. For a Responses stream that is BifrostResponse{ResponsesStreamResponse: {Type: \"response.completed\", Response: {Usage}}}.\nTokens: PopulateLLMResponseAttributes -> ApplyResponse -> buildResponseSide sets d.Usage = resp.NormalizedUsage() (framework/tracing/spanbuild.go). NormalizedUsage (core/schemas/mux.go) handles ChatResponse and ResponsesResponse but has no ResponsesStreamResponse case, so it returns nil. appendUsage (core/schemas/spanattrs.go) emits gen_ai.usage.* only when d.Usage != nil.\nCost: CalculateCostBreakdown -> extractCostInput (framework/modelcatalog/datasheet/cost.go) does read ResponsesStreamResponse.Response.Usage, so gen_ai.usage.cost is set.\n\nThe doc comment on NormalizedUsage assumes streams always settle through the accumulator, which is not true without a plugin that calls ProcessStreamingChunk.\n\nChat streams are unaffected (the final chunk is a ChatResponse with Usage). Non-streaming requests are unaffected.\n\nSteps to reproduce\n\nUnit-level (tag v2.3.1-based tree, go1.27.3, go work init ./core ./framework). Test in framework/tracing:\n\nCreate NewTracer(store, nil, nil) and an LLM span. Do not call ProcessStreamingChunk; GetAccumulatedChunks returns nil.\nCall PopulateLLMResponseAttributes with usage 14/4/18 in each of three shapes.\nRead the span's gen_ai.usage.* attributes.\nResponse shape\tNormalizedUsage\tgen_ai.usage.* on span\nChatResponse.Usage (chat stream final chunk)\t14/4/18\t14/4/18\nResponsesResponse.Usage (accumulated, logging plugin on)\t14/4/18\t14/4/18\nResponsesStreamResponse.Response.Usage (final chunk, no plugin)\tnil\tabsent\n\nFor the third shape, extractCostInput returns 14/4/18 in framework/modelcatalog/datasheet while NormalizedUsage returns nil.\n\nEnd-to-end (observed through our own span consumer, not yet confirmed on a live span dump): with the logging plugin disabled, stream requests on /anthropic/v1/messages, /bedrock/model/{id}/converse-stream and /bedrock/model/{id}/invoke-with-response-stream (messages body) produce records with cost_usd > 0 and no token fields, while the same requests non-streaming, and /openai/v1/chat/completions streaming, carry tokens. Client-visible responses always include usage (14/4), so the loss is only on the span.\n\nExpected behavior\n\nThe span carries gen_ai.usage.* token counts whenever it carries gen_ai.usage.cost, regardless of whether a plugin calls ProcessStreamingChunk.\n\nActual behavior\n\nCost is set, tokens are absent, for Responses-family streams without such a plugin.\n\nAffected area(s)\n\nCore (Go), Framework\n\nVersion\n\nObserved on a fork based on v2.3.1 (v2.3.1-dgt.2026.10.19.1). Code inspection of upstream main (2026-10-23) shows no ResponsesStreamResponse case in NormalizedUsage and the same accumulator-only SetAccumulatedResponse; not run.\n\nEnvironment\nBifrost HTTP transport, Bedrock provider, Anthropic models\nclient.enable_logging: false (the logging plugin is not registered), with an out-of-tree plugin that reads span attributes\nGo 1.27.x\nRegression?\n\nNot determined.\n\nSeverity\n\nMedium (some functionality impaired): usage telemetry for streaming requests is missing while cost is present.\n\nPossible fixes (maintainers' call):\n\nAdd a ResponsesStreamResponse case to BifrostResponse.NormalizedUsage returning Response.Usage. Smallest change; tokens only.\nMake core settle the accumulated response without a plugin, so spans also get content.\nActivity\nConstantine3\nadded 6 commits that reference this issue \n\n[fix]: preserve token usage on Responses stream spans\n\n...\n4f66df6\n\n[fix]: preserve token usage on Responses stream spans\n\n...\n0df68bb\n\n[fix]: preserve token usage on Responses stream spans\n\n...\nd4ceeb7\n\n[fix]: preserve token usage on Responses stream spans\n\n...\n6bddd82\n\n[fix]: preserve token usage on Responses stream spans\n\n...\nb0e555d\n\n[fix]: preserve token usage on Responses stream spans\n\n...\n017fb17\nSign up for free\n to join this conversation on GitHub. Already have an account? Sign in to comment\nMetadata\nAssignees\nNo one assigned\nLabels\nNo labels\nType\nNo type\nProjects\nNo projects\nMilestone\nNo milestone\nRelationships\nNone yet\nDevelopment\nNo branches or pull requests\nIssue actions\nOpen in GitHub Copilot app",
+  "links": [
+    {
+      "text": "Skip to content",
+      "href": "https://github.com/maximhq/bifrost/issues/8983#start-of-content"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fmaximhq%2Fbifrost%2Fissues%2F8983"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/platform"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/actions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/code-quality"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/codespaces"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/code-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/secret-protection"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/credentials"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/ai"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trending"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/open-source/sponsors"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/articles"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/team"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/startups"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/nonprofits"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/healthcare"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/financial-services"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/manufacturing"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/government"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/why-github"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/executive-insights"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trust-center"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot/copilot-business"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/premium-support"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/events"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/orgs/community/discussions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://help.github.com/"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/about"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/partners"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://githubuniverse.com/"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://github.com/pricing"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fmaximhq%2Fbifrost%2Fissues%2F8983"
+    },
+    {
+      "text": "Sign up",
+      "href": "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fvoltron%2Fissues_fragments%2Fissue_layout&source=header-repo&source_repo=maximhq%2Fbifrost"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/issues/8983"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/issues/8983"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/issues/8983"
+    },
+    {
+      "text": "maximhq",
+      "href": "https://github.com/maximhq"
+    },
+    {
+      "text": "bifrost",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Code",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Issues\n628\n (628)",
+      "href": "https://github.com/maximhq/bifrost/issues"
+    },
+    {
+      "text": "Pull requests\n879\n (879)",
+      "href": "https://github.com/maximhq/bifrost/pulls"
+    },
+    {
+      "text": "Discussions",
+      "href": "https://github.com/maximhq/bifrost/discussions"
+    },
+    {
+      "text": "Actions",
+      "href": "https://github.com/maximhq/bifrost/actions"
+    },
+    {
+      "text": "Security and quality\n3\n (3)",
+      "href": "https://github.com/maximhq/bifrost/security"
+    },
+    {
+      "text": "Insights",
+      "href": "https://github.com/maximhq/bifrost/pulse"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "#9001",
+      "href": "https://github.com/maximhq/bifrost/pull/9001"
+    },
+    {
+      "text": "[Bug]: Responses-family streams lose token usage on the span (cost is set) when no plugin calls ProcessStreamingChunk",
+      "href": "https://github.com/maximhq/bifrost/issues/8983#top"
+    },
+    {
+      "text": "#9001",
+      "href": "https://github.com/maximhq/bifrost/pull/9001"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/grmorozov"
+    },
+    {
+      "text": "grmorozov",
+      "href": "https://github.com/grmorozov"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/issues/8983#issue-6006124664"
+    },
+    {
+      "text": "[Bug]: Bedrock invoke routes drop tool cache_control when converting to Converse, disabling prompt caching (full prefix re-billed every turn) #5629",
+      "href": "https://github.com/maximhq/bifrost/issues/5629"
+    },
+    {
+      "text": "Constantine3",
+      "href": "https://github.com/Constantine3"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/issues/8983#event-34613526292"
+    },
+    {
+      "text": "[fix]: preserve token usage on Responses stream spans",
+      "href": "https://github.com/Constantine3/bifrost/commit/4f66df6a58fdb6ec0efc8e77c4f9a9fbdd2b6011"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/articles/closing-issues-via-commit-messages"
+    },
+    {
+      "text": "4f66df6",
+      "href": "https://github.com/Constantine3/bifrost/commit/4f66df6a58fdb6ec0efc8e77c4f9a9fbdd2b6011"
+    },
+    {
+      "text": "[fix]: preserve token usage on Responses stream spans",
+      "href": "https://github.com/Constantine3/bifrost/commit/0df68bb1451d858a565595c413a384c438301948"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/articles/closing-issues-via-commit-messages"
+    },
+    {
+      "text": "0df68bb",
+      "href": "https://github.com/Constantine3/bifrost/commit/0df68bb1451d858a565595c413a384c438301948"
+    },
+    {
+      "text": "[fix]: preserve token usage on Responses stream spans",
+      "href": "https://github.com/Constantine3/bifrost/commit/d4ceeb7c17ec88944f0b369fb5f8b29178f1017d"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/articles/closing-issues-via-commit-messages"
+    },
+    {
+      "text": "d4ceeb7",
+      "href": "https://github.com/Constantine3/bifrost/commit/d4ceeb7c17ec88944f0b369fb5f8b29178f1017d"
+    },
+    {
+      "text": "[fix]: preserve token usage on Responses stream spans",
+      "href": "https://github.com/Constantine3/bifrost/commit/6bddd82d9f2b1205ecd0a9a290916c399ac84178"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/articles/closing-issues-via-commit-messages"
+    },
+    {
+      "text": "6bddd82",
+      "href": "https://github.com/Constantine3/bifrost/commit/6bddd82d9f2b1205ecd0a9a290916c399ac84178"
+    },
+    {
+      "text": "[fix]: preserve token usage on Responses stream spans",
+      "href": "https://github.com/Constantine3/bifrost/commit/b0e555d51ea49af17ad37a7bc38fb180af47d46d"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/articles/closing-issues-via-commit-messages"
+    },
+    {
+      "text": "b0e555d",
+      "href": "https://github.com/Constantine3/bifrost/commit/b0e555d51ea49af17ad37a7bc38fb180af47d46d"
+    },
+    {
+      "text": "[fix]: preserve token usage on Responses stream spans",
+      "href": "https://github.com/Constantine3/bifrost/commit/017fb170ca1e4322a948246c263ac06089d6e079"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/articles/closing-issues-via-commit-messages"
+    },
+    {
+      "text": "017fb17",
+      "href": "https://github.com/Constantine3/bifrost/commit/017fb170ca1e4322a948246c263ac06089d6e079"
+    },
+    {
+      "text": "Sign up for free",
+      "href": "https://github.com/signup?return_to=https://github.com/maximhq/bifrost/issues/8983"
+    },
+    {
+      "text": "Sign in to comment",
+      "href": "https://github.com/login?return_to=https://github.com/maximhq/bifrost/issues/8983"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Terms",
+      "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service"
+    },
+    {
+      "text": "Privacy",
+      "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement"
+    },
+    {
+      "text": "Security",
+      "href": "https://github.com/security"
+    },
+    {
+      "text": "Status",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "Community",
+      "href": "https://github.community/"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.github.com/"
+    },
+    {
+      "text": "Contact",
+      "href": "https://support.github.com/?tags=dotcom-footer"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:50:10.365Z"
+}

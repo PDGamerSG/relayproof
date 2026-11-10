@@ -1,0 +1,788 @@
+{
+  "url": "https://platform.claude.com/docs/en/build-with-claude/streaming",
+  "title": "Streaming messages - Claude Platform Docs",
+  "text": "Messages\n\nModel capabilities\nStreaming messages\n\nCopy page\n\n\nStream Messages API responses incrementally with server-sent events, including text, tool use, and thinking deltas.\n\nWhen creating a Message, you can set \"stream\": true to incrementally stream the response using server-sent events (SSE).\n\nStreaming with SDKs\n\n\nThe Python SDK and TypeScript SDK offer multiple ways of streaming. The PHP SDK provides streaming through createStream(). The Python SDK allows both sync and async streams. See the documentation in each SDK for details.\n\nCLI\nPython\nTypeScript\nC#\nGo\nJava\nPHP\nRuby\n\nclient = anthropic.Anthropic()\n\nwith client.messages.stream(\n    max_tokens=1024,\n    messages=[{\"role\": \"user\", \"content\": \"Hello\"}],\n    model=\"claude-opus-5-5\",\n) as stream:\n    for text in stream.text_stream:\n        print(text, end=\"\", flush=True)\nGet the final message without handling events\n\n\nIf you don’t need to process text as it arrives, the SDK provides a way to use streaming internally while returning the complete Message object, identical to what client.messages.create() returns. This is especially useful for requests with large max_tokens values, where the SDK requires streaming to avoid HTTP timeouts.\n\nCLI\nPython\nTypeScript\nC#\nGo\nJava\nPHP\nRuby\n\nclient = anthropic.Anthropic()\n\nwith client.messages.stream(\n    max_tokens=128000,\n    messages=[{\"role\": \"user\", \"content\": \"Write a detailed analysis...\"}],\n    model=\"claude-opus-5-5\",\n) as stream:\n    message = stream.get_final_message()\n\nfor block in message.content:\n    if block.type == \"text\":\n        print(block.text)\n\nThe .stream() call keeps the HTTP connection alive with server-sent events, and then the SDK’s message-accumulation helper, stream.get_final_message(), collects all events into the complete Message object.\n\nEvent types\n\n\nEach server-sent event includes a named event type and associated JSON data. Each event uses an SSE event name (for example, event: message_stop), and includes the matching event type in its data.\n\nEach stream uses the following event flow:\n\nmessage_start: contains a Message object with empty content. Under the thinking-binding-controls-2026-08-01 beta header, this Message object also carries the input_transformations array. After a mid-stream server-side fallback, the final message_delta event carries the array again with the serving model’s entries.\nA series of content blocks, each of which has a content_block_start, one or more content_block_delta events, and a content_block_stop event. Each content block has an index that corresponds to its index in the final Message content array. One exception: during server-side fallback responses, a fallback content block arrives at each model boundary as a content_block_start and content_block_stop pair with no deltas in between.\nOne or more message_delta events, indicating top-level changes to the final Message object.\nA final message_stop event.\n\n\nThe token counts shown in the usage field of the message_delta event are cumulative.\n\nPing events\n\n\nEvent streams might also include any number of ping events.\n\nError events\n\n\nThe API might occasionally send errors in the event stream. For example, during periods of high usage, you might receive an overloaded_error, which would normally correspond to an HTTP 529 in a non-streaming context:\n\nExample error\n\nevent: error\ndata: {\"type\": \"error\", \"error\": {\"type\": \"overloaded_error\", \"message\": \"Overloaded\"}}\nOther events\n\n\nIn accordance with the versioning policy, new event types may be added, and your code should handle unknown event types gracefully.\n\nContent block delta types\n\n\nEach content_block_delta event contains a delta of a type that updates the content block at a given index.\n\nText delta\n\n\nA text content block delta looks like:\n\nText delta\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\",\"index\": 0,\"delta\": {\"type\": \"text_delta\", \"text\": \"ello frien\"}}\nInput JSON delta\n\n\nThe deltas for tool_use content blocks correspond to updates for the input field of the block. To support maximum granularity, the deltas are partial JSON strings, whereas the final tool_use.input is always an object.\n\nYou can accumulate the string deltas and parse the JSON once you receive a content_block_stop event, by using a library such as Pydantic to do partial JSON parsing, or by using the SDK’s streaming helpers. In the Python and TypeScript SDKs, these helpers also give you access to the parsed input incrementally, as it streams.\n\nA tool_use content block delta looks like:\n\nInput JSON delta\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\",\"index\": 1,\"delta\": {\"type\": \"input_json_delta\",\"partial_json\": \"{\\\"location\\\": \\\"San Fra\"}}}\n\nNote: Current models only support emitting one complete key and value property from input at a time. As such, when using tools, there might be delays between streaming events while the model is working. Once an input key and value are accumulated, they are emitted as multiple content_block_delta events with chunked partial JSON so that the format can automatically support finer granularity in future models.\n\nThinking delta\n\n\nWhen using thinking with streaming enabled, you’ll receive thinking content through thinking_delta events. These deltas correspond to the thinking field of the thinking content blocks.\n\nFor thinking content, a special signature_delta event is sent just before the content_block_stop event. This signature is used to verify the integrity of the thinking block.\n\nWhen display: \"omitted\" is set on the thinking configuration, no thinking text is streamed. The thinking block opens, receives a thinking_delta with an empty thinking string and then a single signature_delta, and closes. With display: \"updates\" (beta), reasoning blocks stream the same way, and only the progress updates that some models write between tool calls stream thinking_delta events that carry text. See Controlling thinking display.\n\nA typical thinking delta looks like:\n\nThinking delta\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"thinking_delta\", \"thinking\": \"I need to find the GCD of 1071 and 462 using the Euclidean algorithm.\\n\\n1071 = 2 × 462 + 147\"}}\n\nThe signature delta looks like:\n\nSignature delta\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"signature_delta\", \"signature\": \"EqQBCgIYAhIM1gbcDa9GJwZA2b3hGgxBdjrkzLoky3dl1pkiMOYds...\"}}\nFull HTTP stream response\n\n\nUse the client SDKs when using streaming mode. However, if you are building a direct API integration, you need to handle these events yourself.\n\nA stream response consists of:\n\nA message_start event\nPotentially multiple content blocks, each of which contains:\nA content_block_start event\nPotentially multiple content_block_delta events\nA content_block_stop event\nOne or more message_delta events\nA message_stop event\n\nThere might be ping events dispersed throughout the response as well. See Event types for more details on the format.\n\nBasic streaming request\n\ncURL\nCLI\nPython\nTypeScript\nC#\nGo\nJava\nPHP\nRuby\n\nclient = anthropic.Anthropic()\n\nwith client.messages.stream(\n    model=\"claude-opus-5-5\",\n    messages=[{\"role\": \"user\", \"content\": \"Hello\"}],\n    max_tokens=256,\n) as stream:\n    for text in stream.text_stream:\n        print(text, end=\"\", flush=True)\nResponse\n\nevent: message_start\ndata: {\"type\": \"message_start\", \"message\": {\"id\": \"msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY\", \"type\": \"message\", \"role\": \"assistant\", \"content\": [], \"model\": \"claude-opus-5-5\", \"stop_reason\": null, \"stop_sequence\": null, \"usage\": {\"input_tokens\": 25, \"output_tokens\": 1}}}\n\nevent: content_block_start\ndata: {\"type\": \"content_block_start\", \"index\": 0, \"content_block\": {\"type\": \"text\", \"text\": \"\"}}\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"text_delta\", \"text\": \"Hello\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"text_delta\", \"text\": \"!\"}}\n\nevent: content_block_stop\ndata: {\"type\": \"content_block_stop\", \"index\": 0}\n\nevent: message_delta\ndata: {\"type\": \"message_delta\", \"delta\": {\"stop_reason\": \"end_turn\", \"stop_sequence\":null}, \"usage\": {\"output_tokens\": 15}}\n\nevent: message_stop\ndata: {\"type\": \"message_stop\"}\n\nStreaming request with tool use\n\n\n\nTool use supports fine-grained streaming for parameter values. Enable it on individual tools with eager_input_streaming.\n\nThis request asks Claude to use a tool to report the weather.\n\ncURL\nCLI\nPython\nTypeScript\nC#\nGo\nJava\nPHP\nRuby\n\nclient = anthropic.Anthropic()\n\ntools = [\n    {\n        \"name\": \"get_weather\",\n        \"description\": \"Get the current weather in a given location\",\n        \"input_schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n                \"location\": {\n                    \"type\": \"string\",\n                    \"description\": \"The city and state, e.g. San Francisco, CA\",\n                }\n            },\n            \"required\": [\"location\"],\n        },\n    }\n]\n\nwith client.messages.stream(\n    model=\"claude-opus-5\",\n    max_tokens=1024,\n    tools=tools,\n    tool_choice={\"type\": \"any\"},\n    messages=[\n        {\"role\": \"user\", \"content\": \"What is the weather like in San Francisco?\"}\n    ],\n) as stream:\n    for text in stream.text_stream:\n        print(text, end=\"\", flush=True)\nResponse\n\nevent: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_014p7gG3wDgGV9EUtLvnow3U\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-opus-5\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":472,\"output_tokens\":2},\"content\":[],\"stop_reason\":null}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Okay\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\",\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" let\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"'s\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" check\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" the\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" weather\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" for\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" San\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" Francisco\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\",\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" CA\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\":\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_01T1x1fJ34qAmk2tNTrN7Up6\",\"name\":\"get_weather\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"location\\\":\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\" \\\"San\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\" Francisc\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"o,\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\" CA\\\"}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":89}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\nStreaming request with thinking\n\n\nThis request enables thinking with streaming. The display: \"summarized\" setting streams a condensed summary of Claude’s reasoning rather than the full chain of thought.\n\ncURL\nCLI\nPython\nTypeScript\nC#\nGo\nJava\nPHP\nRuby\n\nclient = anthropic.Anthropic()\n\nwith client.messages.stream(\n    model=\"claude-opus-5-5\",\n    max_tokens=20000,\n    thinking={\"type\": \"adaptive\", \"display\": \"summarized\"},\n    messages=[\n        {\n            \"role\": \"user\",\n            \"content\": \"What is the greatest common divisor of 1071 and 462?\",\n        }\n    ],\n) as stream:\n    for event in stream:\n        if event.type == \"content_block_delta\":\n            delta = event.delta\n            match delta.type:\n                case \"thinking_delta\":\n                    print(delta.thinking, end=\"\", flush=True)\n                case \"text_delta\":\n                    print(delta.text, end=\"\", flush=True)\nResponse\n\nevent: message_start\ndata: {\"type\": \"message_start\", \"message\": {\"id\": \"msg_01...\", \"type\": \"message\", \"role\": \"assistant\", \"content\": [], \"model\": \"claude-opus-5-5\", \"stop_reason\": null, \"stop_sequence\": null}}\n\nevent: content_block_start\ndata: {\"type\": \"content_block_start\", \"index\": 0, \"content_block\": {\"type\": \"thinking\", \"thinking\": \"\", \"signature\": \"\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"thinking_delta\", \"thinking\": \"I need to find the GCD of 1071 and 462 using the Euclidean algorithm.\\n\\n1071 = 2 × 462 + 147\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"thinking_delta\", \"thinking\": \"\\n462 = 3 × 147 + 21\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"thinking_delta\", \"thinking\": \"\\n147 = 7 × 21 + 0\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"thinking_delta\", \"thinking\": \"\\nThe remainder is 0, so GCD(1071, 462) = 21.\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 0, \"delta\": {\"type\": \"signature_delta\", \"signature\": \"EqQBCgIYAhIM1gbcDa9GJwZA2b3hGgxBdjrkzLoky3dl1pkiMOYds...\"}}\n\nevent: content_block_stop\ndata: {\"type\": \"content_block_stop\", \"index\": 0}\n\nevent: content_block_start\ndata: {\"type\": \"content_block_start\", \"index\": 1, \"content_block\": {\"type\": \"text\", \"text\": \"\"}}\n\nevent: content_block_delta\ndata: {\"type\": \"content_block_delta\", \"index\": 1, \"delta\": {\"type\": \"text_delta\", \"text\": \"The greatest common divisor of 1071 and 462 is **21**.\"}}\n\nevent: content_block_stop\ndata: {\"type\": \"content_block_stop\", \"index\": 1}\n\nevent: message_delta\ndata: {\"type\": \"message_delta\", \"delta\": {\"stop_reason\": \"end_turn\", \"stop_sequence\": null}}\n\nevent: message_stop\ndata: {\"type\": \"message_stop\"}\nStreaming request with web search tool use\n\n\nThis request asks Claude to search the web for current weather information.\n\ncURL\nCLI\nPython\nTypeScript\nC#\nGo\nJava\nPHP\nRuby\n\nclient = anthropic.Anthropic()\n\nwith client.messages.stream(\n    model=\"claude-opus-5-5\",\n    max_tokens=1024,\n    tools=[{\"type\": \"web_search_20250305\", \"name\": \"web_search\", \"max_uses\": 5}],\n    messages=[\n        {\"role\": \"user\", \"content\": \"What is the weather like in New York City today?\"}\n    ],\n) as stream:\n    for text in stream.text_stream:\n        print(text, end=\"\", flush=True)\nResponse\n\nevent: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_01G...\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-opus-5-5\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":2679,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":3}}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"I'll check\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\" the current weather in New York City for you\"}}\n\nevent: ping\ndata: {\"type\": \"ping\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\".\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"server_tool_use\",\"id\":\"srvtoolu_014hJH82Qum7Td6UV8gDXThB\",\"name\":\"web_search\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"query\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\":\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\" \\\"weather\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\" NY\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"C to\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"day\\\"}\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1 }\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"web_search_tool_result\",\"tool_use_id\":\"srvtoolu_014hJH82Qum7Td6UV8gDXThB\",\"content\":[{\"type\":\"web_search_result\",\"title\":\"Weather in New York City in May 2025 (New York) - detailed Weather Forecast for a month\",\"url\":\"https://world-weather.info/forecast/usa/new_york/may-2025/\",\"encrypted_content\":\"Ev0DCioIAxgCIiQ3NmU4ZmI4OC1k...\",\"page_age\":null},...]}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":2}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":3,\"delta\":{\"type\":\"text_delta\",\"text\":\"Here's the current weather information for New York\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":3,\"delta\":{\"type\":\"text_delta\",\"text\":\" City:\\n\\n# Weather\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":3,\"delta\":{\"type\":\"text_delta\",\"text\":\" in New York City\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":3,\"delta\":{\"type\":\"text_delta\",\"text\":\"\\n\\n\"}}\n\n...\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":17}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10682,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":510,\"server_tool_use\":{\"web_search_requests\":1}}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\nError recovery\n\nClaude 4.5 and earlier\n\n\nFor Claude 4.5 models and earlier, you can recover a streaming request that was interrupted because of network issues, timeouts, or other errors by resuming from where the stream was interrupted. This approach saves you from re-processing the entire response.\n\nThe basic recovery strategy involves:\n\nCapture the partial response: Save all content that was successfully received before the error occurred.\nConstruct a continuation request: Create a new API request that includes the partial assistant response as the beginning of a new assistant message.\nResume streaming: Continue receiving the rest of the response from where it was interrupted.\nClaude 4.6 and later\n\n\nFor Claude 4.6 and later models, the same capture-and-resume strategy applies, but step 2 changes: instead of placing the partial response in an assistant message, add a user message that instructs the model to continue from where it left off.\n\nCapture the partial response: Save all content that was successfully received before the error occurred.\nConstruct a continuation request: Create a new API request with a user message containing the partial response and an instruction to continue, for example:\nSample prompt\n\nYour previous response was interrupted and ended with [previous_response]. Continue from where you left off.\nResume streaming: Continue receiving the rest of the response from where it was interrupted.\nError recovery best practices\n\nUse SDK features: Rely on the SDK’s built-in message accumulation and error handling capabilities.\nHandle content types: Be aware that messages can contain multiple content blocks (text, tool_use, thinking). Tool use and thinking blocks cannot be partially recovered. You can resume streaming from the most recent text block.\nNext steps\n\n\nStop reasons and fallback\n\nHandle each stop_reason value once a stream completes.\n\n\nFine-grained tool streaming\n\nStream tool input JSON without server-side buffering for lower latency.\n\n\nThinking\n\nStream thinking output with thinking_delta and signature_delta events.\n\n\nClient SDKs\n\nUse the official SDKs, which handle streaming, accumulation, and reconnection for you.\n\n\nBatch processing\n\nProcess large volumes of requests asynchronously when you don’t need real-time responses.\n\nAvailability\n\nMessage streaming\nCloud platform\nCloud platform:\nClaude API\n\nAPI\n\nMessages API\nModels\n\nAll models\n\nWas this page helpful?\n\n\n\n\nMessage streaming\n\nFeature of\n\nMessages API\nModels\n\nAll models\nCloud platforms\n\nAll platforms\nStreaming with SDKs\nGet the final message without handling events\nEvent types\nPing events\nError events\nOther events\nContent block delta types\nText delta\nInput JSON delta\nThinking delta\nFull HTTP stream response\nBasic streaming request\nStreaming request with tool use\nStreaming request with thinking\nStreaming request with web search tool use\nError recovery\nClaude 4.5 and earlier\nClaude 4.6 and later\nError recovery best practices\nNext steps\nAvailability\nClaude Platform Docs\n\n\nSolutions\nAI agents\nCode modernization\nCoding\nCustomer support\nFinancial services\nGovernment\nHigher education\nK-12 teachers\nLife sciences\nPartners\nClaude on AWS\nClaude on Google Cloud\nCompany\nAnthropic\nCareers\nEconomic Futures\nResearch\nNews\nResponsible Scaling Policy\nSecurity and compliance\nTransparency\nLearn\nBlog\nCourses\nUse cases\nConnectors\nCustomer stories\nEngineering at Anthropic\nEvents\nPowered by Claude\nService partners\nStartups program\nHelp and security\nAvailability\nStatus\nSupport\nDiscord\nTerms and policies\nPrivacy policy\nResponsible disclosure policy\nTerms of service: Commercial\nTerms of service: Consumer\nUsage policy",
+  "links": [
+    {
+      "text": "here",
+      "href": "https://www.anthropic.com/legal/cookies"
+    },
+    {
+      "text": "Claude Platform Docs",
+      "href": "https://platform.claude.com/docs/en/home"
+    },
+    {
+      "text": "Messages",
+      "href": "https://platform.claude.com/docs/en/intro"
+    },
+    {
+      "text": "Managed Agents",
+      "href": "https://platform.claude.com/docs/en/managed-agents/overview"
+    },
+    {
+      "text": "Admin",
+      "href": "https://platform.claude.com/docs/en/manage-claude/admin-api"
+    },
+    {
+      "text": "Best practices",
+      "href": "https://platform.claude.com/docs/en/about-claude/use-case-guides/overview"
+    },
+    {
+      "text": "Models & pricing",
+      "href": "https://platform.claude.com/docs/en/models/overview"
+    },
+    {
+      "text": "SDKs, CLI, and libraries",
+      "href": "https://platform.claude.com/docs/en/cli-sdks-libraries/overview"
+    },
+    {
+      "text": "Claude API skill",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/claude-api-skill"
+    },
+    {
+      "text": "Release notes",
+      "href": "https://platform.claude.com/docs/en/release-notes/overview"
+    },
+    {
+      "text": "\nAPI reference",
+      "href": "https://platform.claude.com/docs/en/api/messages/create#create.stream"
+    },
+    {
+      "text": "\nConsole",
+      "href": "https://platform.claude.com/"
+    },
+    {
+      "text": "Log in",
+      "href": "https://platform.claude.com/login?returnTo=%2Fdocs%2Fen%2Fbuild-with-claude%2Fstreaming"
+    },
+    {
+      "text": "Intro to Claude",
+      "href": "https://platform.claude.com/docs/en/intro"
+    },
+    {
+      "text": "Get your API key",
+      "href": "https://platform.claude.com/docs/en/get-api-key"
+    },
+    {
+      "text": "Quickstart",
+      "href": "https://platform.claude.com/docs/en/get-started"
+    },
+    {
+      "text": "Authentication",
+      "href": "https://platform.claude.com/docs/en/manage-claude/authentication"
+    },
+    {
+      "text": "Features overview",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/overview"
+    },
+    {
+      "text": "Using the Messages API",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/working-with-messages"
+    },
+    {
+      "text": "Stop reasons and fallback",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+    },
+    {
+      "text": "Refusals and fallback",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback"
+    },
+    {
+      "text": "Fallback credit",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/fallback-credit"
+    },
+    {
+      "text": "Text watermark",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/text-watermark"
+    },
+    {
+      "text": "Effort",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/effort"
+    },
+    {
+      "text": "Task budgets (beta)",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/task-budgets"
+    },
+    {
+      "text": "Fast mode",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/fast-mode"
+    },
+    {
+      "text": "Structured outputs",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs"
+    },
+    {
+      "text": "Citations",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/citations"
+    },
+    {
+      "text": "Streaming Messages",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming"
+    },
+    {
+      "text": "Batch processing",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/batch-processing"
+    },
+    {
+      "text": "Search results",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/search-results"
+    },
+    {
+      "text": "Streaming refusals",
+      "href": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/handle-streaming-refusals"
+    },
+    {
+      "text": "Multilingual support",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/multilingual-support"
+    },
+    {
+      "text": "Embeddings",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/embeddings"
+    },
+    {
+      "text": "Thinking",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/thinking"
+    },
+    {
+      "text": "Overview",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview"
+    },
+    {
+      "text": "How tool use works",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/how-tool-use-works"
+    },
+    {
+      "text": "Tutorial: Build a tool-using agent",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/build-a-tool-using-agent"
+    },
+    {
+      "text": "Define tools",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools"
+    },
+    {
+      "text": "Handle tool calls",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls"
+    },
+    {
+      "text": "Parallel tool use",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use"
+    },
+    {
+      "text": "Tool runner (SDK)",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-runner"
+    },
+    {
+      "text": "Strict tool use",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use"
+    },
+    {
+      "text": "Server tools",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/server-tools"
+    },
+    {
+      "text": "Web search tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool"
+    },
+    {
+      "text": "Web fetch tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool"
+    },
+    {
+      "text": "Code execution tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool"
+    },
+    {
+      "text": "Advisor tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/advisor-tool"
+    },
+    {
+      "text": "Tool search tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool"
+    },
+    {
+      "text": "Memory tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool"
+    },
+    {
+      "text": "Bash tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/bash-tool"
+    },
+    {
+      "text": "Text editor tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/text-editor-tool"
+    },
+    {
+      "text": "Browser and computer use (SDK)",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/browser-use-sdk"
+    },
+    {
+      "text": "Computer use tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool"
+    },
+    {
+      "text": "Browser use tool",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/browser-use-tool"
+    },
+    {
+      "text": "Troubleshooting",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/troubleshooting-tool-use"
+    },
+    {
+      "text": "Tool reference",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-reference"
+    },
+    {
+      "text": "Manage tool context",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/manage-tool-context"
+    },
+    {
+      "text": "Tool combinations",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-combinations"
+    },
+    {
+      "text": "Tool use with prompt caching",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-use-with-prompt-caching"
+    },
+    {
+      "text": "Programmatic tool calling",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling"
+    },
+    {
+      "text": "Fine-grained tool streaming",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/fine-grained-tool-streaming"
+    },
+    {
+      "text": "Context windows",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/context-windows"
+    },
+    {
+      "text": "Context editing",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/context-editing"
+    },
+    {
+      "text": "Prompt caching",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+    },
+    {
+      "text": "Message threads",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/message-threads"
+    },
+    {
+      "text": "Mid-conversation messages",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages"
+    },
+    {
+      "text": "Build an orchestration mode",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/mid-conversation-effort-example"
+    },
+    {
+      "text": "Cache diagnostics",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics"
+    },
+    {
+      "text": "Token counting",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/token-counting"
+    },
+    {
+      "text": "Compaction",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/compaction"
+    },
+    {
+      "text": "Files API",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/files"
+    },
+    {
+      "text": "PDF support",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/pdf-support"
+    },
+    {
+      "text": "Images and vision",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/vision"
+    },
+    {
+      "text": "Overview",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview"
+    },
+    {
+      "text": "Quickstart",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart"
+    },
+    {
+      "text": "Best practices",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices"
+    },
+    {
+      "text": "Skills for enterprise",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/enterprise"
+    },
+    {
+      "text": "Skills in the API",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/skills-guide"
+    },
+    {
+      "text": "Remote MCP servers",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/remote-mcp-servers"
+    },
+    {
+      "text": "MCP connector",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector"
+    },
+    {
+      "text": "MCP tunnels",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/mcp-tunnels/overview"
+    },
+    {
+      "text": "Overview",
+      "href": "https://platform.claude.com/docs/en/manage-claude/opentelemetry"
+    },
+    {
+      "text": "Get Claude SDK spans",
+      "href": "https://platform.claude.com/docs/en/manage-claude/opentelemetry/sdk"
+    },
+    {
+      "text": "Get Claude API spans",
+      "href": "https://platform.claude.com/docs/en/manage-claude/opentelemetry/api"
+    },
+    {
+      "text": "Amazon Bedrock (Opus 4.7 and later)",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock"
+    },
+    {
+      "text": "Amazon Bedrock (Opus 4.6 and earlier)",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy"
+    },
+    {
+      "text": "Claude Platform on AWS",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/claude-platform-on-aws"
+    },
+    {
+      "text": "Microsoft Foundry",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry"
+    },
+    {
+      "text": "Google Cloud",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/overview"
+    },
+    {
+      "text": "Console",
+      "href": "https://platform.claude.com/"
+    },
+    {
+      "text": "Messages",
+      "href": "https://platform.claude.com/docs/en/intro"
+    },
+    {
+      "text": "Messages API",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/working-with-messages"
+    },
+    {
+      "text": "Models",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#feature-availability"
+    },
+    {
+      "text": "Cloud platforms",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#feature-availability"
+    },
+    {
+      "text": "server-sent events",
+      "href": "https://developer.mozilla.org/en-US/Web/API/Server-sent%5Fevents/Using%5Fserver-sent%5Fevents"
+    },
+    {
+      "text": "Python SDK",
+      "href": "https://github.com/anthropics/anthropic-sdk-python"
+    },
+    {
+      "text": "TypeScript SDK",
+      "href": "https://github.com/anthropics/anthropic-sdk-typescript"
+    },
+    {
+      "text": "PHP SDK",
+      "href": "https://github.com/anthropics/anthropic-sdk-php"
+    },
+    {
+      "text": "thinking-binding-controls-2026-08-01",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/thinking#preserved-thinking-controls"
+    },
+    {
+      "text": "server-side fallback",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#server-side-fallback"
+    },
+    {
+      "text": "server-side fallback",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback#server-side-fallback"
+    },
+    {
+      "text": "errors",
+      "href": "https://platform.claude.com/docs/en/api/errors"
+    },
+    {
+      "text": "versioning policy",
+      "href": "https://platform.claude.com/docs/en/api/versioning"
+    },
+    {
+      "text": "Pydantic",
+      "href": "https://docs.pydantic.dev/latest/concepts/json/#partial-json-parsing"
+    },
+    {
+      "text": "streaming helpers",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#streaming-with-sdks"
+    },
+    {
+      "text": "thinking with streaming enabled",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/thinking#streaming-thinking"
+    },
+    {
+      "text": "progress updates",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/thinking#progress-updates"
+    },
+    {
+      "text": "Controlling thinking display",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/thinking#controlling-thinking-display"
+    },
+    {
+      "text": "client SDKs",
+      "href": "https://platform.claude.com/docs/en/cli-sdks-libraries/overview"
+    },
+    {
+      "text": "Event types",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#event-types"
+    },
+    {
+      "text": "fine-grained streaming",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/fine-grained-tool-streaming"
+    },
+    {
+      "text": "Stop reasons and fallback",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+    },
+    {
+      "text": "Fine-grained tool streaming",
+      "href": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/fine-grained-tool-streaming"
+    },
+    {
+      "text": "Thinking",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/thinking"
+    },
+    {
+      "text": "Client SDKs",
+      "href": "https://platform.claude.com/docs/en/cli-sdks-libraries/overview"
+    },
+    {
+      "text": "Batch processing",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/batch-processing"
+    },
+    {
+      "text": "Messages API",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/working-with-messages"
+    },
+    {
+      "text": "Models",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#feature-availability"
+    },
+    {
+      "text": "Cloud platforms",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#feature-availability"
+    },
+    {
+      "text": "Streaming with SDKs",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#streaming-with-sdks"
+    },
+    {
+      "text": "Get the final message without handling events",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#get-the-final-message-without-handling-events"
+    },
+    {
+      "text": "Event types",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#event-types"
+    },
+    {
+      "text": "Ping events",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#ping-events"
+    },
+    {
+      "text": "Error events",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#error-events"
+    },
+    {
+      "text": "Other events",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#other-events"
+    },
+    {
+      "text": "Content block delta types",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#content-block-delta-types"
+    },
+    {
+      "text": "Text delta",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#text-delta"
+    },
+    {
+      "text": "Input JSON delta",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#input-json-delta"
+    },
+    {
+      "text": "Thinking delta",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#thinking-delta"
+    },
+    {
+      "text": "Full HTTP stream response",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#full-http-stream-response"
+    },
+    {
+      "text": "Basic streaming request",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#basic-streaming-request"
+    },
+    {
+      "text": "Streaming request with tool use",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#streaming-request-with-tool-use"
+    },
+    {
+      "text": "Streaming request with thinking",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#streaming-request-with-thinking"
+    },
+    {
+      "text": "Streaming request with web search tool use",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#streaming-request-with-web-search-tool-use"
+    },
+    {
+      "text": "Error recovery",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#error-recovery"
+    },
+    {
+      "text": "Claude 4.5 and earlier",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#claude-4-5-and-earlier"
+    },
+    {
+      "text": "Claude 4.6 and later",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#claude-4-6-and-later"
+    },
+    {
+      "text": "Error recovery best practices",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#error-recovery-best-practices"
+    },
+    {
+      "text": "Next steps",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#next-steps"
+    },
+    {
+      "text": "Availability",
+      "href": "https://platform.claude.com/docs/en/build-with-claude/streaming#feature-availability"
+    },
+    {
+      "text": "Claude Platform Docs",
+      "href": "https://platform.claude.com/docs/en/home"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/claudeai"
+    },
+    {
+      "text": "",
+      "href": "https://www.threads.com/@claudeai"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/showcase/claude"
+    },
+    {
+      "text": "",
+      "href": "https://www.youtube.com/@anthropic-ai"
+    },
+    {
+      "text": "",
+      "href": "https://instagram.com/claudeai"
+    },
+    {
+      "text": "AI agents",
+      "href": "https://claude.com/solutions/agents"
+    },
+    {
+      "text": "Code modernization",
+      "href": "https://claude.com/solutions/code-modernization"
+    },
+    {
+      "text": "Coding",
+      "href": "https://claude.com/solutions/coding"
+    },
+    {
+      "text": "Customer support",
+      "href": "https://claude.com/solutions/customer-support"
+    },
+    {
+      "text": "Financial services",
+      "href": "https://claude.com/solutions/financial-services"
+    },
+    {
+      "text": "Government",
+      "href": "https://claude.com/solutions/government"
+    },
+    {
+      "text": "Higher education",
+      "href": "https://claude.com/solutions/education"
+    },
+    {
+      "text": "K-12 teachers",
+      "href": "https://claude.com/solutions/teachers"
+    },
+    {
+      "text": "Life sciences",
+      "href": "https://claude.com/solutions/life-sciences"
+    },
+    {
+      "text": "Claude on AWS",
+      "href": "https://claude.com/partners/amazon-bedrock"
+    },
+    {
+      "text": "Claude on Google Cloud",
+      "href": "https://claude.com/partners/google-cloud-vertex-ai"
+    },
+    {
+      "text": "Blog",
+      "href": "https://claude.com/blog"
+    },
+    {
+      "text": "Courses",
+      "href": "https://claude.com/resources/courses"
+    },
+    {
+      "text": "Use cases",
+      "href": "https://claude.com/resources/use-cases"
+    },
+    {
+      "text": "Connectors",
+      "href": "https://claude.com/partners/mcp"
+    },
+    {
+      "text": "Customer stories",
+      "href": "https://claude.com/customers"
+    },
+    {
+      "text": "Engineering at Anthropic",
+      "href": "https://www.anthropic.com/engineering"
+    },
+    {
+      "text": "Events",
+      "href": "https://www.anthropic.com/events"
+    },
+    {
+      "text": "Powered by Claude",
+      "href": "https://claude.com/partners/powered-by-claude"
+    },
+    {
+      "text": "Service partners",
+      "href": "https://claude.com/partners/services"
+    },
+    {
+      "text": "Startups program",
+      "href": "https://claude.com/programs/startups"
+    },
+    {
+      "text": "Anthropic",
+      "href": "https://www.anthropic.com/company"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.anthropic.com/careers"
+    },
+    {
+      "text": "Economic Futures",
+      "href": "https://www.anthropic.com/economic-futures"
+    },
+    {
+      "text": "Research",
+      "href": "https://www.anthropic.com/research"
+    },
+    {
+      "text": "News",
+      "href": "https://www.anthropic.com/news"
+    },
+    {
+      "text": "Responsible Scaling Policy",
+      "href": "https://www.anthropic.com/news/announcing-our-updated-responsible-scaling-policy"
+    },
+    {
+      "text": "Security and compliance",
+      "href": "https://trust.anthropic.com/"
+    },
+    {
+      "text": "Transparency",
+      "href": "https://www.anthropic.com/transparency"
+    },
+    {
+      "text": "Blog",
+      "href": "https://claude.com/blog"
+    },
+    {
+      "text": "Courses",
+      "href": "https://claude.com/resources/courses"
+    },
+    {
+      "text": "Use cases",
+      "href": "https://claude.com/resources/use-cases"
+    },
+    {
+      "text": "Connectors",
+      "href": "https://claude.com/partners/mcp"
+    },
+    {
+      "text": "Customer stories",
+      "href": "https://claude.com/customers"
+    },
+    {
+      "text": "Engineering at Anthropic",
+      "href": "https://www.anthropic.com/engineering"
+    },
+    {
+      "text": "Events",
+      "href": "https://www.anthropic.com/events"
+    },
+    {
+      "text": "Powered by Claude",
+      "href": "https://claude.com/partners/powered-by-claude"
+    },
+    {
+      "text": "Service partners",
+      "href": "https://claude.com/partners/services"
+    },
+    {
+      "text": "Startups program",
+      "href": "https://claude.com/programs/startups"
+    },
+    {
+      "text": "Availability",
+      "href": "https://www.anthropic.com/supported-countries"
+    },
+    {
+      "text": "Status",
+      "href": "https://status.claude.com/"
+    },
+    {
+      "text": "Support",
+      "href": "https://support.claude.com/"
+    },
+    {
+      "text": "Discord",
+      "href": "https://www.anthropic.com/discord"
+    },
+    {
+      "text": "Privacy policy",
+      "href": "https://www.anthropic.com/legal/privacy"
+    },
+    {
+      "text": "Responsible disclosure policy",
+      "href": "https://www.anthropic.com/responsible-disclosure-policy"
+    },
+    {
+      "text": "Terms of service: Commercial",
+      "href": "https://www.anthropic.com/legal/commercial-terms"
+    },
+    {
+      "text": "Terms of service: Consumer",
+      "href": "https://www.anthropic.com/legal/consumer-terms"
+    },
+    {
+      "text": "Usage policy",
+      "href": "https://www.anthropic.com/legal/aup"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:48:23.003Z"
+}

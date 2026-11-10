@@ -1,0 +1,324 @@
+{
+  "url": "https://docs.tavily.com/documentation/api-reference/endpoint/search",
+  "title": "Tavily Search - Tavily Docs",
+  "text": "Tavily Search\nCopy page\n\nExecute a search query using Tavily Search.\n\nPOST\n/\nsearch\nAuthorizations\n​\nAuthorization\nstringheaderrequired\n\nBearer authentication header in the form Bearer , where is your Tavily API key (e.g., Bearer tvly-YOUR_API_KEY).\n\nBody\napplication/json\n\nParameters for the Tavily Search request.\n\n​\nquery\nstringrequired\n\nThe search query to execute with Tavily.\n\nExample:\n\n\"who is Leo Messi?\"\n\n​\nsearch_depth\nenum<string>default:basic\n\nControls the latency vs. relevance tradeoff and how results[].content is generated:\n\nadvanced: Highest relevance with increased latency. Best for detailed, high-precision queries. Returns multiple semantically relevant snippets per URL (configurable via chunks_per_source).\nbasic: A balanced option for relevance and latency. Ideal for general-purpose searches. Returns multiple semantically relevant snippets per URL (configurable via chunks_per_source).\nfast: Prioritizes lower latency while maintaining good relevance. Returns multiple semantically relevant snippets per URL (configurable via chunks_per_source).\nultra-fast: Minimizes latency above all else. Best for time-critical use cases. Returns one NLP summary per URL.\n\nCost:\n\nbasic, fast, ultra-fast: 1 API Credit\nadvanced: 2 API Credits\n\nSee Search Best Practices for guidance on choosing the right search depth.\n\nAvailable options: advanced, basic, fast, ultra-fast \n​\nchunks_per_source\nintegerdefault:3\n\nChunks are short content snippets (about 500 characters each for basic and fast, 800 for advanced) pulled directly from the source. Use chunks_per_source to define the maximum number of relevant chunks returned per source and to control the content length. Chunks will appear in the content field as: <chunk 1> [...] <chunk 2> [...] <chunk 3>. Adjacent chunks may be joined into one longer passage, so chunk length is a target, not a hard limit. Available when search_depth is advanced, basic or fast.\n\nRequired range: 1 <= x <= 3\n​\nmax_results\nintegerdefault:10\n\nThe maximum number of search results to return.\n\nRequired range: 0 <= x <= 20\nExample:\n\n1\n\n​\ntopic\nenum<string>default:general\n\nThe category of the search.news is useful for retrieving real-time updates, particularly about politics, sports, and major current events covered by mainstream media sources. general is for broader, more general-purpose searches that may include a wide range of sources.\n\nAvailable options: general, news, finance \n​\ntime_range\nenum<string>\n\nThe time range back from the current date to filter results by publish date. Continuously updated pages, such as weather forecasts and prices, keep old publish dates and get filtered out. For those, leave time_range unset and use max_age_hours. By default, results with no detectable published date are not removed; set filter_by_published_date to true to remove them.\n\nAvailable options: day, week, month, year, d, w, m, y \n​\nstart_date\nstring\n\nWill return all results after the specified start date based on publish date. Required to be written in the format YYYY-MM-DD. By default, results with no detectable published date are not removed; set filter_by_published_date to true to remove them.\n\nExample:\n\n\"2025-02-09\"\n\n​\nend_date\nstring\n\nWill return all results before the specified end date based on publish date. Required to be written in the format YYYY-MM-DD. By default, results with no detectable published date are not removed; set filter_by_published_date to true to remove them.\n\nExample:\n\n\"2025-12-29\"\n\n​\ninclude_published_date\nbooleandefault:false\n\nInclude a published_date field in each result. The date is Tavily's best estimate of when the source was published or last updated, so it can be later than the original publish date. Results with no detectable date return null. Automatically enabled when topic is news.\n\nNote: this feature is currently in beta.\n\n​\nfilter_by_published_date\nbooleandefault:false\n\nRemove results whose published date falls outside the time_range, start_date, or end_date window. Results with no detectable published date are also removed. Setting this to true also enables include_published_date.\n\nIf you want date-window filtering but don't want to lose sources without a detectable date, leave this false and set include_published_date: true together with a date range instead.\n\n​\nmax_age_hours\ninteger\n\nThe maximum age in hours of Tavily's cached copy of each result.\n\nAccepted values:\n\nunset (default): Tavily serves cached copies and fetches pages live as needed.\n1 to 720 (30 days): only return a cached copy fetched within that many hours.\n0: always fetch the page live.\n-1: never fetch live.\n\nUse this for continuously updated pages, such as weather forecasts and prices, where time_range drops results. You can combine the two.\n\nLower values do not cost more credits, but fetching live adds latency. Results whose cached copy is too old and can't be fetched live are left out, so you may get fewer than max_results.\n\nOn non-paying plans, live fetching is best-effort. While Tavily is under heavy load, requests that set max_age_hours may be refused with 434 Flex tier capacity exceeded.\n\nRequired range: -1 <= x <= 720\nExample:\n\n24\n\n​\ninclude_answer\nboolean\nenum<string>\nboolean\ndefault:false\n\nInclude an LLM-generated answer to the provided query. basic or true returns a quick answer. advanced returns a more detailed answer.\n\n​\ninclude_raw_content\nboolean\nenum<string>\nboolean\ndefault:false\n\nInclude the cleaned and parsed HTML content of each search result. markdown or true returns search result content in markdown format. text returns the plain text from the results and may increase latency.\n\n​\ninclude_images\nbooleandefault:false\n\nInclude images in the response. Returns both a top-level images list of query-related images and an images array inside each result object with images extracted from that specific source.\n\n​\ninclude_image_descriptions\nbooleandefault:false\n\nWhen include_images is true, also add a descriptive text for each image.\n\n​\ninclude_favicon\nbooleandefault:false\n\nWhether to include the favicon URL for each result.\n\n​\ninclude_domains\nstring[]\n\nA list of domains to specifically include in the search results. Maximum 300 domains.\n\n​\nexclude_domains\nstring[]\n\nA list of domains to specifically exclude from the search results. Maximum 150 domains.\n\n​\ninclude_domains_mode\nenum<string>default:restrict\n\nControls how include_domains is applied. restrict limits results to only the listed domains. prefer also searches the rest of the web, so results outside include_domains can still surface, rather than excluding them. Defaults to restrict, so include_domains acts as a hard filter unless set to prefer. Setting it without include_domains returns a 400 error.\n\nAvailable options: restrict, prefer \n​\ncountry\nenum<string>\n\nBoost search results from a specific country. This will prioritize content from the selected country in the search results. Available only if topic is general.\n\nAvailable options: afghanistan, albania, algeria, andorra, angola, argentina, armenia, australia, austria, azerbaijan, bahamas, bahrain, bangladesh, barbados, belarus, belgium, belize, benin, bhutan, bolivia, bosnia and herzegovina, botswana, brazil, brunei, bulgaria, burkina faso, burundi, cambodia, cameroon, canada, cape verde, central african republic, chad, chile, china, colombia, comoros, congo, costa rica, croatia, cuba, cyprus, czech republic, denmark, djibouti, dominican republic, ecuador, egypt, el salvador, equatorial guinea, eritrea, estonia, ethiopia, fiji, finland, france, gabon, gambia, georgia, germany, ghana, greece, guatemala, guinea, haiti, honduras, hungary, iceland, india, indonesia, iran, iraq, ireland, israel, italy, jamaica, japan, jordan, kazakhstan, kenya, kuwait, kyrgyzstan, latvia, lebanon, lesotho, liberia, libya, liechtenstein, lithuania, luxembourg, madagascar, malawi, malaysia, maldives, mali, malta, mauritania, mauritius, mexico, moldova, monaco, mongolia, montenegro, morocco, mozambique, myanmar, namibia, nepal, netherlands, new zealand, nicaragua, niger, nigeria, north korea, north macedonia, norway, oman, pakistan, panama, papua new guinea, paraguay, peru, philippines, poland, portugal, qatar, romania, russia, rwanda, saudi arabia, senegal, serbia, singapore, slovakia, slovenia, somalia, south africa, south korea, south sudan, spain, sri lanka, sudan, sweden, switzerland, syria, taiwan, tajikistan, tanzania, thailand, togo, trinidad and tobago, tunisia, turkey, turkmenistan, uganda, ukraine, united arab emirates, united kingdom, united states, uruguay, uzbekistan, venezuela, vietnam, yemen, zambia, zimbabwe \n​\nlanguage\nstring\n\nBoost search results in a specific language. Accepts an ISO 639-1 code (e.g. en, fr, zh-cn) or an English language name (e.g. english, french). By default this only boosts matching-language results in ranking; pass filter_by_language: true to strictly filter out non-matching results instead. For best results, write your query in the same language you set here.\n\nExample:\n\n\"en\"\n\n​\nfilter_by_language\nbooleandefault:false\n\nStrictly filter out search results that don't match the language parameter, instead of only boosting them in ranking. Requires language to be set; returns a 400 error otherwise.\n\n​\nauto_parameters\nbooleandefault:false\n\nWhen auto_parameters is enabled, Tavily automatically configures search parameters based on your query's content and intent. You can still set other parameters manually, and your explicit values will override the automatic ones. The parameters include_answer, include_raw_content, and max_results must always be set manually, as they directly affect response size. Note: search_depth may be automatically set to advanced when it's likely to improve results. This uses 2 API credits per request. To avoid the extra cost, you can explicitly set search_depth to basic.\n\n​\nexact_match\nbooleandefault:false\n\nEnsure that only search results containing the exact quoted phrase(s) in the query are returned, bypassing synonyms or semantic variations. Wrap target phrases in quotes within your query (e.g. \"John Smith\" CEO Acme Corp). Punctuation is typically ignored inside quotes.\n\n​\ninclude_usage\nbooleandefault:false\n\nWhether to include credit usage information in the response.\n\n​\nsafe_search\nbooleandefault:false\n\nWhether to filter out adult or unsafe content from results. Not supported for fast or ultra-fast search depths.\n\nResponse\n200\napplication/json\n\nSearch results returned successfully\n\n​\nquery\nstringrequired\n\nThe search query that was executed.\n\nExample:\n\n\"Who is Leo Messi?\"\n\n​\nanswer\nstringrequired\n\nA short answer to the user's query, generated by an LLM. Included in the response only if include_answer is requested (i.e., set to true, basic, or advanced)\n\nExample:\n\n\"Lionel Messi, born in 1987, is an Argentine footballer widely regarded as one of the greatest players of his generation. He spent the majority of his career playing for FC Barcelona, where he won numerous domestic league titles and UEFA Champions League titles. Messi is known for his exceptional dribbling skills, vision, and goal-scoring ability. He has won multiple FIFA Ballon d'Or awards, numerous La Liga titles with Barcelona, and holds the record for most goals scored in a calendar year. In 2014, he led Argentina to the World Cup final, and in 2015, he helped Barcelona capture another treble. Despite turning 36 in June, Messi remains highly influential in the sport.\"\n\n​\nimages\nobject[]required\n\nA list of query-related images from image search. If include_image_descriptions is true, each item will have url and description. Note: per-result images are also returned inside each result object's images field.\n\nShow child attributes\n\nExample:\n[]\n​\nresults\nobject[]required\n\nA list of sorted search results, ranked by relevancy.\n\nShow child attributes\n\n​\nresponse_time\nnumber<float>required\n\nTime in seconds it took to complete the request.\n\nExample:\n\n\"1.67\"\n\n​\nauto_parameters\nobject\n\nA dictionary of the selected auto_parameters, only shown when auto_parameters is true.\n\nExample:\n{\n  \"topic\": \"general\",\n  \"search_depth\": \"basic\"\n}\n​\nusage\nobject\n\nCredit usage details for the request.\n\nExample:\n{ \"credits\": 1 }\n​\nrequest_id\nstring\n\nA unique request identifier you can share with customer support to help resolve issues with specific requests.\n\nExample:\n\n\"123e4567-e89b-12d3-a456-426614174111\"\n\nTavily Extract\nNext",
+  "links": [
+    {
+      "text": "/llms.txt",
+      "href": "https://docs.tavily.com/llms.txt"
+    },
+    {
+      "text": "Skip to main content",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#content-area"
+    },
+    {
+      "text": "Tavily Docs home page",
+      "href": "https://tavily.com/"
+    },
+    {
+      "text": "Support",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Get an API key",
+      "href": "https://app.tavily.com/"
+    },
+    {
+      "text": "Get an API key",
+      "href": "https://app.tavily.com/"
+    },
+    {
+      "text": "Documentation",
+      "href": "https://docs.tavily.com/"
+    },
+    {
+      "text": "API Reference",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.tavily.com/documentation/integrations/overview"
+    },
+    {
+      "text": "Examples",
+      "href": "https://docs.tavily.com/examples/hub"
+    },
+    {
+      "text": "Changelog",
+      "href": "https://docs.tavily.com/changelog"
+    },
+    {
+      "text": "API Playground",
+      "href": "https://app.tavily.com/playground"
+    },
+    {
+      "text": "POST\nSearch",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search"
+    },
+    {
+      "text": "POST\nExtract",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract"
+    },
+    {
+      "text": "POST\nCrawl",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/crawl"
+    },
+    {
+      "text": "POST\nMap",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/map"
+    },
+    {
+      "text": "POST\nCreate Research Task",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/research"
+    },
+    {
+      "text": "GET\nGet Research Task Status",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/research-get"
+    },
+    {
+      "text": "Streaming",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/research-streaming"
+    },
+    {
+      "text": "POST\nFeedback\nBETA",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/feedback"
+    },
+    {
+      "text": "GET\nUsage",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/usage"
+    },
+    {
+      "text": "POST\nLogs",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/logs"
+    },
+    {
+      "text": "POST\nOrganization Usage",
+      "href": "https://docs.tavily.com/documentation/enterprise/org-usage"
+    },
+    {
+      "text": "SDK Reference",
+      "href": "https://docs.tavily.com/sdk/python/reference"
+    },
+    {
+      "text": "SDK Reference",
+      "href": "https://docs.tavily.com/sdk/javascript/reference"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#authorization-authorization"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-query"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-search-depth"
+    },
+    {
+      "text": "Search Best Practices",
+      "href": "https://docs.tavily.com/documentation/best-practices/best-practices-search#search-depth"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-chunks-per-source"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-max-results"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-topic"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-time-range"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-start-date"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-end-date"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-published-date"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-filter-by-published-date"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-max-age-hours"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-answer-one-of-0"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-raw-content-one-of-0"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-images"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-image-descriptions"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-favicon"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-domains"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-exclude-domains"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-domains-mode"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-country"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-language"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-filter-by-language"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-auto-parameters"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-exact-match"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-include-usage"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#body-safe-search"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-query"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-answer"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-images"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-results"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-response-time"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-auto-parameters"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-usage"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search#response-request-id"
+    },
+    {
+      "text": "Tavily Extract\nNext",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract"
+    },
+    {
+      "text": "Tavily Docs home page",
+      "href": "https://tavily.com/"
+    },
+    {
+      "text": "linkedin",
+      "href": "https://linkedin.com/company/tavily"
+    },
+    {
+      "text": "x",
+      "href": "https://x.com/tavilyai"
+    },
+    {
+      "text": "github",
+      "href": "https://github.com/tavily-ai"
+    },
+    {
+      "text": "youtube",
+      "href": "https://www.youtube.com/@TavilyAI"
+    },
+    {
+      "text": "Get started",
+      "href": "https://docs.tavily.com/"
+    },
+    {
+      "text": "Tavily Search Crawler",
+      "href": "https://docs.tavily.com/documentation/search-crawler"
+    },
+    {
+      "text": "Tavily Status",
+      "href": "https://status.tavily.com/"
+    },
+    {
+      "text": "Security & Compliance",
+      "href": "https://trust.tavily.com/"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.tavily.com/privacy"
+    },
+    {
+      "text": "Website Terms of Use",
+      "href": "https://www.tavily.com/website-terms"
+    },
+    {
+      "text": "Platform Terms of Use",
+      "href": "https://www.tavily.com/terms"
+    },
+    {
+      "text": "Cookie Notice",
+      "href": "https://www.tavily.com/cookie-policy"
+    },
+    {
+      "text": "linkedin",
+      "href": "https://linkedin.com/company/tavily"
+    },
+    {
+      "text": "x",
+      "href": "https://x.com/tavilyai"
+    },
+    {
+      "text": "github",
+      "href": "https://github.com/tavily-ai"
+    },
+    {
+      "text": "youtube",
+      "href": "https://www.youtube.com/@TavilyAI"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:46:48.895Z"
+}

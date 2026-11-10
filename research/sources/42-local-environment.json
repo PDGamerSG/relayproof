@@ -1,0 +1,12 @@
+{
+  "observed_on": "2026-11-10",
+  "method": "read-only local command checks; no container or inference workload launched",
+  "go_version": "go version go1.27.3 darwin/arm64",
+  "node_version": "v26.8.1",
+  "pnpm_version": "10.18.0",
+  "docker_client_version": "29.8.1",
+  "docker_daemon_status": "unavailable",
+  "docker_error": "failed to connect to the docker API at unix:///Users/admin/.docker/run/docker.sock; connect: no such file or directory",
+  "hardware_previously_observed": {"architecture":"arm64","memory_gib":64,"logical_cpus":10},
+  "limitations": ["No container runtime benchmark", "No local inference benchmark", "Node22 toolchain availability not checked"]
+}

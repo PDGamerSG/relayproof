@@ -1,0 +1,34 @@
+PAGE 1
+GLOBAL AI HACKATHON
+ TAVILY
+PROBLEM STATEMENT 05
+Build a Pre-Meeting Briefing Agent
+Preparing for important meetings often requires researching companies, individuals, recent announcements,
+leadership changes, and other developments. This information is scattered across multiple sources, making
+manual research time-consuming, and AI-generated summaries can miss important updates or present
+unsupported information as fact.
+The challenge is to build an agent that gathers recent, relevant information and turns it into a concise,
+source-backed briefing.
+GOAL
+Build an AI-powered research agent that takes a company or person and a meeting time as input,
+then produces a one-page briefing covering relevant developments from the previous 30 days.
+CORE REQUIREMENTS
+/ Meeting context: Accept a company or person and the
+scheduled meeting time.
+/ Recent research: Identify relevant developments from the
+preceding 30 days, including news, launches, hires, and other
+meaningful updates.
+/ Concise briefing: Produce a structured, one-page report that
+helps the user prepare for the meeting.
+/ Source attribution: Include sources for factual claims so the
+user can verify the information.
+/ Open questions: Highlight relevant questions or discussion
+points that may be useful during the meeting.
+EXPECTED OUTCOME
+A working meeting-preparation agent that transforms recent web research into a concise, reliable, source-backed
+briefing that helps users enter conversations better informed.
+OPTIONAL IMPLEMENTATION GUIDANCE
+Participants may explore briefings for sales calls, partnership discussions, investor meetings, or business development conversations.
+Tavily can provide web search and research capabilities, while Bifrost can manage model requests and related gateway functionality. The
+agent should distinguish verified findings from uncertain information and avoid inventing unsupported details.
+BUILD 1–15 NOV 2026 TEAM 1–4 FORMAT ONLINE · GLOBAL JUDGING 29 NOV 2026 INTEGRATE BIFROST + TAVILY 05 / 05

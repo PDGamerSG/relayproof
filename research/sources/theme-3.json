@@ -1,0 +1,4 @@
+{
+  "text": "Build an Agent That Pentests a Target on Its Own\nTHEME: AI Agents & Intelligent Systems\nBuild an autonomous AI agent capable of performing authorized penetration testing inside a strictly isolated laboratory environment. The agent must explore permitted targets using real security tools, interpret results, independently decide its next actions, and work toward predefined security objectives.\n\nThe solution must strictly respect the provided scope, recover from unsuccessful attempts, and generate actionable security reports containing findings, evidence, severity, and remediation recommendations.\nView Detailed Explanation",
+  "url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_lawn3ha165.pdf"
+}

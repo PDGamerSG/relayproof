@@ -1,0 +1,360 @@
+{
+  "url": "https://www.tavily.com/blog/what-shipped-october-2026",
+  "title": "What Shipped: October 2026 | Tavily Blog",
+  "text": "/news\n4 min read\n\nWhat Shipped: October 2026\n\nOctober brought the first World of Tavily event, our new Startup Program, more control over web context, and new ways to build with Tavily. Catch up on our latest benchmark, customer stories, integrations, and community events.\n\nStefanie Miller\n\nNov 2, 2026\n\nWelcome to the World of Tavily\n\nTo close out SF Tech Week, we held the first immersive World of Tavily event with Nebius and LangChain. The experience was as visually engaging as it was inspiring for the developers who attended. The evening included lightning talks and demos from leaders across the three co-hosting companies, along with networking, food, and drinks.\n\nJoin us for World of Tavily NYC, Nov. 12 ->\n\nTavily for Startups is here\n\nWhether you’re running a startup or investing in several, applications for the Tavily for Startups program are open. Accepted founders (and founders in participating investors’ portfolios) receive:\n\n100K free API credits\nGo-to-market distribution opportunities across the Nebius ecosystem\nHands-on support from our engineering team\nAccess to the Tavily x Nebius founder and investor network\n\nCheck the requirements and apply ->\n\nKeep context fresh and in your control\n\nOctober’s upgrades help your agents work with timely information and give your team more options for EU query processing.\n\nHelp your agents avoid outdated answers. When prices change, availability shifts, or news develops, your agents need fresh context. Set how recently a page must have been fetched (from 0 to 720 hours) to help keep their answers current. Explore freshness controls.\nEU Query Residency helps teams move forward with agents that need web search and local query processing. Optional zero query retention gives you more control. Available for select customer evaluations. See the details.\nPlay with the newest integrations\n\nEach month, Tavily adds new integrations and partnerships so your agents can work with current context wherever you build. New in October, use Tavily with:\n\nOpenAI dots to help your always-on agent research up-to-date information and keep projects moving.\nMerge Gateway to bring fresh, cited web information into production AI applications while keeping routing, controls, and audit trails in one place.\nGrok Bot to let your coding agent search current documentation, investigate errors, compare tools, and conduct research without leaving your development workflow.\nSee how much your agent can learn about a company in one search\n\nWe introduced the Company Search Benchmark to measure how well search providers help agents answer real company research questions. Built around production query patterns, a dataset available on Hugging Face, and current web evidence, it evaluates how much useful information an agent can uncover in a single search. Tavily ranked #1 among the nine providers evaluated.\n\nExplore the benchmark and dataset ->\n\n3 million developers are building with Tavily\n\nMore than 3 million developers choose Tavily to connect their agents and applications to the web. Thank you to everyone who has built with us, shared feedback, and helped shape Tavily along the way. We can’t wait to see what you build next.\n\nCelebrate with us ->\n\nBell Cyber closes investigations 83% faster\n\nBell Cyber’s security operations center brought in Tavily to automate research across vulnerability databases, threat intelligence platforms, vendor documentation, and historical incidents. Investigations that once took 30 minutes now close in under five, helping its analysts handle up to 100,000 monthly alerts without adding headcount.\n\nWatch the Bell Cyber story ->\n\nmonday.com gives agents the context to act as teammates\n\nmonday.com integrated Tavily across its AI products so agents can combine internal workflow data with current information from the web. monday.com agents perform more than 100,000 retrievals each week for company research, contact enrichment, news monitoring, and fact-checking, and 99.8% of retrieval calls are completed successfully.\n\nSee how monday.com builds with Tavily ->\n\nOcean investigates one billion emails every month\n\nOcean’s AI agents depend on Tavily to research senders, companies, domains, and business relationships in real time, helping them identify sophisticated impersonation and phishing attempts. These web-grounded investigations happen in seconds, and in September alone, Ocean flagged approximately 54,000 malicious emails and caught roughly 900 lookalike or impersonation domains for its customers.\n\nRead Ocean’s story ->\n\nA world tour with builders\n\nOctober closed out our Builders and Brews global events with Nebius and a variety of co-hosts. From SF to Berlin, we brought developers, customers, and partners together for SF Tech Week and NVIDIA GTC. Thank you to all who joined us digitally or in person to build, talk, and share what you’re working on.\n\nCheck our upcoming events:\n\nBy Tavily ->\nFor the community ->\nJoin us for Tavily Office Hours\n\nMissed our first Office Hours? Watch October’s session on demand to see our Dev Rel, Ricky Johnson, set up the Tavily CLI and Claude plugin, use Tavily skills, and share practical workflow tips. Then join us live on November 17 for Cut Costs, Not Quality, featuring a working agentic search demo, practical optimizations, and an open AMA.\n\nSave your seat for November’s Office Hours ->\n\nWritten by\n\nStefanie Miller\n\nSenior Content Manager at Tavily\n\nStefanie is a content strategist who spent over a decade running her own businesses before leading content at Tavily. Her experiences in marketing, partnerships, and customer relationships shape her approach to copywriting, creating effective content strategies, and coordinating efforts.",
+  "links": [
+    {
+      "text": "Explore the results →",
+      "href": "https://www.tavily.com/blog/your-agent-has-the-company-name-how-much-can-it-actually-tell-you-about-it"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/events/tavily-november-2026-office-hours-coffee-chat-ama"
+    },
+    {
+      "text": "",
+      "href": "https://luma.com/ivrwjk0o"
+    },
+    {
+      "text": "",
+      "href": "https://luma.com/ivrwjk0o"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.tavily.com/"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://www.tavily.com/pricing"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/product"
+    },
+    {
+      "text": "",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search"
+    },
+    {
+      "text": "",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract"
+    },
+    {
+      "text": "",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/research"
+    },
+    {
+      "text": "",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/crawl"
+    },
+    {
+      "text": "",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/map"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/solutions/financial-services"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/solutions/insurance"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/demos"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/solutions/post-training"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/blog"
+    },
+    {
+      "text": "",
+      "href": "https://nebius.com/certification/agentic-web-search"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/events"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/about"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/careers"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/tavilyai"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/tavily"
+    },
+    {
+      "text": "",
+      "href": "https://community.tavily.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/author/stefanie-miller"
+    },
+    {
+      "text": "Stefanie Miller",
+      "href": "https://www.tavily.com/author/stefanie-miller"
+    },
+    {
+      "text": "Join us for World of Tavily NYC, Nov. 12 ->",
+      "href": "https://luma.com/ivrwjk0o"
+    },
+    {
+      "text": "Check the requirements and apply ->",
+      "href": "https://www.tavily.com/startups"
+    },
+    {
+      "text": "Explore freshness controls.",
+      "href": "https://docs.tavily.com/documentation/best-practices/best-practices-search#by-content-freshness"
+    },
+    {
+      "text": "See the details",
+      "href": "https://www.tavily.com/eu"
+    },
+    {
+      "text": "help your always-on agent research up-to-date information",
+      "href": "https://lnkd.in/p/exme76Ct"
+    },
+    {
+      "text": "bring fresh, cited web information into production AI applications",
+      "href": "https://www.tavily.com/integrations/merge-gateway?utm_source=twitter&utm_medium=social&utm_content=388357908&landing=www.tavily.com%2Fstartups"
+    },
+    {
+      "text": "let your coding agent search current documentation",
+      "href": "https://www.tavily.com/integrations/grok-build?utm_source=twitter&utm_medium=social&utm_content=388357908&landing=www.tavily.com%2Fstartups"
+    },
+    {
+      "text": "dataset available on Hugging Face",
+      "href": "https://huggingface.co/datasets/Tavily/tavily-company-search-benchmark"
+    },
+    {
+      "text": "Explore the benchmark and dataset ->",
+      "href": "https://www.tavily.com/blog/your-agent-has-the-company-name-how-much-can-it-actually-tell-you-about-it"
+    },
+    {
+      "text": "Celebrate with us ->",
+      "href": "https://www.linkedin.com/feed/update/urn:li:activity:7520840044736200704"
+    },
+    {
+      "text": "Watch the Bell Cyber story ->",
+      "href": "https://www.tavily.com/customer-stories/bell-cyber"
+    },
+    {
+      "text": "See how monday.com builds with Tavily ->",
+      "href": "https://www.tavily.com/customer-stories/monday.com"
+    },
+    {
+      "text": "Read Ocean’s story ->",
+      "href": "https://www.tavily.com/customer-stories/Ocean"
+    },
+    {
+      "text": "By Tavily ->",
+      "href": "https://www.tavily.com/events"
+    },
+    {
+      "text": "For the community ->",
+      "href": "https://www.tavily.com/community#events"
+    },
+    {
+      "text": "Watch October’s session on demand",
+      "href": "https://www.tavily.com/events/tavily-office-hours-coffee-chat-ama"
+    },
+    {
+      "text": "Save your seat for November’s Office Hours ->",
+      "href": "https://www.tavily.com/events/tavily-november-2026-office-hours-coffee-chat-ama"
+    },
+    {
+      "text": "Stefanie Miller",
+      "href": "https://www.tavily.com/author/stefanie-miller"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/in/stefaniemiller1/"
+    },
+    {
+      "text": "Try it out",
+      "href": "https://app.tavily.com/home"
+    },
+    {
+      "text": "Explore API docs",
+      "href": "https://docs.tavily.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.tavily.com/"
+    },
+    {
+      "text": "Privacy Notice",
+      "href": "https://www.tavily.com/privacy"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/tavilyai"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/tavily"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/tavily-ai"
+    },
+    {
+      "text": "",
+      "href": "https://www.youtube.com/@TavilyAI"
+    },
+    {
+      "text": "",
+      "href": "https://community.tavily.com/"
+    },
+    {
+      "text": "",
+      "href": "https://luma.com/eventstavily"
+    },
+    {
+      "text": "Overview",
+      "href": "https://www.tavily.com/product"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://www.tavily.com/pricing"
+    },
+    {
+      "text": "Enterprise",
+      "href": "https://www.tavily.com/enterprise"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://www.tavily.com/integrations"
+    },
+    {
+      "text": "Tavily EU",
+      "href": "https://www.tavily.com/eu"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.tavily.com/"
+    },
+    {
+      "text": "Financial Services",
+      "href": "https://www.tavily.com/solutions/financial-services"
+    },
+    {
+      "text": "Insurance",
+      "href": "https://www.tavily.com/solutions/insurance"
+    },
+    {
+      "text": "Post-Training",
+      "href": "https://www.tavily.com/solutions/post-training"
+    },
+    {
+      "text": "Demos",
+      "href": "https://www.tavily.com/demos"
+    },
+    {
+      "text": "Blog",
+      "href": "https://www.tavily.com/blog"
+    },
+    {
+      "text": "Events",
+      "href": "https://www.tavily.com/events"
+    },
+    {
+      "text": "Customers",
+      "href": "https://www.tavily.com/customer-stories"
+    },
+    {
+      "text": "Certification",
+      "href": "https://nebius.com/certification/agentic-web-search"
+    },
+    {
+      "text": "Community",
+      "href": "https://www.tavily.com/community"
+    },
+    {
+      "text": "About",
+      "href": "https://www.tavily.com/about"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.tavily.com/careers"
+    },
+    {
+      "text": "Partnerships",
+      "href": "https://www.tavily.com/partnerships"
+    },
+    {
+      "text": "Startups",
+      "href": "https://www.tavily.com/startups"
+    },
+    {
+      "text": "Brand",
+      "href": "https://www.tavily.com/brand"
+    },
+    {
+      "text": "Contact",
+      "href": "https://www.tavily.com/contact"
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.tavily.com/"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.tavily.com/privacy"
+    },
+    {
+      "text": "Privacy Requests",
+      "href": "https://www.tavily.com/legal/privacy-requests"
+    },
+    {
+      "text": "",
+      "href": "https://trust.tavily.com/"
+    },
+    {
+      "text": "[redacted-email]",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Website Terms",
+      "href": "https://www.tavily.com/website-terms"
+    },
+    {
+      "text": "Platform Terms",
+      "href": "https://www.tavily.com/terms"
+    },
+    {
+      "text": "Cookie Notice",
+      "href": "https://www.tavily.com/cookie-policy"
+    },
+    {
+      "text": "Acceptable Use",
+      "href": "https://www.tavily.com/acceptable-use-policy"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:50:04.695Z"
+}

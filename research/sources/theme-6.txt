@@ -1,0 +1,38 @@
+PAGE 1
+GLOBAL AI HACKATHON
+PROBLEM STATEMENT 06 · TAVILY
+THEME
+AI-Powered Fact Verification & Information Freshness
+Build a Stale-Answer Detector for AI
+Applications
+Large language models can confidently generate answers containing information that is no longer accurate.
+Product pricing changes, APIs are updated, regulations evolve, and company leadership changes, but AI-generated
+responses may continue presenting outdated information as fact.
+The challenge is to build a verification layer that examines AI-generated answers, identifies claims that may have
+become outdated, and checks them against current information from reliable sources.
+GOAL
+Build a system that accepts an LLM-generated answer, detects potentially stale factual claims, re-
+verifies them using live sources, and provides a freshness score for each relevant claim.
+CORE REQUIREMENTS
+1 Claim Identification: Analyze an AI-generated response and
+identify factual statements that may be time-sensitive.
+2 Freshness Detection: Flag claims that could have become
+outdated, including information about pricing, API versions,
+laws, or leadership.
+3 Live Verification: Re-check flagged claims against current
+web sources.
+4 Freshness Scoring: Provide a freshness score for each
+relevant claim based on the available evidence.
+EXPECTED OUTCOME
+A working AI verification system that helps users identify potentially outdated information in LLM-generated responses and
+understand which claims are supported by current sources.
+OPTIONAL IMPLEMENTATION GUIDANCE
+Participants may explore verification for API documentation, software pricing, regulatory information, company announcements, or other
+frequently changing information. Tavily can support live web research and source retrieval, while Bifrost can manage the model requests used
+to analyze and evaluate claims.
+MANDATORY TECHNOLOGY INTEGRATION
+All submissions must meaningfully integrate both Tavily and Bifrost by Maxim AI. The project must demonstrate how each technology
+contributes to the solution.
+Geek Room Global AI Hackathon 2026
+BUILD WINDOW NOV 1–15, 2026 FORMAT ONLINE, GLOBAL TEAM SIZE 1–4
+hackculture.io/hackathons/ai-global-hackathon 06

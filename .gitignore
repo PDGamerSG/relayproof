@@ -1,0 +1,26 @@
+# Local operating-system and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Generated dependencies and build output
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.venv/
+__pycache__/
+
+# Future implementation runtime data
+relayproof/data/
+relayproof/artifacts/
+relayproof/bin/

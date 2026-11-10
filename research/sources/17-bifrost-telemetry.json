@@ -1,0 +1,652 @@
+{
+  "url": "https://docs.getbifrost.ai/features/telemetry",
+  "title": "Telemetry - Bifrost",
+  "text": "Documentation Index\n\nFetch the complete documentation index at: /llms.txt\n\nUse this file to discover all available pages before exploring further.\n\nSkip to main content\nBifrost home page\nSearch...\n⌘K\nAsk Assistant\n⌘I\nRequest License\nBook a Demo\nOSS\nEnterprise\nEdge\nIntegrations\nDeployment Guides\nAPI\nContributing\nBenchmarks\nChangelogs\nDiscord\nGitHub\nTry Enterprise\nOverview\nBifrost AI Gateway\nQuick Start\nGateway\nBifrost CLI\nUse as Go SDK\nRelease Cadence\nRelease Cadence\nMigration Guides\nMigrating to v2.0.0\nMigrating to v1.5.0\nMigrate from other Gateway\nMigrating from LiteLLM\nSDK Integrations\nWhat is an integration?\nProviders & Guides\nSupported Providers\nRouting Rules\nProvider Routing\nSession Affinity\nAliasing Models\nReasoning\nPerformance Tuning\nCustom Providers\nSelf-Hosted Decision Models\nCustom Pricing\nRequest Options\nResponse Headers\nTest Harness Coverage\nMCP Gateway\nOverview\nConnecting to Servers\nOpenAPI Specs\nConnections & States\nVirtual MCPs\nAuthentication\nPer-Caller Discovery\nSessions\nTool Execution\nResources & Prompts\nAgent Mode\nCode Mode\nGateway Authentication\nTool Hosting\nFiltering\nAgent Gateway\nOverview\nRegister your first agent\nAuthentication\nAgent access\nMessages, tasks, and events\nConnect model and tool calls\nRead Agent Logs\nGateway settings and transports\nTransport selection and recovery\nPush notifications\nExport agent telemetry\nTroubleshooting\nRelays\nOverview\nCreate a relay\nRoutes\nPricing\nTroubleshooting\nCustom plugins\nGetting Started\nBuilding Dynamically Linked Bifrost Binary\nPlugin Sequencing\nWriting Plugins\nPlugin Migration Guide\nOpen Source Features\nDrop-in Replacement\nRetries & Fallbacks\nComplexity Router\nBeta\nWarp\nAlpha\nCompatibility Plugin\nLoad Balance\nAsync Inference\nWebhooks\nNews Feeds\nGovernance\nTelemetry\nOpenTelemetry\nContent Logging\nLatency & Overhead Breakdown\nSemantic Caching\nAuto Prompt Caching\nSkills Repository\nPrompt Repository\nPlugins\nOn this page\nOverview\nDefault Metrics\nHTTP Transport Metrics\nUpstream Provider Metrics\nStreaming Metrics\nMCP Metrics\nMonitoring Examples\nSuccess Rate Monitoring\nToken Usage Analysis\nCost Tracking\nCache Performance\nError Rate Analysis\nConfiguration\nDynamic Label Injection\nInfrastructure Setup\nDevelopment & Testing\nProduction Deployment\nProduction Alerting Examples\nNext Steps\nOpen Source Features\nTelemetry\n\nComprehensive Prometheus-based monitoring for Bifrost Gateway with custom metrics and labels.\n\n​\nOverview\nBifrost provides built-in telemetry and monitoring capabilities through Prometheus metrics collection. The telemetry system tracks both HTTP-level performance metrics and upstream provider interactions, giving you complete visibility into your AI gateway’s performance and usage patterns.\nKey Features:\nPrometheus Integration - Native metrics collection at /metrics endpoint\nComprehensive Tracking - Success/error rates, token usage, costs, and cache performance\nCustom Labels - Configurable dimensions for detailed analysis\nDynamic Headers - Runtime label injection via x-bf-dim-* headers\nCost Monitoring - Real-time tracking of AI provider costs in USD\nCache Analytics - Direct and semantic cache hit tracking\nAsync Collection - Zero-latency impact on request processing\nMulti-Level Tracking - HTTP transport + upstream provider metrics\nThe telemetry plugin operates asynchronously to ensure metrics collection doesn’t impact request latency or connection performance.\n​\nDefault Metrics\n​\nHTTP Transport Metrics\nThese metrics track all incoming HTTP requests to Bifrost:\nMetric\tType\tDescription\nhttp_requests_total\tCounter\tTotal number of HTTP requests\nhttp_request_duration_seconds\tHistogram\tDuration of HTTP requests\nhttp_request_size_bytes\tHistogram\tSize of incoming HTTP requests\nhttp_response_size_bytes\tHistogram\tSize of outgoing HTTP responses\nLabels:\npath: HTTP endpoint path\nmethod: HTTP verb (e.g., GET, POST, PUT, DELETE)\nstatus: HTTP status code\ncustom labels: Custom labels configured in the Bifrost configuration\n​\nUpstream Provider Metrics\nThese metrics track requests forwarded to AI providers:\nMetric\tType\tDescription\tLabels\nbifrost_upstream_requests_total\tCounter\tTotal requests forwarded to upstream providers\tBase Labels, custom labels\nbifrost_success_requests_total\tCounter\tTotal successful requests to upstream providers\tBase Labels, custom labels\nbifrost_error_requests_total\tCounter\tTotal failed requests, by effective status and normalized reason\tBase Labels, status_code, error_type, custom labels\nbifrost_upstream_latency_seconds\tHistogram\tLatency of upstream provider requests\tBase Labels, is_success, custom labels\nbifrost_overhead_latency_microseconds\tHistogram\tTotal Bifrost overhead per request in microseconds (Bifrost’s own work, excluding upstream provider time)\tBase Labels, custom labels\nbifrost_overhead_component_microseconds\tHistogram\tSame overhead broken down by internal component. Opt-in via overhead_breakdown_enabled; populated only when tracing is active\tBase Labels, overhead_component, custom labels\nbifrost_input_tokens_total\tCounter\tTotal input tokens sent to upstream providers\tBase Labels, custom labels\nbifrost_output_tokens_total\tCounter\tTotal output tokens received from upstream providers\tBase Labels, custom labels\nbifrost_cache_hits_total\tCounter\tTotal cache hits by type (direct/semantic)\tBase Labels, cache_type, custom labels\nbifrost_cost_total\tCounter\tTotal cost in USD for upstream provider requests\tBase Labels, custom labels\nbifrost_active_requests\tGauge\tLLM requests currently in-flight\tmethod\nbifrost_provider_key_up\tGauge\tPer-key health: 1 after a successful attempt, 0 after a failed attempt, except a failure that says nothing about the key’s health (model_access, model_gone, region_blocked), which leaves it unchanged\tprovider, key_id, key_name\nbifrost_key_rotation_events_total\tCounter\tKey rotations triggered by per-key failures (rate limit, rejected credential, exhausted quota, model this key cannot reach, retired model, region block), one increment per actual swap\tprovider, requested_model, key_id, key_name, fail_reason\nbifrost_request_retries\tHistogram\tNumber of retries used per request (observed once per request; buckets 0,1,2,3,5,10).\tBase Labels\nbifrost_routing_embedding_requests_total\tCounter\tEmbedding calls made by semantic complexity routing\tprovider, model, phase (request or warmup)\nbifrost_routing_embedding_cost_total\tCounter\tCost in USD of semantic complexity routing embeddings\tprovider, model, phase (request or warmup)\nbifrost_routing_llm_requests_total\tCounter\tChat completions made by the semantic router’s LLM fallback\tprovider, model\nbifrost_routing_llm_cost_total\tCounter\tCost in USD of those LLM fallback completions\tprovider, model\nBase Labels:\nprovider: AI provider name (e.g., openai, anthropic, azure)\nmodel: Model name (e.g., gpt-4o-mini, claude-3-sonnet)\nalias: Alias resolved to this model (empty if none)\nmethod: Request type (chat, text, embedding, speech, transcription)\napp: Calling client classified from the User-Agent (Claude Code, Cursor, Codex CLI, …, API, or Other); empty when no User-Agent was sent\nvirtual_key_id: Virtual key ID\nvirtual_key_name: Virtual key name\nrouting_engine_used: Comma-separated routing engines used (routing-rule, governance, loadbalancing, model-catalog, core). core is emitted when the Bifrost orchestrator itself makes a routing decision — i.e. a fallback transition or a retry transition.\nrouting_rule_id: Routing rule ID that matched the request\nrouting_rule_name: Routing rule name that matched the request\ncomplexity_tier: Complexity tier used for routing (SIMPLE / MEDIUM / COMPLEX); empty when no routing rule referenced complexity_tier\ncomplexity_mechanism: How the effective complexity tier was determined (semantic, decision, llm, session, or skipped when no tier was produced). The semantic similarity score is not a label because it has unbounded cardinality; it is recorded in request logs and traces. Decision-model confidence is recorded in the routing decision log\nselected_key_id: ID of the key that successfully served the request (empty string \"\" on final errors)\nselected_key_name: Name of the key that successfully served the request (empty string \"\" on final errors)\nfallback_index: Fallback index (0 for first attempt, 1 for second attempt, etc.)\nteam_id / team_name: Team identifiers (empty when governance is not used)\ncustomer_id / customer_name: Customer identifiers (empty when governance is not used)\ncustom labels: Custom labels configured in the Bifrost configuration\nuser_id / user_name are not Base Labels. They are opt-in via the telemetry plugin’s user_labels_enabled config field, because user identity has unbounded cardinality and multiplies series count. See Prometheus → User Labels.\nbifrost_overhead_component_microseconds is off by default. Enable it with the telemetry plugin’s overhead_breakdown_enabled config field (a sibling of metrics_enabled). It carries the Base Labels above plus an overhead_component label whose value is one of ten fixed categories (serialization, conversion, plugins, middleware, routing, processing, networking, streaming, miscellaneous, other), the same categories the Bifrost UI’s log-detail overhead breakdown groups into; summing the components for a given label set reconstructs bifrost_overhead_latency_microseconds. Because the breakdown is derived from completed trace spans, it only populates when tracing is active for the request. See Prometheus → Overhead Breakdown.\n​\nStreaming Metrics\nThese metrics capture latency characteristics specific to streaming responses:\nMetric\tType\tDescription\tLabels\nbifrost_stream_first_token_latency_seconds\tHistogram\tTime from request start to first streamed token\tBase Labels\nbifrost_stream_inter_token_latency_seconds\tHistogram\tLatency between subsequent streamed tokens\tBase Labels\n​\nMCP Metrics\nThese metrics track MCP (Model Context Protocol) tool calls executed through Bifrost:\nMetric\tType\tDescription\tLabels\nbifrost_mcp_client_operation_duration_seconds\tHistogram\tDuration of an MCP tool call, as observed by Bifrost (the MCP client). _count gives call volume; a non-empty error_type marks failures.\tmcp_client, mcp_tool_name, mcp_method, error_type, MCP governance labels, custom labels\nMCP Labels:\nmcp_client: MCP server label (client name) the tool belongs to\nmcp_tool_name: Tool name invoked\nmcp_method: MCP method — tools/call\nerror_type: auth_required or _OTHER on failure; empty on success\nMCP governance labels: virtual_key_id / virtual_key_name, team_id / team_name, customer_id / customer_name, business_unit_id / business_unit_name\nOnly tool executions are recorded — lifecycle operations (ping / list_tools) and codemode tools are skipped. Unlike the LLM metrics, MCP metrics do not carry provider / model or a network_transport label.\n​\nMonitoring Examples\n​\nSuccess Rate Monitoring\nTrack the success rate of requests to different providers:\n# Success rate by provider\nrate(bifrost_success_requests_total[5m]) /\nrate(bifrost_upstream_requests_total[5m]) * 100\n\n​\nToken Usage Analysis\nMonitor token consumption across different models:\n# Input tokens per minute by model\nincrease(bifrost_input_tokens_total[1m])\n\n# Output tokens per minute by model\nincrease(bifrost_output_tokens_total[1m])\n\n# Token efficiency (output/input ratio)\nrate(bifrost_output_tokens_total[5m]) /\nrate(bifrost_input_tokens_total[5m])\n\n​\nCost Tracking\nMonitor spending across providers and models:\n# Cost per second by provider\nsum by (provider) (rate(bifrost_cost_total[1m]))\n\n# Daily cost estimate\nsum by (provider) (increase(bifrost_cost_total[1d]))\n\n# Cost per request by provider and model\nsum by (provider, model) (rate(bifrost_cost_total[5m])) /\nsum by (provider, model) (rate(bifrost_upstream_requests_total[5m]))\n\n​\nCache Performance\nTrack cache effectiveness:\n# Cache hit rate by type\nrate(bifrost_cache_hits_total[5m]) /\nrate(bifrost_upstream_requests_total[5m]) * 100\n\n# Direct vs semantic cache hits\nsum by (cache_type) (rate(bifrost_cache_hits_total[5m]))\n\n​\nError Rate Analysis\nMonitor error patterns:\n# Error rate by provider\nrate(bifrost_error_requests_total[5m]) /\nrate(bifrost_upstream_requests_total[5m]) * 100\n\n# Errors by model\nsum by (model) (rate(bifrost_error_requests_total[5m]))\n\n​\nConfiguration\nConfigure custom Prometheus labels to add dimensions for filtering and analysis:\nWeb UI\nAPI\nconfig.json\nNavigate to Configuration\nOpen Bifrost UI at http://localhost:8080\nGo to Config tab\nPrometheus Labels\nCustom Labels: team, environment, organization, project\n\n​\nDynamic Label Injection\nAdd custom label values at runtime using x-bf-dim-* headers:\n# Add custom labels to specific requests\ncurl -X POST http://localhost:8080/v1/chat/completions \\\n  -H \"Content-Type: application/json\" \\\n  -H \"x-bf-dim-team: engineering\" \\\n  -H \"x-bf-dim-environment: production\" \\\n  -H \"x-bf-dim-organization: my-org\" \\\n  -H \"x-bf-dim-project: my-project\" \\\n  -d '{\n    \"model\": \"gpt-4o-mini\",\n    \"messages\": [{\"role\": \"user\", \"content\": \"Hello!\"}]\n  }'\n\nHeader Format:\nPrefix: x-bf-dim-\nLabel name: Any string after the prefix, except reserved metric labels like path and method\nValue: String value for the label\nThese runtime dimensions are also forwarded to the other observability backends. The same x-bf-dim-* values appear in internal logs, OpenTelemetry span attributes, Datadog spans, and Maxim tags.\nLegacy x-bf-prom-* headers still work for Prometheus-only behavior, but they are deprecated. When both prefixes provide the same label, x-bf-dim-* wins.\n​\nInfrastructure Setup\n​\nDevelopment & Testing\nFor local development and testing, use the provided Docker Compose setup:\n# Navigate to telemetry plugin directory\ncd plugins/telemetry\n\n# Start Prometheus and Grafana\ndocker-compose up -d\n\n# Access endpoints\n# Prometheus: http://localhost:9090\n# Grafana: http://localhost:3000 (admin/admin)\n# Bifrost metrics: http://localhost:8080/metrics  (http://localhost:8080/<prefix>/metrics under server.base_path)\n\nDevelopment Only: The provided Docker Compose setup is for testing purposes only. Do not use in production without proper security, scaling, and persistence configuration.\nYou can use the Prometheus scraping endpoint to create your own Grafana dashboards. Given below are few examples created using the Docker Compose setup.\n​\nProduction Deployment\nFor production environments:\nDeploy Prometheus with proper persistence, retention, and security\nConfigure scraping to target your Bifrost instances at /metrics\nSet up Grafana with authentication and dashboards\nConfigure alerts based on your SLA requirements\nPrometheus Scrape Configuration:\nscrape_configs:\n  - job_name: \"bifrost-gateway\"\n    static_configs:\n      - targets: [\"bifrost-instance-1:8080\", \"bifrost-instance-2:8080\"]\n    scrape_interval: 30s\n    metrics_path: /metrics\n    # If Bifrost auth is enabled, add:\n    # basic_auth:\n    #   username: '<admin_username>'\n    #   password: '<admin_password>'\n\nIf you have Bifrost authentication enabled (auth_config), you must include basic_auth in the scrape config with your admin_username and admin_password. See the Prometheus docs for details.\n​\nProduction Alerting Examples\nConfigure alerts for critical scenarios using the new metrics:\nHigh Error Rate Alert:\n- alert: BifrostHighErrorRate\n  # Excludes caller_* (bad model names, malformed requests) and policy_* (governance\n  # refusals: budgets, rate limits, blocked models). Neither is a provider or gateway\n  # failure, and policy refusals short-circuit before any provider call while still\n  # counting in bifrost_upstream_requests_total — so without this they inflate both\n  # sides of the ratio. provider_* and bifrost_* are what this alert is for. See the\n  # error_type reference: /features/observability/prometheus#error-types\n  expr: sum by (provider) (rate(bifrost_error_requests_total{error_type!~\"(caller|policy)_.*\"}[5m])) / sum by (provider) (rate(bifrost_upstream_requests_total[5m])) > 0.05\n  for: 2m\n  labels:\n    severity: warning\n  annotations:\n    summary: \"High error rate detected for provider {{ $labels.provider }} ({{ $value | humanizePercentage }})\"\n\nHigh Cost Alert:\n- alert: BifrostHighCosts\n  expr: sum by (provider) (increase(bifrost_cost_total[1d])) > 100 # $100/day threshold\n  for: 10m\n  labels:\n    severity: warning\n  annotations:\n    summary: 'Daily cost for provider {{ $labels.provider }} exceeds $100 ({{ $value | printf \"%.2f\" }})'\n\nCache Performance Alert:\n- alert: BifrostLowCacheHitRate\n  expr: sum by (provider) (rate(bifrost_cache_hits_total[15m])) / sum by (provider) (rate(bifrost_upstream_requests_total[15m])) < 0.1\n  for: 5m\n  labels:\n    severity: info\n  annotations:\n    summary: \"Cache hit rate for provider {{ $labels.provider }} below 10% ({{ $value | humanizePercentage }})\"\n\n​\nNext Steps\nPrometheus Documentation - Official Prometheus guides\nGrafana Setup - Dashboard creation and management\nTracing - Request/response logging for detailed analysis\n\nWas this page helpful?\n\nYes\nNo\nRequired Headers\nOpenTelemetry\nBifrost home page\nx\nlinkedin\ngithub\n\nCompany\n\nBook a Demo\nPartner Program\nCareers\nContact Us\nSecurity\nTrust Center\nTerms of Service\nPrivacy Policy\n\nProducts\n\nLLM Gateway\nMCP Gateway\nGovernance\nGuardrails\nObservability\nBifrost Edge\n\nResources\n\nBifrost Enterprise\nPerformance Benchmarks\nLLM Gateway Buyer's Guide\nClaude Code Integration\nMigrating from LiteLLM\nBlogs\n\nFor LLMs\n\nllms-full.txt\nllms.txt\nllm-info\nPowered by\nThis documentation is built and hosted on Mintlify, a developer documentation platform",
+  "links": [
+    {
+      "text": "/llms.txt",
+      "href": "https://docs.getbifrost.ai/llms.txt"
+    },
+    {
+      "text": "Skip to main content",
+      "href": "https://docs.getbifrost.ai/features/telemetry#content-area"
+    },
+    {
+      "text": "Bifrost home page",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "Request License",
+      "href": "https://www.getmaxim.ai/enterprise?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar#free-license"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar"
+    },
+    {
+      "text": "OSS",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Enterprise",
+      "href": "https://docs.getbifrost.ai/enterprise/overview"
+    },
+    {
+      "text": "Edge",
+      "href": "https://docs.getbifrost.ai/edge/overview"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.getbifrost.ai/runbooks/claude-code-bedrock"
+    },
+    {
+      "text": "Deployment Guides",
+      "href": "https://docs.getbifrost.ai/deployment-guides/overview"
+    },
+    {
+      "text": "API",
+      "href": "https://docs.getbifrost.ai/api/procuring-api-keys"
+    },
+    {
+      "text": "Contributing",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo"
+    },
+    {
+      "text": "Benchmarks",
+      "href": "https://docs.getbifrost.ai/benchmarking/getting-started"
+    },
+    {
+      "text": "Discord",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "GitHub",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Try Enterprise",
+      "href": "https://www.getmaxim.ai/bifrost/enterprise"
+    },
+    {
+      "text": "Bifrost AI Gateway",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Release Cadence",
+      "href": "https://docs.getbifrost.ai/release-cadence"
+    },
+    {
+      "text": "Migrating to v2.0.0",
+      "href": "https://docs.getbifrost.ai/migration-guides/v2.0.0"
+    },
+    {
+      "text": "Migrating to v1.5.0",
+      "href": "https://docs.getbifrost.ai/migration-guides/v1.5.0"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://docs.getbifrost.ai/migration-guides/litellm"
+    },
+    {
+      "text": "What is an integration?",
+      "href": "https://docs.getbifrost.ai/integrations/what-is-an-integration"
+    },
+    {
+      "text": "Routing Rules",
+      "href": "https://docs.getbifrost.ai/providers/routing-rules"
+    },
+    {
+      "text": "Provider Routing",
+      "href": "https://docs.getbifrost.ai/providers/provider-routing"
+    },
+    {
+      "text": "Session Affinity",
+      "href": "https://docs.getbifrost.ai/providers/session-affinity"
+    },
+    {
+      "text": "Aliasing Models",
+      "href": "https://docs.getbifrost.ai/providers/aliasing-models"
+    },
+    {
+      "text": "Reasoning",
+      "href": "https://docs.getbifrost.ai/providers/reasoning"
+    },
+    {
+      "text": "Performance Tuning",
+      "href": "https://docs.getbifrost.ai/providers/performance"
+    },
+    {
+      "text": "Custom Providers",
+      "href": "https://docs.getbifrost.ai/providers/custom-providers"
+    },
+    {
+      "text": "Self-Hosted Decision Models",
+      "href": "https://docs.getbifrost.ai/providers/self-hosted-decision-models"
+    },
+    {
+      "text": "Custom Pricing",
+      "href": "https://docs.getbifrost.ai/providers/custom-pricing"
+    },
+    {
+      "text": "Request Options",
+      "href": "https://docs.getbifrost.ai/providers/request-options"
+    },
+    {
+      "text": "Response Headers",
+      "href": "https://docs.getbifrost.ai/providers/response-headers"
+    },
+    {
+      "text": "Test Harness Coverage",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/mcp/overview"
+    },
+    {
+      "text": "Connecting to Servers",
+      "href": "https://docs.getbifrost.ai/mcp/connecting-to-servers"
+    },
+    {
+      "text": "OpenAPI Specs",
+      "href": "https://docs.getbifrost.ai/mcp/openapi-servers"
+    },
+    {
+      "text": "Connections & States",
+      "href": "https://docs.getbifrost.ai/mcp/connections"
+    },
+    {
+      "text": "Virtual MCPs",
+      "href": "https://docs.getbifrost.ai/mcp/virtual-mcps"
+    },
+    {
+      "text": "Per-Caller Discovery",
+      "href": "https://docs.getbifrost.ai/mcp/per-caller-discovery"
+    },
+    {
+      "text": "Sessions",
+      "href": "https://docs.getbifrost.ai/mcp/sessions"
+    },
+    {
+      "text": "Tool Execution",
+      "href": "https://docs.getbifrost.ai/mcp/tool-execution"
+    },
+    {
+      "text": "Resources & Prompts",
+      "href": "https://docs.getbifrost.ai/mcp/resources-and-prompts"
+    },
+    {
+      "text": "Agent Mode",
+      "href": "https://docs.getbifrost.ai/mcp/agent-mode"
+    },
+    {
+      "text": "Code Mode",
+      "href": "https://docs.getbifrost.ai/mcp/code-mode"
+    },
+    {
+      "text": "Gateway Authentication",
+      "href": "https://docs.getbifrost.ai/mcp/gateway-auth"
+    },
+    {
+      "text": "Tool Hosting",
+      "href": "https://docs.getbifrost.ai/mcp/tool-hosting"
+    },
+    {
+      "text": "Filtering",
+      "href": "https://docs.getbifrost.ai/mcp/filtering"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/overview"
+    },
+    {
+      "text": "Register your first agent",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/registration"
+    },
+    {
+      "text": "Authentication",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/authentication"
+    },
+    {
+      "text": "Agent access",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/access-control"
+    },
+    {
+      "text": "Messages, tasks, and events",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/messages-and-tasks"
+    },
+    {
+      "text": "Connect model and tool calls",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/integrating-your-agent"
+    },
+    {
+      "text": "Read Agent Logs",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/observability"
+    },
+    {
+      "text": "Gateway settings and transports",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/configuration"
+    },
+    {
+      "text": "Transport selection and recovery",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/transports-and-recovery"
+    },
+    {
+      "text": "Push notifications",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/push-notifications"
+    },
+    {
+      "text": "Export agent telemetry",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/connectors"
+    },
+    {
+      "text": "Troubleshooting",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/troubleshooting"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/relays/overview"
+    },
+    {
+      "text": "Create a relay",
+      "href": "https://docs.getbifrost.ai/relays/configuration"
+    },
+    {
+      "text": "Routes",
+      "href": "https://docs.getbifrost.ai/relays/routes"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://docs.getbifrost.ai/relays/pricing"
+    },
+    {
+      "text": "Troubleshooting",
+      "href": "https://docs.getbifrost.ai/relays/troubleshooting"
+    },
+    {
+      "text": "Getting Started",
+      "href": "https://docs.getbifrost.ai/plugins/getting-started"
+    },
+    {
+      "text": "Building Dynamically Linked Bifrost Binary",
+      "href": "https://docs.getbifrost.ai/plugins/building-dynamic-binary"
+    },
+    {
+      "text": "Plugin Sequencing",
+      "href": "https://docs.getbifrost.ai/plugins/sequencing"
+    },
+    {
+      "text": "Plugin Migration Guide",
+      "href": "https://docs.getbifrost.ai/plugins/migration-guide"
+    },
+    {
+      "text": "Drop-in Replacement",
+      "href": "https://docs.getbifrost.ai/features/drop-in-replacement"
+    },
+    {
+      "text": "Retries & Fallbacks",
+      "href": "https://docs.getbifrost.ai/features/retries-and-fallbacks"
+    },
+    {
+      "text": "Complexity Router\nBeta",
+      "href": "https://docs.getbifrost.ai/features/complexity-router"
+    },
+    {
+      "text": "Warp\nAlpha",
+      "href": "https://docs.getbifrost.ai/features/warp"
+    },
+    {
+      "text": "Compatibility Plugin",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin"
+    },
+    {
+      "text": "Load Balance",
+      "href": "https://docs.getbifrost.ai/features/keys-management"
+    },
+    {
+      "text": "Async Inference",
+      "href": "https://docs.getbifrost.ai/features/async-inference"
+    },
+    {
+      "text": "Webhooks",
+      "href": "https://docs.getbifrost.ai/features/webhooks"
+    },
+    {
+      "text": "News Feeds",
+      "href": "https://docs.getbifrost.ai/features/news-feeds"
+    },
+    {
+      "text": "Telemetry",
+      "href": "https://docs.getbifrost.ai/features/telemetry"
+    },
+    {
+      "text": "OpenTelemetry",
+      "href": "https://docs.getbifrost.ai/features/otel"
+    },
+    {
+      "text": "Content Logging",
+      "href": "https://docs.getbifrost.ai/features/observability/content-logging"
+    },
+    {
+      "text": "Latency & Overhead Breakdown",
+      "href": "https://docs.getbifrost.ai/features/observability/latency-breakdown"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching"
+    },
+    {
+      "text": "Auto Prompt Caching",
+      "href": "https://docs.getbifrost.ai/features/prompt-caching"
+    },
+    {
+      "text": "Skills Repository",
+      "href": "https://docs.getbifrost.ai/features/skills-repository"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/features/telemetry#overview"
+    },
+    {
+      "text": "Default Metrics",
+      "href": "https://docs.getbifrost.ai/features/telemetry#default-metrics"
+    },
+    {
+      "text": "HTTP Transport Metrics",
+      "href": "https://docs.getbifrost.ai/features/telemetry#http-transport-metrics"
+    },
+    {
+      "text": "Upstream Provider Metrics",
+      "href": "https://docs.getbifrost.ai/features/telemetry#upstream-provider-metrics"
+    },
+    {
+      "text": "Streaming Metrics",
+      "href": "https://docs.getbifrost.ai/features/telemetry#streaming-metrics"
+    },
+    {
+      "text": "MCP Metrics",
+      "href": "https://docs.getbifrost.ai/features/telemetry#mcp-metrics"
+    },
+    {
+      "text": "Monitoring Examples",
+      "href": "https://docs.getbifrost.ai/features/telemetry#monitoring-examples"
+    },
+    {
+      "text": "Success Rate Monitoring",
+      "href": "https://docs.getbifrost.ai/features/telemetry#success-rate-monitoring"
+    },
+    {
+      "text": "Token Usage Analysis",
+      "href": "https://docs.getbifrost.ai/features/telemetry#token-usage-analysis"
+    },
+    {
+      "text": "Cost Tracking",
+      "href": "https://docs.getbifrost.ai/features/telemetry#cost-tracking"
+    },
+    {
+      "text": "Cache Performance",
+      "href": "https://docs.getbifrost.ai/features/telemetry#cache-performance"
+    },
+    {
+      "text": "Error Rate Analysis",
+      "href": "https://docs.getbifrost.ai/features/telemetry#error-rate-analysis"
+    },
+    {
+      "text": "Configuration",
+      "href": "https://docs.getbifrost.ai/features/telemetry#configuration"
+    },
+    {
+      "text": "Dynamic Label Injection",
+      "href": "https://docs.getbifrost.ai/features/telemetry#dynamic-label-injection"
+    },
+    {
+      "text": "Infrastructure Setup",
+      "href": "https://docs.getbifrost.ai/features/telemetry#infrastructure-setup"
+    },
+    {
+      "text": "Development & Testing",
+      "href": "https://docs.getbifrost.ai/features/telemetry#development-%26-testing"
+    },
+    {
+      "text": "Production Deployment",
+      "href": "https://docs.getbifrost.ai/features/telemetry#production-deployment"
+    },
+    {
+      "text": "Production Alerting Examples",
+      "href": "https://docs.getbifrost.ai/features/telemetry#production-alerting-examples"
+    },
+    {
+      "text": "Next Steps",
+      "href": "https://docs.getbifrost.ai/features/telemetry#next-steps"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#overview"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#default-metrics"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#http-transport-metrics"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#upstream-provider-metrics"
+    },
+    {
+      "text": "Prometheus → User Labels",
+      "href": "https://docs.getbifrost.ai/features/observability/prometheus#user-labels"
+    },
+    {
+      "text": "Prometheus → Overhead Breakdown",
+      "href": "https://docs.getbifrost.ai/features/observability/prometheus#overhead-breakdown"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#streaming-metrics"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#mcp-metrics"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#monitoring-examples"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#success-rate-monitoring"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#token-usage-analysis"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#cost-tracking"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#cache-performance"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#error-rate-analysis"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#configuration"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#dynamic-label-injection"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#infrastructure-setup"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#development-&-testing"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#production-deployment"
+    },
+    {
+      "text": "Prometheus docs",
+      "href": "https://docs.getbifrost.ai/features/observability/prometheus#pull-based-scraping"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#production-alerting-examples"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/features/telemetry#next-steps"
+    },
+    {
+      "text": "Prometheus Documentation",
+      "href": "https://prometheus.io/docs/"
+    },
+    {
+      "text": "Grafana Setup",
+      "href": "https://grafana.com/docs/"
+    },
+    {
+      "text": "Tracing",
+      "href": "https://docs.getbifrost.ai/features/observability/default"
+    },
+    {
+      "text": "Required Headers",
+      "href": "https://docs.getbifrost.ai/features/governance/required-headers"
+    },
+    {
+      "text": "OpenTelemetry",
+      "href": "https://docs.getbifrost.ai/features/otel"
+    },
+    {
+      "text": "Bifrost home page",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "x",
+      "href": "https://x.com/getbifrost"
+    },
+    {
+      "text": "linkedin",
+      "href": "https://linkedin.com/company/maxim-ai"
+    },
+    {
+      "text": "github",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Partner Program",
+      "href": "https://www.getmaxim.ai/partners-program?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Contact Us",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Security",
+      "href": "https://docs.getbifrost.ai/security"
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.getmaxim.ai/"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "https://www.getmaxim.ai/terms-of-service?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.getmaxim.ai/privacy-policy?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway",
+      "href": "https://www.getmaxim.ai/llm-gateway?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Gateway",
+      "href": "https://www.getmaxim.ai/mcp-gateway?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Governance",
+      "href": "https://www.getmaxim.ai/ai-governance?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Guardrails",
+      "href": "https://www.getmaxim.ai/ai-guardrails?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Observability",
+      "href": "https://www.getmaxim.ai/ai-observability?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Bifrost Edge",
+      "href": "https://www.getmaxim.ai/edge?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Bifrost Enterprise",
+      "href": "https://www.getmaxim.ai/enterprise?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Performance Benchmarks",
+      "href": "https://www.getmaxim.ai/bifrost/resources/benchmarks?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway Buyer's Guide",
+      "href": "https://www.getmaxim.ai/bifrost/resources/buyers-guide?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Claude Code Integration",
+      "href": "https://www.getmaxim.ai/bifrost/resources/claude-code?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://www.getmaxim.ai/bifrost/resources/migrating-from-litellm?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Blogs",
+      "href": "https://www.getmaxim.ai/bifrost/blog?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "llms-full.txt",
+      "href": "https://docs.getbifrost.ai/llms-full.txt"
+    },
+    {
+      "text": "llms.txt",
+      "href": "https://docs.getbifrost.ai/llms.txt"
+    },
+    {
+      "text": "llm-info",
+      "href": "https://www.getmaxim.ai/llm-info?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Powered by\nThis documentation is built and hosted on Mintlify, a developer documentation platform",
+      "href": "https://www.mintlify.com/?utm_campaign=poweredBy&utm_medium=referral&utm_source=bifrost"
+    },
+    {
+      "text": "Join Discord instead",
+      "href": "https://getmax.im/bifrost-discord"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:42:55.401Z"
+}

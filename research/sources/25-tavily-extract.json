@@ -1,0 +1,256 @@
+{
+  "url": "https://docs.tavily.com/documentation/api-reference/endpoint/extract",
+  "title": "Tavily Extract - Tavily Docs",
+  "text": "Tavily Extract\nCopy page\n\nExtract content from one URL or batch up to 20 URLs in one request. Successful URLs appear in results; per-URL failures appear in failed_results. Check both arrays even when the response is HTTP 200. Request options apply to every URL in the batch.\n\nPOST\n/\nextract\nAuthorizations\n​\nAuthorization\nstringheaderrequired\n\nBearer authentication header in the form Bearer , where is your Tavily API key (e.g., Bearer tvly-YOUR_API_KEY).\n\nBody\napplication/json\n\nParameters for the Tavily Extract request.\n\n​\nurls\nstring\nstring[]\nstring\nrequired\n\nThe URL to extract content from.\n\nExample:\n\n\"https://en.wikipedia.org/wiki/Artificial_intelligence\"\n\n​\nquery\nstring\n\nUser intent for reranking extracted content chunks. When provided, chunks are reranked based on relevance to this query.\n\n​\nchunks_per_source\nintegerdefault:3\n\nChunks are short content snippets (about 800 characters each) pulled directly from the source. Use chunks_per_source to define the maximum number of relevant chunks returned per source and to control the raw_content length. Chunks will appear in the raw_content field as: <chunk 1> [...] <chunk 2> [...] <chunk 3>. If a page splits into no more chunks than chunks_per_source, its full content is returned. Available only when query is provided. Must be between 1 and 5.\n\nRequired range: 1 <= x <= 5\n​\nextract_depth\nenum<string>default:basic\n\nThe depth of the extraction process. advanced extraction retrieves more data, including tables and embedded content, with higher success but may increase latency.basic extraction costs 1 credit per 5 successful URL extractions, while advanced extraction costs 2 credits per 5 successful URL extractions.\n\nAvailable options: basic, advanced \n​\ninclude_images\nbooleandefault:false\n\nInclude a list of images extracted from the URLs in the response. Default is false.\n\n​\ninclude_favicon\nbooleandefault:false\n\nWhether to include the favicon URL for each result.\n\n​\nformat\nenum<string>default:markdown\n\nThe format of the extracted web page content. markdown returns content in markdown format. text returns plain text and may increase latency.\n\nAvailable options: markdown, text \n​\ntimeout\nnumber<float>default:None\n\nMaximum time in seconds to wait for the URL extraction before timing out. Must be between 1.0 and 60.0 seconds. If not specified, default timeouts are applied based on extract_depth: 10 seconds for basic extraction and 30 seconds for advanced extraction.\n\nRequired range: 1 <= x <= 60\n​\ninclude_usage\nbooleandefault:false\n\nWhether to include credit usage information in the response. NOTE:The value may be 0 if the total successful URL extractions has not yet reached 5 calls. See our Credits & Pricing documentation for details.\n\nResponse\n200\napplication/json\n\nExtraction completed. Check results and failed_results for each URL. HTTP 200 can have an empty results array when all valid URLs fail during extraction; output order is not guaranteed.\n\n​\nresults\nobject[]\n\nA list of extracted content from the provided URLs.\n\nShow child attributes\n\n​\nfailed_results\nobject[]\n\nA list of URLs that could not be processed.\n\nShow child attributes\n\nExample:\n[]\n​\nresponse_time\nnumber<float>\n\nTime in seconds it took to complete the request.\n\nExample:\n\n0.02\n\n​\nusage\nobject\n\nCredit usage details for the request.\n\nExample:\n{ \"credits\": 1 }\n​\nrequest_id\nstring\n\nA unique request identifier you can share with customer support to help resolve issues with specific requests.\n\nExample:\n\n\"123e4567-e89b-12d3-a456-426614174111\"\n\nTavily Search\nPrevious\nTavily Crawl\nNext",
+  "links": [
+    {
+      "text": "/llms.txt",
+      "href": "https://docs.tavily.com/llms.txt"
+    },
+    {
+      "text": "Skip to main content",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#content-area"
+    },
+    {
+      "text": "Tavily Docs home page",
+      "href": "https://tavily.com/"
+    },
+    {
+      "text": "Support",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Get an API key",
+      "href": "https://app.tavily.com/"
+    },
+    {
+      "text": "Get an API key",
+      "href": "https://app.tavily.com/"
+    },
+    {
+      "text": "Documentation",
+      "href": "https://docs.tavily.com/"
+    },
+    {
+      "text": "API Reference",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.tavily.com/documentation/integrations/overview"
+    },
+    {
+      "text": "Examples",
+      "href": "https://docs.tavily.com/examples/hub"
+    },
+    {
+      "text": "Changelog",
+      "href": "https://docs.tavily.com/changelog"
+    },
+    {
+      "text": "API Playground",
+      "href": "https://app.tavily.com/playground"
+    },
+    {
+      "text": "POST\nSearch",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search"
+    },
+    {
+      "text": "POST\nExtract",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract"
+    },
+    {
+      "text": "POST\nCrawl",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/crawl"
+    },
+    {
+      "text": "POST\nMap",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/map"
+    },
+    {
+      "text": "POST\nCreate Research Task",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/research"
+    },
+    {
+      "text": "GET\nGet Research Task Status",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/research-get"
+    },
+    {
+      "text": "Streaming",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/research-streaming"
+    },
+    {
+      "text": "POST\nFeedback\nBETA",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/feedback"
+    },
+    {
+      "text": "GET\nUsage",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/usage"
+    },
+    {
+      "text": "POST\nLogs",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/logs"
+    },
+    {
+      "text": "POST\nOrganization Usage",
+      "href": "https://docs.tavily.com/documentation/enterprise/org-usage"
+    },
+    {
+      "text": "SDK Reference",
+      "href": "https://docs.tavily.com/sdk/python/reference"
+    },
+    {
+      "text": "SDK Reference",
+      "href": "https://docs.tavily.com/sdk/javascript/reference"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#authorization-authorization"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-urls-one-of-0"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-query"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-chunks-per-source"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-extract-depth"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-include-images"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-include-favicon"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-format"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-timeout"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#body-include-usage"
+    },
+    {
+      "text": "Credits & Pricing documentation",
+      "href": "https://docs.tavily.com/documentation/api-credits"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#response-results"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#response-failed-results"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#response-response-time"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#response-usage"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#response-request-id"
+    },
+    {
+      "text": "Tavily Search\nPrevious",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/search"
+    },
+    {
+      "text": "Tavily Crawl\nNext",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/crawl"
+    },
+    {
+      "text": "Tavily Docs home page",
+      "href": "https://tavily.com/"
+    },
+    {
+      "text": "linkedin",
+      "href": "https://linkedin.com/company/tavily"
+    },
+    {
+      "text": "x",
+      "href": "https://x.com/tavilyai"
+    },
+    {
+      "text": "github",
+      "href": "https://github.com/tavily-ai"
+    },
+    {
+      "text": "youtube",
+      "href": "https://www.youtube.com/@TavilyAI"
+    },
+    {
+      "text": "Get started",
+      "href": "https://docs.tavily.com/"
+    },
+    {
+      "text": "Tavily Search Crawler",
+      "href": "https://docs.tavily.com/documentation/search-crawler"
+    },
+    {
+      "text": "Tavily Status",
+      "href": "https://status.tavily.com/"
+    },
+    {
+      "text": "Security & Compliance",
+      "href": "https://trust.tavily.com/"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.tavily.com/privacy"
+    },
+    {
+      "text": "Website Terms of Use",
+      "href": "https://www.tavily.com/website-terms"
+    },
+    {
+      "text": "Platform Terms of Use",
+      "href": "https://www.tavily.com/terms"
+    },
+    {
+      "text": "Cookie Notice",
+      "href": "https://www.tavily.com/cookie-policy"
+    },
+    {
+      "text": "Accessibility Menu",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#"
+    },
+    {
+      "text": "Cookies Settings",
+      "href": "https://docs.tavily.com/documentation/api-reference/endpoint/extract#"
+    },
+    {
+      "text": "linkedin",
+      "href": "https://linkedin.com/company/tavily"
+    },
+    {
+      "text": "x",
+      "href": "https://x.com/tavilyai"
+    },
+    {
+      "text": "github",
+      "href": "https://github.com/tavily-ai"
+    },
+    {
+      "text": "youtube",
+      "href": "https://www.youtube.com/@TavilyAI"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:46:49.181Z"
+}

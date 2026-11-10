@@ -1,0 +1,9 @@
+{
+  "url": "https://api.github.com/repos/maximhq/bifrost/issues/9520",
+  "status": 403,
+  "retrieved_at": "2026-11-10T14:48:06.469Z",
+  "data": {
+    "message": "API rate limit exceeded for 36.255.16.53. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)",
+    "documentation_url": "https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting"
+  }
+}

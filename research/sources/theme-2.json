@@ -1,0 +1,4 @@
+{
+  "text": "Build a Coding Agent That Gets the Job Done on the Fewest Tokens\nTHEME: AI Agents & Intelligent Systems\nBuild an AI coding agent that completes real development tasks while minimizing token consumption and operational costs. The agent must continue working through provider outages, enforce individual spending limits, protect confidential repositories by using local models, and require user approval before performing risky operations such as file writes, shell commands, or Git actions.\n\nThe solution should demonstrate efficient and reliable coding workflows without compromising correctness, privacy, or security.\nView Detailed Explanation",
+  "url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_q2jha91frd9.pdf"
+}

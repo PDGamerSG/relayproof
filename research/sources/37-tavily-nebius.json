@@ -1,0 +1,468 @@
+{
+  "url": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack",
+  "title": "Nebius and Tavily: Bringing agentic search into the production AI stack",
+  "text": "Blog/Builder updates/\n\nNebius and Tavily: Bringing agentic search into the production AI stack\n\nMay 20, 2026\n12 mins to read\nShare\nIntroduction\nIntroduction\n\nNebius has acquired Tavily, to bring agentic search directly into the Nebius AI Cloud platform.\n\nWith this, Nebius expands beyond high-performance inference into a more complete stack for building production AI agents. Token Factory handles reasoning at scale and Tavily\n adds real-time access to the web. Together, they give developers the core primitives needed to build systems that operate on live information, not just static model knowledge.\n\nThis is a shift from running models to running real-world AI systems.\n\nWhy agentic search matters now\nWhy agentic search matters now\n\nModels have become strong reasoners, but they are still fundamentally static. They do not know what changed five minutes ago and cannot verify claims against the current state of the world. In production, that gap shows up quickly.\n\nMost real workloads depend on fresh information, such as financial analysis, support agents and research workflows. Without a reliable search layer, teams end up stitching together brittle retrieval pipelines or relying on outdated context. But the value of search goes beyond recency.\n\nIt also acts as a direction layer for the model. Even when the knowledge exists in pretraining, search helps guide the model toward the right sources, disambiguate queries and anchor responses in relevant context. Instead of relying purely on latent knowledge, the model operates with external signals that improve both accuracy and reliability.\n\nWithout this layer, the result is predictable: hallucinations, stale answers and systems that break under real-world conditions. And agentic systems need more than reasoning — they need access to the world.\n\nWhat Tavily adds to the Token Factory stack\nWhat Tavily adds to the Token Factory stack\n\nTavily is the web access layer built specifically for AI agents. It provides a single API to search, extract and structure real-time web data in formats optimized for LLMs and agent workflows. It is designed for low latency, high relevance and safe interaction with the open web.\n\nWithin the Nebius stack, these components work together as a single system: Nebius AI Cloud provides the infrastructure foundation, Token Factory delivers high-performance inference and Tavily adds real-time grounding and web access. Combined, they enable agents that can both reason and operate on live information.\n\nA simple way to think about it: Token Factory helps agents reason, while Tavily helps them know.\n\nWhat this unlocks for builders\nWhat this unlocks for builders\n\nBringing inference and search together unlocks a different class of applications. Agents can verify information against live sources instead of relying purely on model weights. Systems can research topics, monitor events and make decisions based on current data. And developers no longer need to stitch together multiple vendors for inference, retrieval and orchestration.\n\nThe result is not just better answers, but systems that behave more reliably under real usage.\n\nBuild example: Grounded research agent with Tavily and Token Factory\nBuild example: Grounded research agent with Tavily and Token Factory\n\nTo make this concrete, consider a simple research agent. The goal is to answer questions that require up-to-date information by combining:\n\nTavily for live web search\nToken Factory for reasoning and synthesis\n\nThe pattern is straightforward:\n\nThe user asks a question;\nThe model decides whether it needs fresh data;\nIf needed, it calls Tavily search;\nThe results are fed back into the model;\nThe model produces a grounded answer.\n\nAt a high level, the system looks like this:\n\nThe key detail is that search is not hardcoded: the model decides when it is needed. This is not a complex agent framework — it is a minimal, production-relevant loop.\n\nShort code snippet\nShort code snippet\n\nBelow is a minimal example of how this works by using Tavily as a tool with a Token Factory model.\n\nfrom openai import OpenAI\nfrom tavily import TavilyClient\nimport json\n\n# Initialize clients\nclient = OpenAI(\n  base_url=\"https://api.tokenfactory.nebius.com/v1/\",\n  api_key=\"NEBIUS_API_KEY\",\n)\n\ntavily = TavilyClient(api_key=\"TAVILY_API_KEY\")\n\n# Define Tavily tool\ndef tavily_search(query: str):\n  return json.dumps(tavily.search(query=query, max_results=5))\n\ntools = [{\n  \"type\": \"function\",\n  \"function\": {\n      \"name\": \"tavily_search\",\n      \"description\": \"Search the web for up-to-date information\",\n      \"parameters\": {\n          \"type\": \"object\",\n          \"properties\": {\n              \"query\": {\"type\": \"string\"}\n          },\n          \"required\": [\"query\"]\n      }\n  }\n}]\n\n# Ask a question\nresponse = client.chat.completions.create(\n  model=\"moonshotai/Kimi-K2.5\",\n  messages=[{\"role\": \"user\", \"content\": \"What are the latest AI developments?\"}],\n  tools=tools,\n)\n\n\nThis is the core integration: a model with access to a search tool.\n\nFor a full working example with tool-calling loops and structured outputs, see the cookbook\n.\n\nExample of what output looks like in practice\nExample of what output looks like in practice\n\nA typical interaction looks like this:\n\nUser asks: “What are the latest developments in AI this month?”;\nThe model determines the question requires fresh data;\nIt calls Tavily search with a focused query;\nTavily returns recent, relevant results;\nThe model synthesizes a response grounded in those sources.\n\nInstead of a generic answer, you get:\n\nCurrent information\nHigher factual accuracy\nResponses aligned with the real-world\n\nThis is the difference between a demo and a usable system.\n\nFrom demo agents to production systems\nFrom demo agents to production systems\n\nThis pattern becomes critical as systems move into production. Most failures do not come from model quality alone — they come from missing system components.\n\nProduction agents require:\n\nReasoning to process complex tasks;\nRetrieval/search to access fresh information;\nReliability and governance to control behavior;\nDeployment infrastructure to scale and perform consistently.\n\nSearch is not an add-on, but a core part of the system design.\n\nExample use cases\nExample use cases\n\nThis pattern shows up across multiple real workloads:\n\nResearch agents: Automatically gather and synthesize up-to-date information from the web;\n\nEnterprise copilots: Provide answers grounded in both internal data and current external context;\n\nMonitoring and operations agents; Track changes in markets, vendors, regulations or competitors in real time.\n\nThis is no longer theoretical. Teams are already building systems this way.\n\nDeveloper angle\nDeveloper angle\n\nTavily will continue operating under its current brand and serving its existing developer ecosystem.\n\nDevelopers can keep using Tavily as they do today, with:\n\nA simple API for search, extraction and crawling;\nEndpoints optimized for agent workflows;\nFast and reliable responses designed for real-time systems.\n\nOver time, integration with the Nebius stack will deepen, making it easier to combine inference, search and deployment into a single workflow.\n\nThe bigger Nebius narrative\nThe bigger Nebius narrative\n\nThis acquisition reflects a broader direction, Nebius is building the production stack for AI systems:\n\nInfrastructure to run workloads\nInference to power reasoning\nSearch to ground systems in reality\n\nAnd over time, additional components are required to design, deploy and operate reliable AI agents.\n\nThe goal is simple: reduce the gap between building a model and running a real product.\n\nLearn more\nLearn more\n\nExplore Tavily\n\nExplore Token Factory\nRead the full cookbook\n\nTalk to us about production agents\n\nExplore Nebius AI Cloud\nSign up​\nDocs​\nExplore Nebius Token Factory\nSign up​\nDocs and support​\nJakki Jakaj\nHead of Marketing at Tavily\nDylan Bristot\nProduct Marketing, Token Factory\n\nContents\n\nIntroduction\nWhy agentic search matters now\nWhat Tavily adds to the Token Factory stack\nWhat this unlocks for builders\nBuild example: Grounded research agent with Tavily and Token Factory\nShort code snippet\nExample of what output looks like in practice\nFrom demo agents to production systems\nExample use cases\nDeveloper angle\nThe bigger Nebius narrative\nLearn more\nSee also\n\nIntroducing NVIDIA RTX PRO 6000 Blackwell Server Edition on Nebius\n\nNVIDIA RTX PRO 6000 Blackwell opens new opportunities for cost-efficient inference and increased performance for visual computing and scientific simulations.\n\nMarch 26, 2026\n5 mins to read\n\nNebius and LangChain partner to power production-grade AI agents on open models\n\nNebius and LangChain have partnered to integrate Nebius Token Factory with LangChain’s Deep Agents. The integration, combined with LangChain’s existing Tavily integration, gives teams building on LangChain a direct path to run agent workloads on production-grade AI infrastructure with open-source models, dedicated endpoints, real-time search and full control over cost and data.\n\nMay 13, 2026\n6 mins to read\n\nAgent 101: Launching production-grade agents at scale\n\nTo go from prototype to production, AI agents need more than just a good model. In this guide, we break down the four components that matter most: reliable LLMs, orchestration frameworks, evaluation tools, and memory systems. We cover how teams are using Nebius AI Studio with CrewAI, ADK, LangChain, and more to ship scalable, observability-friendly agent workflows, all powered by fast, cost-efficient inference.\n\nJuly 10, 2025\n10 mins to read",
+  "links": [
+    {
+      "text": "Skip to main content",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#main-content"
+    },
+    {
+      "text": "Compare live spot Preemptible VM GPU prices and recent trends across regions",
+      "href": "https://nebius.com/spot-prices"
+    },
+    {
+      "text": "Kickstart your career with our Early Talent Program. Apply now!",
+      "href": "https://nebius.com/early-talent-program?utm_source=nebius&utm_medium=banner&utm_campaign=Early_Talent_Program"
+    },
+    {
+      "text": "Compare live spot Preemptible VM GPU prices and recent trends across regions",
+      "href": "https://nebius.com/spot-prices"
+    },
+    {
+      "text": "Nebius Rated Platinum in SemiAnalysis ClusterMAX™ 3.0",
+      "href": "https://nebius.com/blog/posts/nebius-platinum-clustermax-3-0"
+    },
+    {
+      "text": "",
+      "href": "https://nebius.com/"
+    },
+    {
+      "text": "Contact sales",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#ai-contact-form"
+    },
+    {
+      "text": "Blog",
+      "href": "https://nebius.com/blog"
+    },
+    {
+      "text": "Builder updates",
+      "href": "https://nebius.com/blog?tags=builder-updates"
+    },
+    {
+      "text": "Introduction",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#introduction"
+    },
+    {
+      "text": "has acquired Tavily",
+      "href": "https://nebius.com/newsroom/nebius-announces-agreement-to-acquire-tavily-to-add-agentic-search-to-its-ai-cloud-platform"
+    },
+    {
+      "text": "Tavily",
+      "href": "https://www.tavily.com/"
+    },
+    {
+      "text": "Why agentic search matters now",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#why-agentic-search-matters-now"
+    },
+    {
+      "text": "What Tavily adds to the Token Factory stack",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#what-tavily-adds-to-the-token-factory-stack"
+    },
+    {
+      "text": "AI agents",
+      "href": "https://nebius.com/blog/posts/launch-production-agents-at-scale"
+    },
+    {
+      "text": "What this unlocks for builders",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#what-this-unlocks-for-builders"
+    },
+    {
+      "text": "Build example: Grounded research agent with Tavily and Token Factory",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#build-example-grounded-research-agent-with-tavily-and-token-factory"
+    },
+    {
+      "text": "Short code snippet",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#short-code-snippet"
+    },
+    {
+      "text": "cookbook",
+      "href": "https://github.com/nebius/token-factory-cookbook/blob/main/workshops/token-factory-workshop/tavily-search.md"
+    },
+    {
+      "text": "Example of what output looks like in practice",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#example-of-what-output-looks-like-in-practice"
+    },
+    {
+      "text": "From demo agents to production systems",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#from-demo-agents-to-production-systems"
+    },
+    {
+      "text": "Example use cases",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#example-use-cases"
+    },
+    {
+      "text": "Developer angle",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#developer-angle"
+    },
+    {
+      "text": "The bigger Nebius narrative",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#the-bigger-nebius-narrative"
+    },
+    {
+      "text": "Learn more",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#learn-more"
+    },
+    {
+      "text": "Explore Tavily",
+      "href": "https://www.tavily.com/"
+    },
+    {
+      "text": "Explore Token Factory",
+      "href": "https://nebius.com/services/token-factory"
+    },
+    {
+      "text": "full cookbook",
+      "href": "https://github.com/nebius/token-factory-cookbook/blob/main/workshops/token-factory-workshop/tavily-search.md"
+    },
+    {
+      "text": "Talk to us",
+      "href": "https://nebius.com/services/token-factory#ai-contact-form"
+    },
+    {
+      "text": "Sign up​",
+      "href": "https://console.eu.nebius.com/"
+    },
+    {
+      "text": "Docs​",
+      "href": "https://nebius.com/docs"
+    },
+    {
+      "text": "Sign up​",
+      "href": "https://tokenfactory.nebius.com/"
+    },
+    {
+      "text": "Docs and support​",
+      "href": "https://docs.tokenfactory.nebius.com/quickstart"
+    },
+    {
+      "text": "Introduction",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#introduction"
+    },
+    {
+      "text": "Why agentic search matters now",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#why-agentic-search-matters-now"
+    },
+    {
+      "text": "What Tavily adds to the Token Factory stack",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#what-tavily-adds-to-the-token-factory-stack"
+    },
+    {
+      "text": "What this unlocks for builders",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#what-this-unlocks-for-builders"
+    },
+    {
+      "text": "Build example: Grounded research agent with Tavily and Token Factory",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#build-example-grounded-research-agent-with-tavily-and-token-factory"
+    },
+    {
+      "text": "Short code snippet",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#short-code-snippet"
+    },
+    {
+      "text": "Example of what output looks like in practice",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#example-of-what-output-looks-like-in-practice"
+    },
+    {
+      "text": "From demo agents to production systems",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#from-demo-agents-to-production-systems"
+    },
+    {
+      "text": "Example use cases",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#example-use-cases"
+    },
+    {
+      "text": "Developer angle",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#developer-angle"
+    },
+    {
+      "text": "The bigger Nebius narrative",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#the-bigger-nebius-narrative"
+    },
+    {
+      "text": "Learn more",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#learn-more"
+    },
+    {
+      "text": "",
+      "href": "https://nebius.com/blog/posts/introducing-rtx-pro-6000"
+    },
+    {
+      "text": "Introducing NVIDIA RTX PRO 6000 Blackwell Server Edition on Nebius",
+      "href": "https://nebius.com/blog/posts/introducing-rtx-pro-6000"
+    },
+    {
+      "text": "",
+      "href": "https://nebius.com/blog/posts/nebius-and-langchain-partner-to-power-production-grade-ai-agents-on-open-models"
+    },
+    {
+      "text": "Nebius and LangChain partner to power production-grade AI agents on open models",
+      "href": "https://nebius.com/blog/posts/nebius-and-langchain-partner-to-power-production-grade-ai-agents-on-open-models"
+    },
+    {
+      "text": "",
+      "href": "https://nebius.com/blog/posts/launch-production-agents-at-scale"
+    },
+    {
+      "text": "Agent 101: Launching production-grade agents at scale",
+      "href": "https://nebius.com/blog/posts/launch-production-agents-at-scale"
+    },
+    {
+      "text": " (opens in a new tab)",
+      "href": "https://www.youtube.com/@nebiusofficial"
+    },
+    {
+      "text": " (opens in a new tab)",
+      "href": "https://www.facebook.com/nebiusofficial"
+    },
+    {
+      "text": " (opens in a new tab)",
+      "href": "https://www.linkedin.com/company/nebius"
+    },
+    {
+      "text": " (opens in a new tab)",
+      "href": "https://x.com/nebiusai"
+    },
+    {
+      "text": "Privacy Policy.\n(opens in a new tab)",
+      "href": "https://docs.nebius.ai/legal/privacy/"
+    },
+    {
+      "text": "(opens in a new tab)",
+      "href": "https://www.youtube.com/@nebiusofficial"
+    },
+    {
+      "text": "(opens in a new tab)",
+      "href": "https://www.facebook.com/nebiusofficial"
+    },
+    {
+      "text": "(opens in a new tab)",
+      "href": "https://www.linkedin.com/company/nebius"
+    },
+    {
+      "text": "(opens in a new tab)",
+      "href": "https://x.com/nebiusai"
+    },
+    {
+      "text": "Managed Inference",
+      "href": "https://nebius.com/services/token-factory"
+    },
+    {
+      "text": "Agentic Search",
+      "href": "https://nebius.com/solutions/agentic-search"
+    },
+    {
+      "text": "Human Validation",
+      "href": "https://nebius.com/solutions/tendem"
+    },
+    {
+      "text": "AI Orchestration",
+      "href": "https://nebius.com/orchestration"
+    },
+    {
+      "text": "Serverless AI",
+      "href": "https://nebius.com/serverless"
+    },
+    {
+      "text": "DataOps",
+      "href": "https://nebius.com/dataops"
+    },
+    {
+      "text": "ModelOps",
+      "href": "https://nebius.com/modelops"
+    },
+    {
+      "text": "Compute",
+      "href": "https://nebius.com/compute"
+    },
+    {
+      "text": "Networking",
+      "href": "https://nebius.com/networking"
+    },
+    {
+      "text": "AI Storage",
+      "href": "https://nebius.com/storage"
+    },
+    {
+      "text": "Service status",
+      "href": "https://status.nebius.com/"
+    },
+    {
+      "text": "Site selection",
+      "href": "https://nebius.com/infra-partner-types"
+    },
+    {
+      "text": "Partnerships",
+      "href": "https://nebius.com/infrastructure-partners"
+    },
+    {
+      "text": "Scientific AI and Healthcare",
+      "href": "https://nebius.com/solutions/life-sciences-and-healthcare"
+    },
+    {
+      "text": "Media & Entertainment",
+      "href": "https://nebius.com/solutions/media-and-entertainment"
+    },
+    {
+      "text": "Retail & Commerce",
+      "href": "https://nebius.com/solutions/cloud-for-ai-in-retail-commerce"
+    },
+    {
+      "text": "Physical AI & Robotics",
+      "href": "https://nebius.com/solutions/physical-ai-and-robotics"
+    },
+    {
+      "text": "Agents & Copilots",
+      "href": "https://nebius.com/solutions/ai-agents"
+    },
+    {
+      "text": "Vision AI",
+      "href": "https://nebius.com/solutions/vision"
+    },
+    {
+      "text": "Pre-Training",
+      "href": "https://nebius.com/solutions/pre-training"
+    },
+    {
+      "text": "Post-Training",
+      "href": "https://nebius.com/solutions/post-training"
+    },
+    {
+      "text": "Inference",
+      "href": "https://nebius.com/solutions/inference"
+    },
+    {
+      "text": "Simulation",
+      "href": "https://nebius.com/solutions/simulations"
+    },
+    {
+      "text": "AI Cloud pricing",
+      "href": "https://nebius.com/prices"
+    },
+    {
+      "text": "Token Factory pricing",
+      "href": "https://tokenfactory.nebius.com/organization/prices"
+    },
+    {
+      "text": "Partner program",
+      "href": "https://nebius.com/nebius-partner-program"
+    },
+    {
+      "text": "Startup program",
+      "href": "https://nebius.com/startups"
+    },
+    {
+      "text": "Research grants",
+      "href": "https://nebius.com/nebius-research-grants"
+    },
+    {
+      "text": "Nebius Fellows",
+      "href": "https://nebius.com/fellows"
+    },
+    {
+      "text": "Blog",
+      "href": "https://nebius.com/blog"
+    },
+    {
+      "text": "Events & webinars",
+      "href": "https://nebius.com/events"
+    },
+    {
+      "text": "Customer stories",
+      "href": "https://nebius.com/customer-stories"
+    },
+    {
+      "text": "Feature requests",
+      "href": "http://ideas.nebius.com/"
+    },
+    {
+      "text": "Nebius for AI Builders",
+      "href": "https://dev.nebius.com/"
+    },
+    {
+      "text": "Nebius AI Cloud",
+      "href": "https://docs.nebius.com/"
+    },
+    {
+      "text": "Nebius Token Factory",
+      "href": "https://docs.tokenfactory.nebius.com/quickstart"
+    },
+    {
+      "text": "Legal documents",
+      "href": "https://docs.nebius.com/legal/"
+    },
+    {
+      "text": "Report abuse",
+      "href": "https://nebius.com/report-abuse"
+    },
+    {
+      "text": "DMCA notice",
+      "href": "https://nebius.com/dmca-notice"
+    },
+    {
+      "text": "Trust center",
+      "href": "https://nebius.com/trust-center"
+    },
+    {
+      "text": "About",
+      "href": "https://nebius.com/about"
+    },
+    {
+      "text": "Investor Hub",
+      "href": "https://nebius.com/investor-hub"
+    },
+    {
+      "text": "Sustainability",
+      "href": "https://nebius.com/sustainability"
+    },
+    {
+      "text": "Nebius Academy",
+      "href": "https://academy.nebius.com/"
+    },
+    {
+      "text": "Newsroom",
+      "href": "https://nebius.com/newsroom"
+    },
+    {
+      "text": "Careers",
+      "href": "https://nebius.com/careers"
+    },
+    {
+      "text": "Contacts",
+      "href": "https://nebius.com/contacts"
+    },
+    {
+      "text": "Corporate policies",
+      "href": "https://nebius.com/corporate-policies"
+    },
+    {
+      "text": "Terms of use",
+      "href": "https://docs.nebius.com/legal/terms-of-use/"
+    },
+    {
+      "text": "Manage cookies",
+      "href": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack#manage-cookies"
+    },
+    {
+      "text": "Cookie policy\n(opens in a new tab)",
+      "href": "https://docs.nebius.com/legal/cookie-policy/"
+    },
+    {
+      "text": "Privacy policy\n(opens in a new tab)",
+      "href": "https://docs.nebius.com/legal/privacy/"
+    },
+    {
+      "text": "Cookie policy",
+      "href": "https://docs.nebius.com/legal/cookie-policy"
+    },
+    {
+      "text": "More information",
+      "href": "https://docs.nebius.com/legal/cookie-policy"
+    },
+    {
+      "text": "",
+      "href": "https://www.onetrust.com/solutions/consent-and-preferences/"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:50:07.927Z"
+}

@@ -1,0 +1,616 @@
+{
+  "url": "https://github.com/danpiths",
+  "title": "danpiths (Dan Piths) · GitHub",
+  "text": "\tdanpiths\nFollow\nOverview\nRepositories\n27\nProjects\nPackages\nStars\n61\nSponsoring\n3\n\tdanpiths\t\nFollow\n🔨\nbuilding shit\nDan Piths\ndanpiths\nFollow\ni don't drink coffee. Full Stack Developer - Typescript (@t3dotgg 🛐) | Next.js | tRPC | Prisma | @shadcn /ui | @clerkinc\n 18 followers · 24 following\nSponsoring\nAchievements\nx4\nx3\nBlock or report user\ndanpiths/README.md\nhi, i’m dan :)\n\naka dhwanil pithva\n\nweb developer (fullstack)\n🪂 never afraid to dive into anything new and rewrite the whole code base if it’s worth it\n🚀 aiming to ship shit faster that is performant and has a good ui\n🩸 “bleed responsibly” - Theo\n🎓 “best way to learn is to build shit” - Also Theo\n🗿 average T3 mindset enjoyer\ntech i strongly recommend and use\n            \n\n\n\ns/o Theo Browne\n\nThis man made me a better developer and i learned a lot from him, definitely recommend you check him out.\n\n  \nPinned\nLoading\n todos-next-13 Public\n\nA basic todos app, made using Next.js 13 and Drizzle ORM\n\n TypeScript\n\n t3-twitter-clone Public\n\nA Twitter Clone created using the T3 Stack\n\n TypeScript\n\n Canteen-Frontend Public\n\nAn app to try and streamline the process of ordering food from our canteen.\n\n JavaScript\n\n Canteen-Backend Public\n\nBackend for CanteenWala App.\n\n JavaScript\n\n dink Public\n\nAn app to keep track of me and my friends' dinner and milk expenses :)\n\n JavaScript\n\n Pacman Public\n\nA minimal Pacman game that you can play on your browser\n\n JavaScript  1",
+  "links": [
+    {
+      "text": "Skip to content",
+      "href": "https://github.com/danpiths#start-of-content"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fdanpiths"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/platform"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/actions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/code-quality"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/codespaces"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/code-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/secret-protection"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/credentials"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/ai"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trending"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/open-source/sponsors"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/articles"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/team"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/startups"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/nonprofits"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/healthcare"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/financial-services"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/manufacturing"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/government"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/why-github"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/executive-insights"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trust-center"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot/copilot-business"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/premium-support"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/events"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/orgs/community/discussions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://help.github.com/"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/about"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/partners"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://githubuniverse.com/"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://github.com/pricing"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fdanpiths"
+    },
+    {
+      "text": "Sign up",
+      "href": "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E&source=header"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "Follow",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fdanpiths"
+    },
+    {
+      "text": "Overview",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "Repositories\n27",
+      "href": "https://github.com/danpiths?tab=repositories"
+    },
+    {
+      "text": "Projects",
+      "href": "https://github.com/danpiths?tab=projects"
+    },
+    {
+      "text": "Packages",
+      "href": "https://github.com/danpiths?tab=packages"
+    },
+    {
+      "text": "Stars\n61",
+      "href": "https://github.com/danpiths?tab=stars"
+    },
+    {
+      "text": "Sponsoring\n3",
+      "href": "https://github.com/danpiths?tab=sponsoring"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?tab=repositories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?tab=projects"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?tab=packages"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?tab=stars"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?tab=sponsoring"
+    },
+    {
+      "text": "Follow",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fdanpiths"
+    },
+    {
+      "text": "",
+      "href": "https://avatars.githubusercontent.com/u/85949566?v=4"
+    },
+    {
+      "text": "Follow",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fdanpiths"
+    },
+    {
+      "text": "@t3dotgg",
+      "href": "https://github.com/t3dotgg"
+    },
+    {
+      "text": "@shadcn",
+      "href": "https://github.com/shadcn"
+    },
+    {
+      "text": "@clerkinc",
+      "href": "https://github.com/clerkinc"
+    },
+    {
+      "text": " 18 followers ",
+      "href": "https://github.com/danpiths?tab=followers"
+    },
+    {
+      "text": "24 following",
+      "href": "https://github.com/danpiths?tab=following"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/lpil"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/giacomocavalieri"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/gleam-lang"
+    },
+    {
+      "text": "Achievements",
+      "href": "https://github.com/danpiths?tab=achievements"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?achievement=public-sponsor&tab=achievements"
+    },
+    {
+      "text": "x4",
+      "href": "https://github.com/danpiths?achievement=pull-shark&tab=achievements"
+    },
+    {
+      "text": "x3",
+      "href": "https://github.com/danpiths?achievement=pair-extraordinaire&tab=achievements"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?achievement=quickdraw&tab=achievements"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?achievement=yolo&tab=achievements"
+    },
+    {
+      "text": "Achievements",
+      "href": "https://github.com/danpiths?tab=achievements"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?achievement=public-sponsor&tab=achievements"
+    },
+    {
+      "text": "x4",
+      "href": "https://github.com/danpiths?achievement=pull-shark&tab=achievements"
+    },
+    {
+      "text": "x3",
+      "href": "https://github.com/danpiths?achievement=pair-extraordinaire&tab=achievements"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?achievement=quickdraw&tab=achievements"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths?achievement=yolo&tab=achievements"
+    },
+    {
+      "text": "blocking users",
+      "href": "https://docs.github.com/articles/blocking-a-user-from-your-personal-account"
+    },
+    {
+      "text": "reporting abuse",
+      "href": "https://docs.github.com/articles/reporting-abuse-or-spam"
+    },
+    {
+      "text": "Report abuse",
+      "href": "https://github.com/contact/report-abuse?report=danpiths+%28user%29"
+    },
+    {
+      "text": "\n    \n    \n\n    Overview\n",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "\n    \n    \n\n    Repositories\n    27\n",
+      "href": "https://github.com/danpiths?tab=repositories"
+    },
+    {
+      "text": "\n    \n    \n\n    Projects\n    0\n",
+      "href": "https://github.com/danpiths?tab=projects"
+    },
+    {
+      "text": "\n      \n    \n\n      Packages\n      0\n",
+      "href": "https://github.com/danpiths?tab=packages"
+    },
+    {
+      "text": "\n    \n    \n\n    Stars\n    61\n",
+      "href": "https://github.com/danpiths?tab=stars"
+    },
+    {
+      "text": "\n      \n    \n\n      Sponsoring\n      3\n",
+      "href": "https://github.com/danpiths?tab=sponsoring"
+    },
+    {
+      "text": "Overview",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "Repositories",
+      "href": "https://github.com/danpiths?tab=repositories"
+    },
+    {
+      "text": "Projects",
+      "href": "https://github.com/danpiths?tab=projects"
+    },
+    {
+      "text": "Packages",
+      "href": "https://github.com/danpiths?tab=packages"
+    },
+    {
+      "text": "Stars",
+      "href": "https://github.com/danpiths?tab=stars"
+    },
+    {
+      "text": "Sponsoring",
+      "href": "https://github.com/danpiths?tab=sponsoring"
+    },
+    {
+      "text": "danpiths",
+      "href": "https://github.com/danpiths/danpiths"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths#hi-im-dan-"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths#web-developer-fullstack"
+    },
+    {
+      "text": "Theo",
+      "href": "https://github.com/t3dotgg"
+    },
+    {
+      "text": "Theo",
+      "href": "https://github.com/t3dotgg"
+    },
+    {
+      "text": "T3",
+      "href": "https://create.t3.gg/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths#tech-i-strongly-recommend-and-use"
+    },
+    {
+      "text": "",
+      "href": "https://www.typescriptlang.org/"
+    },
+    {
+      "text": "",
+      "href": "https://react.dev/"
+    },
+    {
+      "text": "",
+      "href": "https://nextjs.org/"
+    },
+    {
+      "text": "",
+      "href": "https://tanstack.com/query"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths/danpiths/blob/main"
+    },
+    {
+      "text": "",
+      "href": "https://zod.dev/"
+    },
+    {
+      "text": "",
+      "href": "https://ui.shadcn.com/"
+    },
+    {
+      "text": "",
+      "href": "https://planetscale.com/"
+    },
+    {
+      "text": "",
+      "href": "https://orm.drizzle.team/"
+    },
+    {
+      "text": "",
+      "href": "https://www.prisma.io/"
+    },
+    {
+      "text": "",
+      "href": "https://trpc.io/"
+    },
+    {
+      "text": "",
+      "href": "https://clerk.com/"
+    },
+    {
+      "text": "",
+      "href": "https://excalidraw.com/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/anuraghazra/github-readme-stats"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/danpiths#so-theo-browne"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/t3dotgg"
+    },
+    {
+      "text": "",
+      "href": "https://www.youtube.com/c/theobrowne1017"
+    },
+    {
+      "text": "",
+      "href": "https://www.twitch.tv/theo"
+    },
+    {
+      "text": "",
+      "href": "https://twitter.com/t3dotgg"
+    },
+    {
+      "text": "todos-next-13",
+      "href": "https://github.com/danpiths/todos-next-13"
+    },
+    {
+      "text": "t3-twitter-clone",
+      "href": "https://github.com/danpiths/t3-twitter-clone"
+    },
+    {
+      "text": "Canteen-Frontend",
+      "href": "https://github.com/danpiths/Canteen-Frontend"
+    },
+    {
+      "text": "Canteen-Backend",
+      "href": "https://github.com/danpiths/Canteen-Backend"
+    },
+    {
+      "text": "dink",
+      "href": "https://github.com/danpiths/dink"
+    },
+    {
+      "text": "Pacman",
+      "href": "https://github.com/danpiths/Pacman"
+    },
+    {
+      "text": " 1",
+      "href": "https://github.com/danpiths/Pacman/forks"
+    },
+    {
+      "text": "GitHub status page",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "contact support",
+      "href": "https://github.com/contact"
+    },
+    {
+      "text": "Please reload this page",
+      "href": "https://github.com/danpiths"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Terms",
+      "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service"
+    },
+    {
+      "text": "Privacy",
+      "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement"
+    },
+    {
+      "text": "Security",
+      "href": "https://github.com/security"
+    },
+    {
+      "text": "Status",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "Community",
+      "href": "https://github.community/"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.github.com/"
+    },
+    {
+      "text": "Contact",
+      "href": "https://support.github.com/?tags=dotcom-footer"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:50:13.379Z"
+}

@@ -1,0 +1,4 @@
+{
+  "text": "Build a Benchmarking Platform for AI Agents, Not Just Models\nTHEME: AI Agents & Intelligent Systems\nBuild a framework-independent benchmarking platform that evaluates AI agents against identical tasks. The platform must measure task success, execution steps, tool calls, token usage, cost, and completion time across repeated runs.\n\nIt should also test how agents respond to failing tools, unavailable models, and misleading instructions, while providing a comparison interface with detailed execution traces to help developers understand agent performance and reliability.\nView Detailed Explanation",
+  "url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_ck1ellfr6qh.pdf"
+}

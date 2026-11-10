@@ -1,0 +1,320 @@
+{
+  "url": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents",
+  "title": "Introducing Agent Gateway in Bifrost: One gateway for models, tools and agents | Bifrost Blog",
+  "text": "Back to Blog\nIntroducing Agent Gateway in Bifrost: One gateway for models, tools and agents\n\nDhwanil Pithva\n\nOct 20, 2026 · 3 min read\n\nAn agent hands work to another agent. That agent calls a model, uses a few tools, and sends back a result. Now you need to understand what happened - Who started the request? Should they have been able to call that agent? What did it send back? Which model and tool calls went into the answer?\n\nEach service might have its own logs. Following the work across all of them is where things get tedious.\n\nAgent Gateway brings A2A agent calls into Bifrost, alongside your model and MCP tool calls. You get one place to control access, inspect conversations and follow the work behind an agent's response.\n\nFollow the conversation, end to end\n\nSay your support bot asks a research agent to investigate a customer's question. The research agent looks up documentation, makes a few model calls and returns an answer.\n\nIn Agent Logs, you can open that conversation and read the exchange. Inspect messages, task updates and results, see the recorded caller, and check agent latency alongside Bifrost's added overhead.\n\nTo follow the research agent's own work, route its model and MCP tool calls through Bifrost too. Attach two correlation headers:\n\nx-bf-session-id with the A2A context ID\nx-bf-agent-correlation-id with the A2A task ID\n\nThose IDs connect the conversation to its model and tool calls. You can inspect the prompts, responses and tool results, with token usage and cost on the model calls.\n\nThat gives you somewhere useful to start when an answer looks wrong, a task takes too long, or usage jumps unexpectedly.\n\nDecide who gets to call each agent\n\nThe support bot needs access to the research agent. Another team's application might not.\n\nGive a virtual key access to specific agents, or enable ‘Allow any virtual key’ when an agent should be available to every valid key. Enable authentication enforcement to reject anonymous calls.\n\nAgent access is separate from model and tool access. Permission to call the research agent doesn't automatically grant access to the models or MCP tools it uses. In Bifrost Enterprise, you can also manage agent access through Access Profiles and Projects.\n\nBy default, Bifrost removes the caller's Bifrost credential before forwarding a request to the agent.\n\nFor agents you trust, enable ‘Forward Bifrost authentication’ and configure the agent to reuse that credential on its model and tool calls through Bifrost. Those calls then follow the original caller's access rules and configured budgets.\n\nThe agent can also use its own Bifrost key. In that case, its key's permissions and budgets apply.\n\nThe support bot's virtual key has separate grants for its model, Context7 tools and the research agent.\nDifferent transports shouldn't require another integration\n\nYour app uses A2A over REST. The research agent exposes A2A over JSON-RPC. Another agent uses gRPC.\n\nBifrost bridges all three A2A v1 bindings, so your client and agent can use different transports. A REST client can reach a JSON-RPC agent through the gateway without a custom adapter between them.\n\nClients connecting to Bifrost over gRPC need additional setup, covered in the docs.\n\nOne request, two transports. Bifrost accepts HTTP+JSON from the client and forwards JSON-RPC to the research agent.\nLet long tasks finish without keeping a connection open\n\nSome tasks take minutes. Your app shouldn't need an open stream just to wait for a report.\n\nIf the agent supports A2A push notifications, register your app's callback through Bifrost. The agent receives a Bifrost callback address and a separate token. Your app's callback address and credentials stay with Bifrost.\n\nWhen an update arrives, Bifrost checks it, stores it and delivers it to your app, with retries for failed deliveries. Private and internal callback destinations are blocked by default.\n\nBoth sides of that exchange appear in Agent Logs: the notification arriving from the agent and the delivery attempts to your app.\n\nStart with an agent you already have\n\nAgent Gateway works with A2A v1 agents.\n\nSet External Client URL in Agents → Agent Settings to Bifrost's public base URL. For an internal agent, configure the Private Network Allowlist too.\nOpen Agents → Agent Catalog → New Agent, paste the agent's card URL and click Fetch. Review its skills and authentication, then save.\nEnable authentication enforcement and give a virtual key access to the agent.\nCopy the agent's Bifrost endpoint and use it in your app.\n\nClients discovering the agent through Bifrost's served card receive gateway endpoints, so their calls come through Bifrost too.\n\nSend a request and open Agent Logs. Connect the agent's model and tool calls when you're ready to follow the work further.\n\nRead the docs to get started with Agent Gateway →",
+  "links": [
+    {
+      "text": "REQUEST ACCESS",
+      "href": "https://www.getmaxim.ai/#enterprise-trial"
+    },
+    {
+      "text": "",
+      "href": "https://www.getmaxim.ai/"
+    },
+    {
+      "text": "P\nR\nO\nD\nU\nC\nT\nS",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#"
+    },
+    {
+      "text": "E\nN\nT\nE\nR\nP\nR\nI\nS\nE",
+      "href": "https://www.getmaxim.ai/enterprise"
+    },
+    {
+      "text": "P\nR\nI\nC\nI\nN\nG",
+      "href": "https://www.getmaxim.ai/pricing"
+    },
+    {
+      "text": "D\nO\nC\nS",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "B\nL\nO\nG",
+      "href": "https://www.getmaxim.ai/bifrost/blog"
+    },
+    {
+      "text": "C\nO\nM\nP\nA\nN\nY",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#"
+    },
+    {
+      "text": "DISCORD",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "GITHUB",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "BOOK A DEMO",
+      "href": "https://www.getmaxim.ai/book-a-demo"
+    },
+    {
+      "text": "Back to Blog",
+      "href": "https://www.getmaxim.ai/bifrost/blog"
+    },
+    {
+      "text": "Agent Gateway",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/overview?ref=bifrost-1.ghost.io"
+    },
+    {
+      "text": "Access Profiles",
+      "href": "https://docs.getbifrost.ai/enterprise/access-profiles?ref=bifrost-1.ghost.io"
+    },
+    {
+      "text": "Projects",
+      "href": "https://docs.getbifrost.ai/enterprise/projects?ref=bifrost-1.ghost.io"
+    },
+    {
+      "text": "Read the docs to get started with Agent Gateway →",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/overview?ref=bifrost-1.ghost.io"
+    },
+    {
+      "text": "Follow the conversation, end to end",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#follow-the-conversation-end-to-end"
+    },
+    {
+      "text": "Decide who gets to call each agent",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#decide-who-gets-to-call-each-agent"
+    },
+    {
+      "text": "Different transports shouldn't require another integration",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#different-transports-shouldnt-require-another-integration"
+    },
+    {
+      "text": "Let long tasks finish without keeping a connection open",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#let-long-tasks-finish-without-keeping-a-connection-open"
+    },
+    {
+      "text": "Start with an agent you already have",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#start-with-an-agent-you-already-have"
+    },
+    {
+      "text": "BOOK A DEMO",
+      "href": "https://www.getmaxim.ai/book-a-demo"
+    },
+    {
+      "text": "",
+      "href": "https://www.getmaxim.ai/"
+    },
+    {
+      "text": "Guardrails",
+      "href": "https://docs.getbifrost.ai/enterprise/guardrails?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Adaptive Load Balancing",
+      "href": "https://docs.getbifrost.ai/enterprise/adaptive-routing/overview?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Governance",
+      "href": "https://docs.getbifrost.ai/enterprise/user-provisioning?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Observability",
+      "href": "https://docs.getbifrost.ai/features/observability/default?utm_medium=bifrost_footer"
+    },
+    {
+      "text": "Cost Optimization",
+      "href": "https://docs.getbifrost.ai/features/governance/budget-and-limits?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LiteLLM Compatibility",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Telemetry",
+      "href": "https://docs.getbifrost.ai/features/telemetry?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Cost Calculator",
+      "href": "https://www.getmaxim.ai/bifrost/llm-cost-calculator?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Developer Guides",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Deployment Guides",
+      "href": "https://docs.getbifrost.ai/deployment-guides/k8s?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Architecture",
+      "href": "https://docs.getbifrost.ai/architecture/core/concurrency?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Blogs",
+      "href": "https://www.getmaxim.ai/bifrost/blog?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Performance Benchmarks",
+      "href": "https://www.getmaxim.ai/resources/benchmarks?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway Buyer's Guide",
+      "href": "https://www.getmaxim.ai/resources/buyers-guide?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Claude Code Integration",
+      "href": "https://www.getmaxim.ai/resources/claude-code?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Gateway",
+      "href": "https://www.getmaxim.ai/resources/mcp-gateway?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://www.getmaxim.ai/resources/migrating-from-litellm?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Provider Status",
+      "href": "https://www.getmaxim.ai/bifrost/provider-status?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Server Directory",
+      "href": "https://www.getmaxim.ai/bifrost/mcp-servers"
+    },
+    {
+      "text": "Skill Registry",
+      "href": "https://www.getmaxim.ai/bifrost/skill-registry?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "AI Information",
+      "href": "https://www.getmaxim.ai/llm-info"
+    },
+    {
+      "text": "Financial Services & Banking",
+      "href": "https://www.getmaxim.ai/industry-pages/financial-services-and-banking?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Healthcare & Life Sciences",
+      "href": "https://www.getmaxim.ai/industry-pages/healthcare-life-sciences?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Insurance",
+      "href": "https://www.getmaxim.ai/industry-pages/insurance?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Retail",
+      "href": "https://www.getmaxim.ai/industry-pages/retail?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Cybersecurity & Threat Intelligence",
+      "href": "https://www.getmaxim.ai/industry-pages/cybersecurity?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Biotechnology & Pharmaceutical",
+      "href": "https://www.getmaxim.ai/industry-pages/biotech-pharma?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Government & Public Sector",
+      "href": "https://www.getmaxim.ai/industry-pages/government?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Telecommunications",
+      "href": "https://www.getmaxim.ai/industry-pages/telecommunication?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Energy & Utilities",
+      "href": "https://www.getmaxim.ai/industry-pages/energy?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Manufacturing & Industrial",
+      "href": "https://www.getmaxim.ai/industry-pages/manufacturing-industrial?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Technology & Software",
+      "href": "https://www.getmaxim.ai/industry-pages/technology-software?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Enterprise",
+      "href": "https://www.getmaxim.ai/enterprise?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Github",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/setting-up?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Community",
+      "href": "https://discord.com/invite/EN6EMhQduQ"
+    },
+    {
+      "text": "API Reference",
+      "href": "https://docs.getbifrost.ai/api-reference/models/list-available-models?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/integrations?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Developer Guides",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Deployment Guides",
+      "href": "https://docs.getbifrost.ai/deployment-guides/k8s?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Changelog",
+      "href": "https://docs.getbifrost.ai/changelogs?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "OSS Friends",
+      "href": "https://www.getmaxim.ai/oss-friends?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Security",
+      "href": "https://trust.getmaxim.ai/?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Contact Us",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "https://www.getmaxim.ai/terms-of-service?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.getmaxim.ai/privacy-policy?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Cookie Settings",
+      "href": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents#"
+    },
+    {
+      "text": "Partner Program",
+      "href": "https://www.getmaxim.ai/partners-program?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Brand Assets",
+      "href": "https://www.getmaxim.ai/brand-assets?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MAXIM TEAM",
+      "href": "https://www.getmaxim.ai/about-us"
+    },
+    {
+      "text": "",
+      "href": "https://www.producthunt.com/products/maxim-ai?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_source=badge-bifrost-2"
+    },
+    {
+      "text": "",
+      "href": "https://peerlist.io/getmaximai/project/bifrost"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:48:17.945Z"
+}

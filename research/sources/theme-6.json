@@ -1,0 +1,4 @@
+{
+  "text": "Build a Stale-Answer Detector for AI Applications\nTHEME: AI Agents & Intelligent Systems\nBuild an AI-powered verification system that identifies outdated information in LLM-generated answers. The system should detect potentially stale claims involving pricing, API versions, regulations, or company information, re-verify them against live web sources, and provide a freshness score for each claim.\n\nThe solution should help users distinguish current, reliable information from potentially outdated AI-generated responses using both Tavily and Bifrost.\nView Detailed Explanation",
+  "url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_urf74r9ydml.pdf"
+}

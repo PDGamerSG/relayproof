@@ -1,0 +1,404 @@
+{
+  "url": "https://github.com/maximhq/bifrost/issues/9721",
+  "title": "[Bug]: Anthropic→OpenAI conversion drops role on messages containing mcp_tool_use/mcp_tool_result blocks, causing 400 from all OpenAI-compatible providers · Issue #9721 · maximhq/bifrost",
+  "text": "maximhq\nbifrost\nRepository navigation\nCode\nIssues\n628\n (628)\nPull requests\n879\n (879)\nDiscussions\nActions\nSecurity and quality\n3\n (3)\nInsights\n[Bug]: Anthropic→OpenAI conversion drops role on messages containing mcp_tool_use/mcp_tool_result blocks, causing 400 from all OpenAI-compatible providers\n #9721\nNew issue\nClosed\n#9733\nDescription\ncuihairu\nopened \nDescription\n\nWhen an Anthropic-protocol request (POST /anthropic/v1/messages) contains mcp_tool_use / mcp_tool_result content blocks in the message history, Bifrost's Anthropic → OpenAI conversion produces a message without a role field, causing every OpenAI-compatible upstream provider to reject the request with a 400.\n\ndeepseek/deepseek-flash → messages[0]: missing field \\role``\nsensenova/sensenova-6.8-flash-lite → field Messages[0].Role invalid, should be set\nxiaomi/mimo-v2.6-pro → messages[7] role is not supported\n\nAnthropic-native providers (e.g. zai, base_type anthropic) are unaffected since no conversion happens.\n\nStandard tool_use / tool_result blocks convert correctly — only mcp_tool_* blocks trigger the bug.\n\nEnvironment\nBifrost version: v2.4.0 (image maximhq/bifrost, sha256 a1c90607dcfd...)\nEndpoint: POST /anthropic/v1/messages\nProtocol: Anthropic Messages API (anthropic-version: 2023-06-01)\nMinimal reproduction\ncurl -X POST http://localhost:8081/anthropic/v1/messages \\\n  -H \"Content-Type: application/json\" \\\n  -H \"x-api-key: $BIFROST_KEY\" \\\n  -H \"anthropic-version: 2023-06-01\" \\\n  -d '{\n    \"model\": \"deepseek/deepseek-flash\",\n    \"max_tokens\": 30,\n    \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": [\n          {\"type\": \"mcp_tool_result\", \"tool_use_id\": \"call_1\",\n           \"content\": [{\"type\": \"text\", \"text\": \"red\"}]}\n        ]\n      },\n      {\"role\": \"user\", \"content\": \"reply OK\"}\n    ]\n  }'\n\nActual response:\n\n{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Failed to deserialize the JSON body into the target type: messages[0]: missing field `role` at line 1 column 56\"}}\n\nA fuller reproduction including the assistant-side block also fails:\n\n\"messages\": [\n  {\"role\": \"user\", \"content\": \"look\"},\n  {\"role\": \"assistant\", \"content\": [\n    {\"type\": \"mcp_tool_use\", \"id\": \"call_1\", \"name\": \"analyze_image\",\n     \"input\": {\"imageSource\": \"https://x/y.png\", \"prompt\": \"desc\"},\n     \"server_name\": \"4_5v_mcp\"}\n  ]},\n  {\"role\": \"user\", \"content\": [\n    {\"type\": \"mcp_tool_result\", \"tool_use_id\": \"call_1\",\n     \"content\": [{\"type\": \"text\", \"text\": \"a red pixel\"}]}\n  ]},\n  {\"role\": \"user\", \"content\": \"reply OK\"}\n]\nExpected behavior\n\nUnknown / unsupported Anthropic content block types should be either:\n\ndropped (ignored) during conversion, or\nconverted into a valid message (e.g. flattened into text content),\n\nbut the resulting OpenAI-format messages array must always contain a valid role on every entry. As a reference, LiteLLM handles the same request by stripping the unknown blocks and returns a normal 200.\n\nActual behavior\n\nThe converted messages array contains an entry with no role, so the upstream returns 400 for every OpenAI-compatible provider.\n\nImpact\n\nClaude Code (and similar Anthropic-protocol clients) persist tool-call history in conversation state. Sessions that previously used Z.ai's built-in MCP tools (e.g. analyze_image, which emits mcp_tool_use / mcp_tool_result blocks) cannot be routed to any OpenAI-compatible model after switching to Bifrost — every subsequent request fails with 400 until the old blocks are compacted out of history.\n\nAdditional context\nRequest logs show the 400 originates from the upstream provider, not from Bifrost's own validation.\nComparison: the identical request sent to LiteLLM's /v1/messages endpoint with an OpenAI-compatible backend succeeds (unknown blocks are dropped; input_tokens reflects stripped content).\nActivity\ncuihairu\nchanged the title \n[-]\nAnthropic→OpenAI conversion drops role on messages containing mcp_tool_use/mcp_tool_result blocks, causing 400 from all OpenAI-compatible providers\n[/-]\n \n[+]\n[BUG]Anthropic→OpenAI conversion drops role on messages containing mcp_tool_use/mcp_tool_result blocks, causing 400 from all OpenAI-compatible providers\n[/+]\n \ncuihairu\nchanged the title \n[-]\n[BUG]Anthropic→OpenAI conversion drops role on messages containing mcp_tool_use/mcp_tool_result blocks, causing 400 from all OpenAI-compatible providers\n[/-]\n \n[+]\n[Bug]: Anthropic→OpenAI conversion drops role on messages containing mcp_tool_use/mcp_tool_result blocks, causing 400 from all OpenAI-compatible providers\n[/+]\n \nakshaydeo\nclosed this as completedin #9733\npublic-aanp-tanium\nadded a commit that references this issue \n\nfix: drop mcp_call items on the Responses-to-Chat fallback (maximhq#9733\n\n...\n65e418a\nSign up for free\n to join this conversation on GitHub. Already have an account? Sign in to comment\nMetadata\nAssignees\nNo one assigned\nLabels\nNo labels\nType\nNo type\nProjects\nNo projects\nMilestone\nNo milestone\nRelationships\nNone yet\nDevelopment\nNo branches or pull requests\nIssue actions\nOpen in GitHub Copilot app",
+  "links": [
+    {
+      "text": "Skip to content",
+      "href": "https://github.com/maximhq/bifrost/issues/9721#start-of-content"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fmaximhq%2Fbifrost%2Fissues%2F9721"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/platform"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/actions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/code-quality"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/codespaces"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/code-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/secret-protection"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/credentials"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/ai"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trending"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/open-source/sponsors"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/articles"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/team"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/startups"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/nonprofits"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/healthcare"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/financial-services"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/manufacturing"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/government"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/why-github"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/executive-insights"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trust-center"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot/copilot-business"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/premium-support"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/events"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/orgs/community/discussions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://help.github.com/"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/about"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/partners"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://githubuniverse.com/"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://github.com/pricing"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fmaximhq%2Fbifrost%2Fissues%2F9721"
+    },
+    {
+      "text": "Sign up",
+      "href": "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fvoltron%2Fissues_fragments%2Fissue_layout&source=header-repo&source_repo=maximhq%2Fbifrost"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/issues/9721"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/issues/9721"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/issues/9721"
+    },
+    {
+      "text": "maximhq",
+      "href": "https://github.com/maximhq"
+    },
+    {
+      "text": "bifrost",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Code",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Issues\n628\n (628)",
+      "href": "https://github.com/maximhq/bifrost/issues"
+    },
+    {
+      "text": "Pull requests\n879\n (879)",
+      "href": "https://github.com/maximhq/bifrost/pulls"
+    },
+    {
+      "text": "Discussions",
+      "href": "https://github.com/maximhq/bifrost/discussions"
+    },
+    {
+      "text": "Actions",
+      "href": "https://github.com/maximhq/bifrost/actions"
+    },
+    {
+      "text": "Security and quality\n3\n (3)",
+      "href": "https://github.com/maximhq/bifrost/security"
+    },
+    {
+      "text": "Insights",
+      "href": "https://github.com/maximhq/bifrost/pulse"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "New issue",
+      "href": "https://github.com/login?return_to=https://github.com/maximhq/bifrost/issues/9721"
+    },
+    {
+      "text": "New issue",
+      "href": "https://github.com/login?return_to=https://github.com/maximhq/bifrost/issues/9721"
+    },
+    {
+      "text": "#9733",
+      "href": "https://github.com/maximhq/bifrost/pull/9733"
+    },
+    {
+      "text": "[Bug]: Anthropic→OpenAI conversion drops role on messages containing mcp_tool_use/mcp_tool_result blocks, causing 400 from all OpenAI-compatible providers",
+      "href": "https://github.com/maximhq/bifrost/issues/9721#top"
+    },
+    {
+      "text": "#9733",
+      "href": "https://github.com/maximhq/bifrost/pull/9733"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/cuihairu"
+    },
+    {
+      "text": "cuihairu",
+      "href": "https://github.com/cuihairu"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/issues/9721#issue-6255903805"
+    },
+    {
+      "text": "cuihairu",
+      "href": "https://github.com/cuihairu"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/issues/9721#event-35435748134"
+    },
+    {
+      "text": "cuihairu",
+      "href": "https://github.com/cuihairu"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/issues/9721#event-35435766766"
+    },
+    {
+      "text": "akshaydeo",
+      "href": "https://github.com/akshaydeo"
+    },
+    {
+      "text": "completed",
+      "href": "https://github.com/maximhq/bifrost/issues?q=is%3Aissue%20state%3Aclosed%20archived%3Afalse%20reason%3Acompleted"
+    },
+    {
+      "text": "#9733",
+      "href": "https://github.com/maximhq/bifrost/pull/9733"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/issues/9721#event-35654074586"
+    },
+    {
+      "text": "public-aanp-tanium",
+      "href": "https://github.com/public-aanp-tanium"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/issues/9721#event-35654861949"
+    },
+    {
+      "text": "fix: drop mcp_call items on the Responses-to-Chat fallback (maximhq#9733",
+      "href": "https://github.com/public-aanp-tanium/bifrost/commit/65e418a2e66168d2e7b43bfddc6e02ffefc4954e"
+    },
+    {
+      "text": "maximhq#9733",
+      "href": "https://github.com/maximhq/bifrost/pull/9733"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/articles/closing-issues-via-commit-messages"
+    },
+    {
+      "text": "65e418a",
+      "href": "https://github.com/public-aanp-tanium/bifrost/commit/65e418a2e66168d2e7b43bfddc6e02ffefc4954e"
+    },
+    {
+      "text": "Sign up for free",
+      "href": "https://github.com/signup?return_to=https://github.com/maximhq/bifrost/issues/9721"
+    },
+    {
+      "text": "Sign in to comment",
+      "href": "https://github.com/login?return_to=https://github.com/maximhq/bifrost/issues/9721"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Terms",
+      "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service"
+    },
+    {
+      "text": "Privacy",
+      "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement"
+    },
+    {
+      "text": "Security",
+      "href": "https://github.com/security"
+    },
+    {
+      "text": "Status",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "Community",
+      "href": "https://github.community/"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.github.com/"
+    },
+    {
+      "text": "Contact",
+      "href": "https://support.github.com/?tags=dotcom-footer"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:50:11.952Z"
+}

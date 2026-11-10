@@ -1,0 +1,484 @@
+{
+  "url": "https://keploy.io/record-replay-testing",
+  "title": "Record and Replay Testing Guide | Keploy",
+  "text": "Definitive Guide\nRecord and Replay Testing\nCapture real API traffic as automated tests with zero manual authoring — powered by eBPF kernel-level capture.\nTry Keploy Free\nDocumentation\nWhat Is Record and Replay Testing?\n\nRecord and replay testing captures real application traffic — API requests, responses, and all dependency interactions — during normal operation and converts recordings into automated, replayable test cases with auto-generated mocks.\n\nInstead of imagining what to test and writing scripts, you observe what your application actually does and capture it. Every real API call becomes a test case. Every database query becomes a mock. Every downstream response becomes a stub.\n\nThe advent of eBPF has removed previous constraints (HTTP-only capture, intrusive proxies), enabling kernel-level capture of all network traffic without any application changes. Keploy is the tool that brought this approach to production readiness.\n\nHow eBPF Enables Non-Intrusive Traffic Capture\n\nKernel-level capture means complete visibility into every byte of network traffic, regardless of protocol or language.\n\nKernel-Level Hooks\n\neBPF probes attach to sendto(), recvfrom(), write(), and read() system calls on socket file descriptors. Sees all network traffic entering and leaving your application.\n\nMulti-Protocol\n\nHTTP, PostgreSQL wire protocol, MongoDB BSON, Redis commands, gRPC frames, Kafka protocol — all visible and decoded into human-readable test cases and mocks.\n\nZero Overhead\n\nNo latency from routing through external processes. No SDK to import. No proxy to configure. Approximately 1-3% overhead during recording — negligible for staging.\n\nFully Transparent\n\nYour application does not know it is being recorded. No code changes. No instrumentation. Language and framework agnostic — works identically with Go, Java, Python, Node.js, Rust.\n\nFor a comprehensive technical deep dive, see the eBPF for testing guide.\n\nRecord-Replay vs Traditional Approaches\n\nWhy record-replay testing is gaining adoption compared to manual authoring and spec-based generation.\n\nDimension\tManual Authoring\tSpec-Based Generation\tRecord-Replay (Keploy)\nTest creation\tEngineer writes each test by hand\tGenerated from OpenAPI spec\tCaptured from real traffic automatically\nMock generation\tEngineer writes mocks manually\tNone (tests against spec only)\tAuto-generated from real dependency responses\nEdge case coverage\tLimited to engineer's imagination\tSchema-level only\tReflects real production edge cases\nTime to first test\tHours to days per endpoint\tMinutes (if spec exists)\tMinutes (capture one session)\nMaintenance effort\tHigh (update on every change)\tMedium (update when spec changes)\tLow (re-record to refresh)\n\nKey takeaway: Record-replay excels at regression and integration testing where you need comprehensive coverage quickly. Manual authoring remains valuable for negative testing, edge case exploration, and business logic validation.\n\nRecord-Replay Testing Use Cases\n\nWhere traffic-based testing delivers the most value.\n\nRegression Testing\n\nRecord traffic, replay after every code change. Detect unintended behavior differences with precise diffs. Catches the regressions that cause the most production incidents.\n\nMigration & Rewrite Validation\n\nRecord traffic from the existing service, replay against the new implementation. The new service must produce identical responses. Far more reliable than manual comparison.\n\nLegacy System Testing\n\nNo test framework, no dependency injection, no mocks? No problem. Keploy operates at the kernel level. The service does not need to be modified or even aware it is being tested.\n\nLoad Testing with Real Traffic\n\nReplay recorded traffic at higher concurrency. Matches actual distribution of endpoints, payload sizes, and request sequences. More realistic than synthetic load generators.\n\nDeveloper Onboarding\n\nRecorded test cases serve as living documentation. New team members read YAML files to understand what each endpoint does, what inputs it accepts, and what responses it produces.\n\nHow Keploy Implements Record-Replay\n\nPurpose-built for record-replay testing. Here is what makes it different from HTTP-only recording tools.\n\nFull Dependency Graph Capture\n\nNot just HTTP. PostgreSQL queries, MongoDB operations, Redis commands, Kafka produce calls, gRPC requests, and third-party API calls. Every interaction becomes an auto-replayed mock.\n\nAI-Powered Noise Detection\n\nStatistical analysis across multiple recordings identifies varying fields. Timestamps, UUIDs, and session tokens are automatically excluded from strict assertions. Adapts as schemas evolve.\n\nTime-Freezing\n\nSystem clock set to original recording timestamp during replay. Token expiration, cache TTLs, date-based partitioning all produce identical results. Deterministic by design.\n\nYAML-Based Test Storage\n\nHuman-readable YAML files in your project directory. Version-controlled alongside code, reviewed in PRs, diffed with standard tools. No proprietary format or database.\n\nRecord\n\neBPF captures all traffic\nStores as YAML test cases\n\nKeploy\n\nNoise detection + Time-freezing\nDeterministic tests\n\nReplay\n\nMocked dependencies\nRuns in seconds in CI\n\nImplementing Record-Replay Testing\n\nA step-by-step approach to adopting record-replay testing with Keploy.\n\n1\nIdentify Your Recording Environment\n\nStart with staging for realistic traffic without data sensitivity concerns. For mature data governance, use production shadow capture for the most realistic test cases.\n\n2\nRecord a Traffic Session\n\nStart Keploy in record mode alongside your application. Execute workflows: API calls, database operations, background jobs. A 10-minute session can produce dozens to hundreds of test cases.\n\n3\nReview and Curate Recordings\n\nRemove health checks and monitoring noise. Filter sensitive data. Review the automatic noise detection exclusions to ensure important fields are not accidentally skipped.\n\n4\nReplay in CI/CD\n\nOn every PR, Keploy starts your app, replays recorded requests, intercepts outbound calls, and compares responses. Failures produce detailed diffs. Tests execute in seconds.\n\n5\nMaintain and Refresh\n\nRe-record traffic periodically to capture new endpoints. Set a refresh cadence (monthly or per major release). Track flakiness rate to detect recordings that need updating.\n\nRecord-Replay Best Practices\n\nMaximize the value of traffic-based testing with these operational guidelines.\n\nCurate recordings carefully\n\nRemove health checks, monitoring endpoints, and noise. Ensure PII and credentials are filtered before committing test files.\n\nRefresh on a cadence\n\nRe-record monthly or per major release to capture new endpoints and updated behavior. Stale recordings lead to false failures.\n\nVersion control test files\n\nTreat YAML test files like production code. Review in PRs, track changes over time, and maintain alongside the application.\n\nStart with staging, not production\n\nStaging carries realistic traffic without data sensitivity concerns. Graduate to production shadow capture only with mature data governance.\n\nRun replays on every PR\n\nWith mocked dependencies, replay tests execute in seconds. No reason to defer to nightly runs. Gate PRs on replay results.\n\nTrack flakiness rate\n\nMonitor which recordings produce non-deterministic results. Quarantine and re-record tests above 2% flake rate rather than ignoring failures.\n\nSee Record-Replay in Action\n\nWatch how Keploy captures traffic, generates mocks, and eliminates flaky tests from recorded sessions.\n\nReal Traffic. Real Data. Real Tests.\nAutomated Test Data Generation\nFrom Real Traffic.\n\nReal test data generated directly from your environment powered by AI. Keploy captures real API interactions, analyzes behavior, and generates accurate, production-like test data.\n\nClient\n\nWeb/Mobile App\n\nKeploy\n\nIntercepting and Analyzing\n\nCapturing Traffic\nGenerating Tests\nServer\n\nBackend or other dependencies\n\nKeploy Generating Tests\n\nReal-time API traffic analysis\n\nLive Capture\n0/8\n\nWaiting for API traffic...\n\nRequests will appear here as they are captured\n\n0\nCaptured\n0\nAnalyzed\n0\nTests Generated\nNo Flaky Tests,\nOnly Rock Solid, Reliable Tests\n\nOther test case generators fail on dynamic data. Keploy automatically detects and ignores noisy fields like timestamps and random IDs.\n\nWithout Keploy\n\nEvery timestamp or random ID changes, causing test failures even though your app works perfectly\n\nRun 1: timestamp changed\nExpected: \"2024-11-17T14:32:45.123Z\"\nGot: \"2024-11-17T14:32:46.456Z\"\nFAILED\nRun 2: timestamp changed\nExpected: \"2024-11-17T14:32:45.123Z\"\nGot: \"2024-11-17T14:32:46.456Z\"\nFAILED\nRun 3: timestamp changed\nExpected: \"2024-11-17T14:32:45.123Z\"\nGot: \"2024-11-17T14:32:46.456Z\"\nFAILED\nWith Keploy\n\nNoisy fields are automatically ignored. Tests focus on what matters\n\nRun 1: Structure validated\nuserId is present\nmessage is correct\nPASSED\nRun 2: Structure validated\nuserId is present\nmessage is correct\nPASSED\nRun 3: Structure validated\nuserId is present\nmessage is correct\nPASSED\nAPI Response (Raw)\nKeploy Filter\nRaw API Response\n{\n\n\"data\": {\n\n\"userId\": \"12345\",\n\n\"username\": \"john_doe\",\n\n\"email\": \"[redacted-email]\",\n\n\"timestamp\": \"2024-11-17T14:32:45.123Z\",// NOISE DETECTED\n\n\"requestId\": \"req_abc123xyz789\",// NOISE DETECTED\n\n\"sessionId\": \"sess_1234567890\",// NOISE DETECTED\n\n\"createdAt\": \"2024-11-17T14:32:45.000Z\",// NOISE DETECTED\n\n\"nonce\": \"n0nc3_rand0m_v4lu3\",// NOISE DETECTED\n\n\"message\": \"User authenticated successfully\"\n\n}\n}\nRaw Data\nStable fields (asserted)\nNoisy fields (ignored)\n\nFields Analyzed\n\n5\n\nNoise Detected\n\n5\n\nTest Stability\n\n100%\n\nNo External Services Required\nDependency-Free Testing\n\nEliminate dependencies from API outages. Keploy automatically generates mocks from real traffic for complete test isolation.\n\nLive Service Status\n\nWatch what happens when services fail\n\nDatabase\n\nNot connected but mocked by Keploy\n\nKeploy serves recorded mocks instead of the offline service\n\nPayment Gateway\n\nNot connected but mocked by Keploy\n\nKeploy serves recorded mocks instead of the offline service\n\nBlob Storage\n\nNot connected but mocked by Keploy\n\nKeploy serves recorded mocks instead of the offline service\n\nCache\n\nConnected\n\nCache traffic stays live\n\nRun Again\nTest Results\n\nTests powered by Keploy mocks\n\ntest_replays.log\n$ keploy test -c \"python3 app.py\" --delay 10 --path \"./tests\"\n→ Starting test suite with Keploy...\n→ Loading mocks from cache...\n→ Cache remains connected; other services are mocked by Keploy.\n→ Database, Payment Gateway, Blob Storage replaying recorded interactions.\nExternal services offline: Database, Payment Gateway, Blob Storage\nKeploy continues replaying mocks seamlessly...\nTests remain unaffected becuase we are now testing on Keploy Mocks!\n✅ ALL TESTS PASSING\nEven with Database, Payment Gateway, and Blob Storage offline, Keploy mocks keep the suite green\n✓ Login flow\n✓ Payment processing\n✓ File upload\n✓ Database query\nExecution: 2.34s (4/4 passed using mocked responses)\nWhen Keploy mocks the dependencies, your tests never fail!\nFAQs\nWhat is record and replay testing?\n\nRecord and replay testing captures real application traffic (API requests, responses, and dependency interactions) during normal operation and replays it as automated test cases. Unlike traditional test authoring, record-replay generates tests from actual production behavior, ensuring tests reflect real-world usage patterns rather than hypothetical scenarios.\n\nHow does Keploy's eBPF-based capture differ from proxy-based record-replay tools like Speedscale?\n\nProxy-based tools route traffic through an intermediary, which requires network reconfiguration, alters TLS termination, adds measurable latency, and can only capture HTTP-layer traffic. Keploy uses eBPF probes in the Linux kernel to passively observe all network syscalls — capturing HTTP, gRPC, database wire protocols, Redis commands, and message queue traffic in a single session with zero network changes and sub-microsecond overhead.\n\nWhy does Keploy capture the full dependency chain while VCR libraries only record HTTP?\n\nVCR libraries (Ruby VCR, Python vcrpy, Go go-vcr) hook into language-specific HTTP client libraries, so they can only record outbound HTTP calls. Keploy operates at the kernel network layer, intercepting all TCP/IP traffic regardless of protocol or library. This means database queries (PostgreSQL, MongoDB, DynamoDB), cache operations (Redis, Memcached), and message queue interactions (Kafka, RabbitMQ) are all captured and mocked automatically.\n\nHow does AI noise detection make recorded tests stable without manual exclusion patterns?\n\nTraditional record-replay requires engineers to manually identify and exclude non-deterministic fields (timestamps, UUIDs, session tokens) through regex patterns or field path configs. Keploy's AI analyzes multiple recordings of the same endpoint, statistically identifies varying fields, and automatically excludes them from strict assertions. As schemas evolve, the AI adapts without requiring manual exclusion rule updates.\n\nHow does Keploy's time-freezing solve the timestamp problem that breaks most record-replay tools?\n\nTime-dependent logic (JWT expiry validation, cache TTLs, date-based database partitioning, cron-triggered behavior) fails during replay because the system clock has advanced past the recording time. Keploy freezes the system clock at the kernel level to match the original recording timestamp, so all time-dependent code paths produce identical results. No other record-replay tool offers kernel-level time manipulation without application code changes.\n\nWhat is the storage and performance overhead of recording production traffic with Keploy?\n\nKeploy's eBPF probes add less than 1% CPU overhead and sub-microsecond latency per network call during recording. Storage depends on traffic volume — a typical API service generates 1-10 MB of recordings per hour of production traffic. Keploy's deduplication reduces stored test cases by 60-80% by identifying redundant recordings that exercise the same code paths.\n\nHow do recorded tests handle API schema changes between recording and replay?\n\nWhen APIs evolve, Keploy's noise detection automatically identifies new or modified fields and adjusts assertions accordingly. For breaking changes, Keploy flags specific field-level diffs rather than failing the entire test, making it clear which schema changes caused the regression. Teams can then re-record affected tests from fresh traffic in a single session rather than manually updating dozens of test fixtures.\n\nWhy is kernel-level capture more reliable than application-layer middleware for recording traffic?\n\nApplication-layer middleware (Express middleware, Spring interceptors, WSGI wrappers) only captures traffic that reaches the application after framework processing. It misses requests rejected by load balancers, TLS errors, malformed requests, and framework-level routing failures. Keploy's kernel-level eBPF capture sees all network traffic entering the process, including edge cases that application middleware never observes.\n\nTest with Keploy AI\n\nGet the power of AI to your Testing Pipelines!\n\nBook a Demo\n\nJoin our Global\nCommunity\n\nConnect with developers worldwide. Follow updates, ask questions, share feedback, and ship faster with other Keploy builders.\n\n1.2M+\nINSTALLS\n19.7K+\nGITHUB\n100K+\nDEVS\n300M+\nMOCKS\n1K+\nCONTRIBUTORS\n#1\nOSS TRENDING\n4.9\n★★★★★\nfrom 500+ reviews on\n★★★★★\n\n“Best report of integration and API tests I've seen — which we don't get from RestAssured.”\n\nG2\n★★★★★\n\n“Future of microservices testing. I don't write tests now!”\n\nMahfooz A. · G2 · 5/5\n★★★★★\n\n“An amazing product that simplifies the automation.”\n\nGartner · 4.0\nBuilt by developers, for developers.\nLet's build the future, together.",
+  "links": [
+    {
+      "text": "",
+      "href": "https://keploy.io/"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://keploy.io/pricing"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://keploy.io/pricing"
+    },
+    {
+      "text": "19.7K+",
+      "href": "https://github.com/keploy/keploy"
+    },
+    {
+      "text": "Sign In",
+      "href": "https://app.keploy.io/"
+    },
+    {
+      "text": "Home",
+      "href": "https://keploy.io/"
+    },
+    {
+      "text": "Try Keploy Free",
+      "href": "https://app.keploy.io/"
+    },
+    {
+      "text": "Documentation",
+      "href": "https://docs.keploy.io/"
+    },
+    {
+      "text": "eBPF for testing guide",
+      "href": "https://keploy.io/ebpf-testing"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://calendar.app.google/cXVaj6hbMUjvmrnt9"
+    },
+    {
+      "text": "",
+      "href": "https://twitter.com/Keployio"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/keploy/keploy"
+    },
+    {
+      "text": "",
+      "href": "https://keploy.io/slack"
+    },
+    {
+      "text": "",
+      "href": "https://www.youtube.com/channel/UC6OTg7F4o0WkmNtSoob34lg"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/74471957"
+    },
+    {
+      "text": "",
+      "href": "https://keploy.io/"
+    },
+    {
+      "text": "Get started",
+      "href": "https://app.keploy.io/"
+    },
+    {
+      "text": "Book a demo",
+      "href": "https://calendar.app.google/cXVaj6hbMUjvmrnt9"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/keployio"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/keploy"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/keploy"
+    },
+    {
+      "text": "",
+      "href": "https://www.youtube.com/@keploy"
+    },
+    {
+      "text": "",
+      "href": "https://keploy.io/slack"
+    },
+    {
+      "text": "",
+      "href": "https://chatgpt.com/?q=I%27m%20evaluating%20Keploy%20(https%3A%2F%2Fkeploy.io)%2C%20an%20open-source%20testing%20platform%20for%20developers%20and%20QA%20teams.%20Explain%20what%20Keploy%20does%20and%20the%20core%20problems%20it%20solves.%20Cover%20its%20main%20capabilities%3A%20recording%20real%20API%20traffic%20and%20replaying%20it%20as%20reliable%20test%20cases%2C%20automatically%20generating%20tests%20along%20with%20data%20mocks%20and%20stubs%2C%20unit%20test%20generation%2C%20and%20API%2C%20integration%20and%20contract%20testing%2C%20including%20low-level%20traffic%20capture%20using%20eBPF.%20Describe%20how%20it%20fits%20into%20CI%2FCD%20pipelines%2C%20the%20programming%20languages%20and%20frameworks%20it%20supports%2C%20and%20how%20it%20helps%20teams%20raise%20test%20coverage%20with%20far%20less%20manual%20effort.%20Finally%2C%20tell%20me%20who%20should%20use%20Keploy%20and%20how%20it%20compares%20to%20traditional%20API%20testing%20and%20mocking%20tools."
+    },
+    {
+      "text": "",
+      "href": "https://claude.ai/new?q=I%27m%20evaluating%20Keploy%20(https%3A%2F%2Fkeploy.io)%2C%20an%20open-source%20testing%20platform%20for%20developers%20and%20QA%20teams.%20Explain%20what%20Keploy%20does%20and%20the%20core%20problems%20it%20solves.%20Cover%20its%20main%20capabilities%3A%20recording%20real%20API%20traffic%20and%20replaying%20it%20as%20reliable%20test%20cases%2C%20automatically%20generating%20tests%20along%20with%20data%20mocks%20and%20stubs%2C%20unit%20test%20generation%2C%20and%20API%2C%20integration%20and%20contract%20testing%2C%20including%20low-level%20traffic%20capture%20using%20eBPF.%20Describe%20how%20it%20fits%20into%20CI%2FCD%20pipelines%2C%20the%20programming%20languages%20and%20frameworks%20it%20supports%2C%20and%20how%20it%20helps%20teams%20raise%20test%20coverage%20with%20far%20less%20manual%20effort.%20Finally%2C%20tell%20me%20who%20should%20use%20Keploy%20and%20how%20it%20compares%20to%20traditional%20API%20testing%20and%20mocking%20tools."
+    },
+    {
+      "text": "",
+      "href": "https://www.perplexity.ai/search?q=I%27m%20evaluating%20Keploy%20(https%3A%2F%2Fkeploy.io)%2C%20an%20open-source%20testing%20platform%20for%20developers%20and%20QA%20teams.%20Explain%20what%20Keploy%20does%20and%20the%20core%20problems%20it%20solves.%20Cover%20its%20main%20capabilities%3A%20recording%20real%20API%20traffic%20and%20replaying%20it%20as%20reliable%20test%20cases%2C%20automatically%20generating%20tests%20along%20with%20data%20mocks%20and%20stubs%2C%20unit%20test%20generation%2C%20and%20API%2C%20integration%20and%20contract%20testing%2C%20including%20low-level%20traffic%20capture%20using%20eBPF.%20Describe%20how%20it%20fits%20into%20CI%2FCD%20pipelines%2C%20the%20programming%20languages%20and%20frameworks%20it%20supports%2C%20and%20how%20it%20helps%20teams%20raise%20test%20coverage%20with%20far%20less%20manual%20effort.%20Finally%2C%20tell%20me%20who%20should%20use%20Keploy%20and%20how%20it%20compares%20to%20traditional%20API%20testing%20and%20mocking%20tools."
+    },
+    {
+      "text": "",
+      "href": "https://www.google.com/search?udm=50&aep=11&q=I%27m%20evaluating%20Keploy%20(https%3A%2F%2Fkeploy.io)%2C%20an%20open-source%20testing%20platform%20for%20developers%20and%20QA%20teams.%20Explain%20what%20Keploy%20does%20and%20the%20core%20problems%20it%20solves.%20Cover%20its%20main%20capabilities%3A%20recording%20real%20API%20traffic%20and%20replaying%20it%20as%20reliable%20test%20cases%2C%20automatically%20generating%20tests%20along%20with%20data%20mocks%20and%20stubs%2C%20unit%20test%20generation%2C%20and%20API%2C%20integration%20and%20contract%20testing%2C%20including%20low-level%20traffic%20capture%20using%20eBPF.%20Describe%20how%20it%20fits%20into%20CI%2FCD%20pipelines%2C%20the%20programming%20languages%20and%20frameworks%20it%20supports%2C%20and%20how%20it%20helps%20teams%20raise%20test%20coverage%20with%20far%20less%20manual%20effort.%20Finally%2C%20tell%20me%20who%20should%20use%20Keploy%20and%20how%20it%20compares%20to%20traditional%20API%20testing%20and%20mocking%20tools."
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.keploy.io/"
+    },
+    {
+      "text": "API Testing",
+      "href": "https://keploy.io/api-testing"
+    },
+    {
+      "text": "Regression Testing",
+      "href": "https://keploy.io/regression-testing"
+    },
+    {
+      "text": "Contract Testing",
+      "href": "https://keploy.io/contract-testing"
+    },
+    {
+      "text": "Integration Testing",
+      "href": "https://keploy.io/integration-testing"
+    },
+    {
+      "text": "Record & Replay",
+      "href": "https://keploy.io/record-replay-testing"
+    },
+    {
+      "text": "Test Case Generator",
+      "href": "https://keploy.io/test-case-generator"
+    },
+    {
+      "text": "Test Data Generator",
+      "href": "https://keploy.io/test-data-generator"
+    },
+    {
+      "text": "Code Coverage",
+      "href": "https://keploy.io/code-quality"
+    },
+    {
+      "text": "CI/CD API Testing",
+      "href": "https://keploy.io/ci-cd-api-testing"
+    },
+    {
+      "text": "E2E Testing",
+      "href": "https://keploy.io/e2e-testing"
+    },
+    {
+      "text": "eBPF Testing",
+      "href": "https://keploy.io/ebpf-testing"
+    },
+    {
+      "text": "Flaky Tests",
+      "href": "https://keploy.io/flaky-tests"
+    },
+    {
+      "text": "AI Test Automation",
+      "href": "https://keploy.io/ai-test-automation"
+    },
+    {
+      "text": "AI Code Generation",
+      "href": "https://keploy.io/ai-code-generation"
+    },
+    {
+      "text": "Developer Productivity",
+      "href": "https://keploy.io/developer-productivity"
+    },
+    {
+      "text": "Testing by Stack",
+      "href": "https://keploy.io/testing"
+    },
+    {
+      "text": "SAP Migration",
+      "href": "https://keploy.io/sap-migration"
+    },
+    {
+      "text": "Noise & Secret Mgmt",
+      "href": "https://keploy.io/noise-secret-management"
+    },
+    {
+      "text": "What is API Testing",
+      "href": "https://keploy.io/what-is-api-testing"
+    },
+    {
+      "text": "What is Integration Testing",
+      "href": "https://keploy.io/what-is-integration-testing"
+    },
+    {
+      "text": "What is Regression Testing",
+      "href": "https://keploy.io/what-is-regression-testing"
+    },
+    {
+      "text": "What is Test Automation",
+      "href": "https://keploy.io/what-is-test-automation"
+    },
+    {
+      "text": "What is eBPF",
+      "href": "https://keploy.io/what-is-ebpf"
+    },
+    {
+      "text": "Test Automation Guide",
+      "href": "https://keploy.io/test-automation-guide"
+    },
+    {
+      "text": "Introduction",
+      "href": "https://keploy.io/docs/keploy-explained/introduction/"
+    },
+    {
+      "text": "Quickstart",
+      "href": "https://keploy.io/docs/quickstart/quickstart-filter/"
+    },
+    {
+      "text": "Installation",
+      "href": "https://keploy.io/docs/server/installation/"
+    },
+    {
+      "text": "Chrome Extension",
+      "href": "https://keploy.io/docs/running-keploy/api-testing-chrome-extension/"
+    },
+    {
+      "text": "API Test Generator",
+      "href": "https://keploy.io/docs/running-keploy/api-test-generator/"
+    },
+    {
+      "text": "CLI Commands",
+      "href": "https://keploy.io/docs/running-keploy/cli-commands/"
+    },
+    {
+      "text": "Configuration",
+      "href": "https://keploy.io/docs/running-keploy/configuration-file/"
+    },
+    {
+      "text": "Custom Mocks",
+      "href": "https://keploy.io/docs/running-keploy/custom-mocks/"
+    },
+    {
+      "text": "Test Coverage",
+      "href": "https://keploy.io/docs/quickstart/code-coverage/"
+    },
+    {
+      "text": "Kubernetes",
+      "href": "https://keploy.io/docs/quickstart/k8s-proxy/"
+    },
+    {
+      "text": "CI/CD (GitHub)",
+      "href": "https://keploy.io/docs/ci-cd/github/"
+    },
+    {
+      "text": "Blog",
+      "href": "https://keploy.io/blog"
+    },
+    {
+      "text": "GitHub",
+      "href": "https://github.com/keploy"
+    },
+    {
+      "text": "Community (Slack)",
+      "href": "https://keploy.io/slack"
+    },
+    {
+      "text": "Tutorials",
+      "href": "https://www.youtube.com/playlist?list=PLuImHQnqnB_b3MbF1_873XeMhXkaZPpwV"
+    },
+    {
+      "text": "Migration Guide",
+      "href": "https://keploy.io/blog/technology/migration-guide-from-restassured-to-keploy"
+    },
+    {
+      "text": "G2 Reviews",
+      "href": "https://www.g2.com/products/keploy/reviews"
+    },
+    {
+      "text": "FAQ",
+      "href": "https://keploy.io/faq"
+    },
+    {
+      "text": "SaaS API Testing",
+      "href": "https://keploy.io/saas-api-testing"
+    },
+    {
+      "text": "AI Test Automation Trends",
+      "href": "https://keploy.io/ai-for-test-automation-trends"
+    },
+    {
+      "text": "Healthcare API Security",
+      "href": "https://keploy.io/healthcare-api-testing-security-report"
+    },
+    {
+      "text": "About Us",
+      "href": "https://keploy.io/about"
+    },
+    {
+      "text": "Careers",
+      "href": "https://keploy.io/about#careers"
+    },
+    {
+      "text": "Events",
+      "href": "https://keploy.io/events"
+    },
+    {
+      "text": "GitTogether",
+      "href": "https://keploy.io/gittogether"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://keploy.io/pricing"
+    },
+    {
+      "text": "Affiliates Program",
+      "href": "https://keploy.io/affiliates-program"
+    },
+    {
+      "text": "OSS Sponsorship",
+      "href": "https://keploy.io/oss-sponsorship"
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.keploy.io/"
+    },
+    {
+      "text": "Postman",
+      "href": "https://keploy.io/compare/postman"
+    },
+    {
+      "text": "Swagger",
+      "href": "https://keploy.io/compare/swagger"
+    },
+    {
+      "text": "SoapUI",
+      "href": "https://keploy.io/compare/soapui"
+    },
+    {
+      "text": "Katalon",
+      "href": "https://keploy.io/compare/katalon"
+    },
+    {
+      "text": "REST Assured",
+      "href": "https://keploy.io/compare/rest-assured"
+    },
+    {
+      "text": "Insomnia",
+      "href": "https://keploy.io/compare/insomnia"
+    },
+    {
+      "text": "BrowserStack",
+      "href": "https://keploy.io/compare/browserstack"
+    },
+    {
+      "text": "LambdaTest",
+      "href": "https://keploy.io/compare/lambdatest"
+    },
+    {
+      "text": "Testsigma",
+      "href": "https://keploy.io/compare/testsigma"
+    },
+    {
+      "text": "Mockito",
+      "href": "https://keploy.io/compare/mockito"
+    },
+    {
+      "text": "View all",
+      "href": "https://keploy.io/compare"
+    },
+    {
+      "text": "MongoDB",
+      "href": "https://keploy.io/testing/mongodb"
+    },
+    {
+      "text": "PostgreSQL",
+      "href": "https://keploy.io/testing/postgresql"
+    },
+    {
+      "text": "MySQL",
+      "href": "https://keploy.io/testing/mysql"
+    },
+    {
+      "text": "Redis",
+      "href": "https://keploy.io/testing/redis"
+    },
+    {
+      "text": "Elasticsearch",
+      "href": "https://keploy.io/testing/elasticsearch"
+    },
+    {
+      "text": "Kafka",
+      "href": "https://keploy.io/testing/kafka"
+    },
+    {
+      "text": "RabbitMQ",
+      "href": "https://keploy.io/testing/rabbitmq"
+    },
+    {
+      "text": "gRPC",
+      "href": "https://keploy.io/testing/grpc"
+    },
+    {
+      "text": "Testing by stack",
+      "href": "https://keploy.io/testing"
+    },
+    {
+      "text": "Self-Healing Tests",
+      "href": "https://keploy.io/product-updates/self-healing-tests"
+    },
+    {
+      "text": "Traffic Recording",
+      "href": "https://keploy.io/product-updates/traffic-recording"
+    },
+    {
+      "text": "Environment Replay",
+      "href": "https://keploy.io/product-updates/environment-replay"
+    },
+    {
+      "text": "Intelligent Edge Testing",
+      "href": "https://keploy.io/product-updates/intelligent-edge-testing"
+    },
+    {
+      "text": "Full API Flow Coverage",
+      "href": "https://keploy.io/product-updates/full-api-flow-coverage"
+    },
+    {
+      "text": "View all",
+      "href": "https://keploy.io/product-updates"
+    },
+    {
+      "text": "[redacted-email]",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "[redacted-email]",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "[redacted-email]",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://keploy.io/legal/privacy-policy"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "https://keploy.io/legal/terms-of-service"
+    },
+    {
+      "text": "Cookie Policy",
+      "href": "https://keploy.io/legal/cookie-policy"
+    },
+    {
+      "text": "Security",
+      "href": "https://keploy.io/legal/security"
+    },
+    {
+      "text": "CCPA",
+      "href": "https://keploy.io/legal/CCPA"
+    },
+    {
+      "text": "AUP",
+      "href": "https://keploy.io/legal/aup"
+    },
+    {
+      "text": "DPA",
+      "href": "https://keploy.io/legal/data-processing-addendum"
+    },
+    {
+      "text": "AI Terms",
+      "href": "https://keploy.io/legal/ai-terms"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://keploy.io/privacy-policy"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:48:33.330Z"
+}

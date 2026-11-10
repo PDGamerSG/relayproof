@@ -1,0 +1,49 @@
+{
+  "url": "https://www.google.com/search?udm=14&q=OpenAI%20Chat%20Completions%20streaming%20include_usage%20tool_calls%20official%20docs",
+  "title": "OpenAI Chat Completions streaming include_usage tool_calls official docs - Google Search",
+  "text": "Skip to main content\nAccessibility help\nAI Mode\nAll\nForums\nShort videos\nFlights\nWeb\nFinance\nMore\nTools\nSearch Results\nWeb results\nChat Completions streaming events | OpenAI API Reference\n\nOpenAI Developers\nhttps://developers.openai.com › api › chat › subresources\nAn optional field that will only be present when you set stream_options: {\"include_usage\": true} in your request. When present, it contains a null value except ...Read more\nChat Completions Overview | OpenAI API Reference\n\nOpenAI Developers\nhttps://developers.openai.com › api › reference › overview\nChat Completions Overview. The Chat Completions API endpoint will generate a model response from a list of messages comprising a conversation.Read more\nMissing: include_usage ‎tool_calls\nChat Completions: Streaming, Reasoning, Tools, Structured ...\n\nArizona State University (ASU)\nhttps://docs.rc.asu.edu › ... › LLM API Access\n19 Oct 2026 — Streaming Set stream: true to receive the reply. Add stream_options: {\"include_usage\": true} to get a final chunk with token counts. You can ...\nCompletions API\n\nOpenAI Developers\nhttps://developers.openai.com › api › docs › guides › co...\nThe Chat Completions format can be made similar to the completions format by constructing a request using a single user message.\nMissing: include_usage ‎tool_calls\nUsage stats now available when using streaming with the ...\n\nOpenAI Developer Community\nhttps://community.openai.com › usage-stats-now-availa...\n6 May 2024 — When streaming with the Chat Completions or Completions APIs you can now request an additional chunk to be streamed at the end that will contain ...Read more\nOpenAI Chat Completion Tool Calls With Reasoning\n\nvLLM docs\nhttps://docs.vllm.ai › examples › openai_chat_completio...\nReasoning Streaming OpenAI Responses. An example demonstrates how to use tool calling with reasoning models\nChat Completion\n\nHugging Face\nhttps://huggingface.co › docs › inference-providers › tasks\nChat Completion. Generate a response given a list of messages in a conversational context, supporting both conversational Language Models (LLMs) and ...Read more\nHow to stream completions\n\nOpenAI Developers\nhttps://developers.openai.com › cookbook › examples\n2 Sept 2022 — To stream completions, set stream=True when calling the chat completions or completions endpoints. This will return an object that streams back ...\nMixing streaming chat completions with tool_calls? - API\n\nOpenAI Developer Community\nhttps://community.openai.com › mixing-streaming-chat...\n11 Dec 2023 — Hi! To be honest, I think tool calls and function calls and all that are mostly gimmicks. That said, they can make your job a little easier.Read more\nMissing: include_usage ‎docs\nStreaming Chat Completions | openai/openai-python\n\nDeepWiki\nhttps://deepwiki.com › openai › 4.1.2-streaming-chat-c...\nThis page documents streaming functionality for the Chat Completions API, which enables incremental delivery of model responses through Server-Sent Events (SSE) ...Read more\nPage navigation\n\t\n1\t\n2\n\t\n3\n\t\n4\n\t\n5\n\t\n6\n\t\n7\n\t\n8\n\t\n9\n\t\n10\n\t\nNext\nFooter links\nResults are personalised\n-\nTry without personalisation\nIndia\n632014, Vellore, Tamil Nadu - Based on your past activity\n - Update location\nHelp\nSend feedback\nPrivacy\nTerms",
+  "links": [
+    {
+      "text": "Chat Completions streaming events | OpenAI API Reference\n\nOpenAI Developers\nhttps://developers.openai.com › api › chat › subresources",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events/"
+    },
+    {
+      "text": "Chat Completions Overview | OpenAI API Reference\n\nOpenAI Developers\nhttps://developers.openai.com › api › reference › overview",
+      "href": "https://developers.openai.com/api/reference/chat-completions/overview/"
+    },
+    {
+      "text": "Chat Completions: Streaming, Reasoning, Tools, Structured ...\n\nArizona State University (ASU)\nhttps://docs.rc.asu.edu › ... › LLM API Access",
+      "href": "https://docs.rc.asu.edu/ai/api/chat"
+    },
+    {
+      "text": "Completions API\n\nOpenAI Developers\nhttps://developers.openai.com › api › docs › guides › co...",
+      "href": "https://developers.openai.com/api/docs/guides/completions"
+    },
+    {
+      "text": "Usage stats now available when using streaming with the ...\n\nOpenAI Developer Community\nhttps://community.openai.com › usage-stats-now-availa...",
+      "href": "https://community.openai.com/t/usage-stats-now-available-when-using-streaming-with-the-chat-completions-api-or-completions-api/738156"
+    },
+    {
+      "text": "OpenAI Chat Completion Tool Calls With Reasoning\n\nvLLM docs\nhttps://docs.vllm.ai › examples › openai_chat_completio...",
+      "href": "https://docs.vllm.ai/en/v0.21.0/examples/reasoning/openai_chat_completion_tool_calls_with_reasoning/"
+    },
+    {
+      "text": "Chat Completion\n\nHugging Face\nhttps://huggingface.co › docs › inference-providers › tasks",
+      "href": "https://huggingface.co/docs/inference-providers/en/tasks/chat-completion"
+    },
+    {
+      "text": "How to stream completions\n\nOpenAI Developers\nhttps://developers.openai.com › cookbook › examples",
+      "href": "https://developers.openai.com/cookbook/examples/how_to_stream_completions"
+    },
+    {
+      "text": "Mixing streaming chat completions with tool_calls? - API\n\nOpenAI Developer Community\nhttps://community.openai.com › mixing-streaming-chat...",
+      "href": "https://community.openai.com/t/mixing-streaming-chat-completions-with-tool-calls/554343"
+    },
+    {
+      "text": "Streaming Chat Completions | openai/openai-python\n\nDeepWiki\nhttps://deepwiki.com › openai › 4.1.2-streaming-chat-c...",
+      "href": "https://deepwiki.com/openai/openai-python/4.1.2-streaming-chat-completions"
+    }
+  ],
+  "query": "OpenAI Chat Completions streaming include_usage tool_calls official docs",
+  "retrieved_at": "2026-11-10T14:47:19.525Z"
+}

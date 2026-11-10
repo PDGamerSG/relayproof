@@ -1,0 +1,139 @@
+{
+  "url": "https://hackculture.io/hackathons/ai-global-hackathon",
+  "title": "Global AI Hackathon | HackCulture",
+  "text": "All Programs\nProfile\nMy Programs\nHost\nGlobal AI Hackathon\nGlobal AI Hackathon\nBy\nGeek Room\nGeek Room\n\nBuild Globally. Ship Boldly.\n\nOct 9, 2026 – Nov 29, 2026\n\nTeam: 1–4 members\n\nOnline\nOnline\n\nVirtual Hackathon\n\nManage\nShare\nOverview\nSchedule\nThemes\nPrizes\nSponsors\nEligibility\nRules\nFAQs\nSupport\nOverview\n\nBuild the future of AI. From anywhere in the world.\n\nGeek Room presents a global, fully virtual AI-focused hackathon, open to developers, students, researchers, and builders from any country, background, and skill level.\n\nBring your ideas, experiment with cutting-edge AI technologies, solve real-world challenges, and build alongside a global community of innovators, all from wherever you are.\n\nWith multiple tracks, technologies, and challenges, participants can choose what they want to build and how they want to build it.\n\nWHY PARTICIPATE?\nGlobal and open to everyone across countries, backgrounds, and skill levels.\nAI-focused challenges across multiple tracks and technologies.\nBuild using technologies from leading industry partners.\n100% virtual, allowing you to participate from anywhere.\nCompete for prizes, recognition, and opportunities.\nConnect and collaborate with builders from around the world.\nShowcase your project to leading companies and the wider developer community.\n\nOne idea. One team. One global stage.\n\nOrganized by Geek Room with ❤️\n\nThemes\nBuild a Coding Agent That Gets the Job Done on the Fewest Tokens\n\nBuild an AI coding agent that completes real development tasks while minimizing token consumption and operational costs. The agent must continue working through provider outages, enforce individual spending limits, protect confidential repositories by using local models, and require user approval before performing risky operations such as file writes, shell commands, or Git actions. The solution should demonstrate efficient and reliable coding workflows without compromising correctness, privacy, or security.\n\nAI Agents & Intelligent Systems\nRead more\nBuild a Benchmarking Platform for AI Agents, Not Just Models\n\nBuild a framework-independent benchmarking platform that evaluates AI agents against identical tasks. The platform must measure task success, execution steps, tool calls, token usage, cost, and completion time across repeated runs. It should also test how agents respond to failing tools, unavailable models, and misleading instructions, while providing a comparison interface with detailed execution traces to help developers understand agent performance and reliability.\n\nAI Agents & Intelligent Systems\nRead more\nBuild an Agent That Pentests a Target on Its Own\n\nBuild an autonomous AI agent capable of performing authorized penetration testing inside a strictly isolated laboratory environment. The agent must explore permitted targets using real security tools, interpret results, independently decide its next actions, and work toward predefined security objectives. The solution must strictly respect the provided scope, recover from unsuccessful attempts, and generate actionable security reports containing findings, evidence, severity, and remediation recommendations.\n\nAI Agents & Intelligent Systems\nRead more\nOpen-Source Bifrost Gateway\n\nExtend the open-source Bifrost gateway with a practical feature that solves a real problem for developers or gateway operators. This could include a plugin, provider integration, caching or routing capability, user interface, or developer tool. The solution must use supported extension points, work with a standard Bifrost installation, and include clear setup instructions, documentation, and tests. The final contribution should be suitable for consideration as an upstream open-source pull request.\n\nAI Agents & Intelligent Systems\nRead more\nTavily Research Agent\n\nBuild an AI-powered research agent that prepares a concise, one-page briefing before a meeting. Given a company or person and a scheduled meeting time, the agent should research relevant developments from the preceding 30 days, including news, launches, hires, and other important updates. The briefing should provide source-backed findings, useful discussion points, and open questions to help users prepare for meaningful conversations.\n\nAI Agents & Intelligent Systems\nRead more\nBuild a Stale-Answer Detector for AI Applications\n\nBuild an AI-powered verification system that identifies outdated information in LLM-generated answers. The system should detect potentially stale claims involving pricing, API versions, regulations, or company information, re-verify them against live web sources, and provide a freshness score for each claim. The solution should help users distinguish current, reliable information from potentially outdated AI-generated responses using both Tavily and Bifrost.\n\nAI Agents & Intelligent Systems\nRead more\nPrizes\n\nCompete for a $11.5K prize pool. Get a participation certificate on completion.\n\nCash Prize Pool\n$ 1,000 cash\n\nCompete for a share of the $1,000 cash prize pool and showcase your AI innovation.\n\nTavily Credits\n$ 65 credits\n100 winners\n\nTavily credits are for all participants\n\nSponsored by Tavily\nOmnidimension Voice AI Credits\n$ 50 credits\n100 winners\n\nVoice AI credits to help winners continue building and scaling their projects.\n\nSponsored by Omnidimension\nCertificates\n\nAll participants will receive a certificate in recognition of their effort and involvement\n\nPartners & Sponsors\nBifrost (By Maxim AI)\nTitle/Track Partner\nBifrost is the fastest Enterprise AI Gateway built for enterprise-grade reliability, governance, and scale.\nRead more\nTavily (By Nebius)\nTrack Partner\nOne secure API for real-time web access.\nRead more\nOmnidimension\nCommunity Partner\nIt helps you build high quality Voice AI assistants in minutes.\nRead more\nPathway\nCommunity Partner\nFrontier AI lab building architectures and models that autonomously reason, learn, and evolve.\nRead more\nSchedule\n8\nOCT\nRegistration\nLive\n\nRegister for the hackathon, explore the available themes, and get ready to build with the global AI community. Complete your registration before the deadline to participate.\n\nOnline\n08 Oct 2026, 11:43 AM\n15 Nov 2026, 11:59 PM\n8\nOCT\nTeam Formation & Preparation\nLive\n\nFind your teammates, connect with fellow builders, and prepare for the challenge ahead. Explore technologies, discuss ideas, and get your team ready before the problem statements go live.\n\nOnline\n08 Oct 2026, 11:43 PM\n15 Nov 2026, 11:59 PM\n1\nNOV\nProblem Statements & Prototype Submission\nLive\n\nREAD THIS IN FULL Problem statements go live on 1 Nov, and the prototype submission window opens at the same time. Choose your challenge, build your AI-powered solution, and submit your working prototype within the two-week building window. Project Submission Instructions\n\nSelect your primary problem statement from the Theme dropdown.\n\nYou can build a project using Bifrost by Maxim AI, Tavily, or both technologies together. However, you are also allowed to submit 2 separate projects on the 2 technologies.\n\nIf you're building a merged project that addresses a Bifrost challenge along with a Tavily challenge, select the Bifrost challenge as your primary problem statement and use the optional Tavily integration checkbox to indicate the additional challenge.\n\nIf you're building only a Tavily project, simply select the relevant Tavily problem statement as your primary theme. And if you're submitting for both the technologies, make sure that you go ahead and submit the provided submission form in full, providing the details for both the projects.\n\nYour GitHub repository must be public and include a detailed README covering your project, installation steps, implementation, and technologies used.\n\nYour pitch deck should explain the problem, your solution, technical architecture, and working prototype. If you've combined both technologies, clearly demonstrate how each contributes to your project.\n\nA deployed application is not mandatory, but you're welcome to share a live demo or demonstration video.\n\nOnline\nElimination round\n01 Nov 2026, 12:00 AM\n15 Nov 2026, 11:59 PM\n29\nNOV\nJudging Round\n\nSubmitted prototypes will be evaluated based on the defined criteria. Showcase your solution, explain your approach, and demonstrate how your AI innovation addresses the challenge.\n\nOnline\n29 Nov 2026, 07:00 PM\n29 Nov 2026, 11:59 PM\nEligibility\nOpen globally to participants from any country.\nOpen to students, developers, designers, founders, researchers, and AI enthusiasts.\nParticipants can participate individually or in teams of up to 4 members.\nTeams may consist of members from different countries and time zones.\nNo specific degree, educational background, or professional experience is required.\nParticipants may use AI tools, APIs, open-source models, and third-party technologies, subject to their respective terms of use.\nYou're eligible\nPallab Das\n[redacted-email]\nRules\n1. Build During the Hackathon\n\nProjects should be substantially developed during the official hackathon period. Existing libraries, frameworks, boilerplate, and supporting infrastructure may be used, but the core project should be created during the hackathon.\n\n2. AI Usage\n\nParticipants are encouraged to use AI models, agents, APIs, vector databases, frameworks, and other AI technologies. The use of AI tools should be clearly mentioned in the project submission where applicable.\n\n3. Discord & Official Communication\n\nAll participants are required to join the official hackathon Discord server. Discord will be used for team communication, important announcements, challenge updates, workshops, technical guidance, and hackathon-related support.\n\nParticipants are responsible for checking the official Discord channels regularly so they do not miss important updates, deadlines, or announcements.\n\nParticipants are responsible for checking the official Discord channels regularly so they do not miss important updates, deadlines, or announcements.\n\n4. Team Size\n\nTeams can consist of 1–4 members. Each participant can be part of only one team.\n\n5. Original Work\n\nAll submissions must be original work or use components that participants have the legal right to use. Plagiarism or unauthorized use of intellectual property will result in disqualification.\n\n6. Third-Party Tools\n\nParticipants may use third-party APIs, SDKs, datasets, open-source software, and developer tools, provided they comply with the applicable licenses and terms of service.\n\n7. Submission Requirements\n\nEach submission must include:\n\nA working project or demo\nSource code or repository\nProject description\nExplanation of the problem being solved\nTechnologies and tools used\nExplanation of how AI is used in the solution\nDemo video, if required\n\nBuild Resources:\nParticipants can explore the Bifrost GitHub repository as a technical resource while building their projects.\n\n8. One Submission per Team\n\nEach team may submit only one final project.\n\n9. Responsible Development\n\nProjects must comply with applicable laws and platform policies. Projects involving illegal activities, malicious software, fraud, harassment, or harmful content may be disqualified.\n\n10. Judging Criteria\n\nProjects will be evaluated based on:\n\nInnovation\nTechnical execution\nProblem and potential impact\nUse of AI\nUser experience\nScalability and potential\n11. Organizer’s Decision\n\nThe organizers reserve the right to disqualify submissions that violate the rules, eligibility requirements, or spirit of the hackathon.\n\nFAQs\nCan I participate individually?\nWho can participate in the hackathon?\nWhen will the problem statements be released?\nDo I need to join Discord?\nCan I use existing code, libraries, or AI tools?\nWhere can I find the problem statements?\nIs it mandatory to use both Bifrost and Tavily?\nCan I combine two problem statements into one project?\nHow do I select my problem statement when submitting?\nCan I submit two separate projects?\nHow will the winners be selected?\nWhat prizes can I win?\nHow can I claim my free Tavily API credits?\nWhere do I submit my project?\nWhat should my GitHub repository and PPT contain?\nIs a deployed application or demo video mandatory?\nWhat are the submission deadline and judging dates?\nSupport\n\nOur team is here to help you with any queries or concerns.\n\nGeek Room Team\n[redacted-email]\nDEADLINE:\n6 days left\nTeam Size\n1 - 4 members\nTotal Prizes\n$ 11,500\nImpressions\n19,162\nN\nH\nT\n2,252 Registrations\nManage\nNeed help?\n\nPlease contact the event administrator at [redacted-email]\n\nPrivacy Policy\nTerms & Conditions\n© 2026 \nHackCulture\n. All rights reserved.",
+  "links": [
+    {
+      "text": "",
+      "href": "https://hackculture.io/"
+    },
+    {
+      "text": "All Programs",
+      "href": "https://hackculture.io/programs"
+    },
+    {
+      "text": "Profile",
+      "href": "https://hackculture.io/profile"
+    },
+    {
+      "text": "My Programs",
+      "href": "https://hackculture.io/my-events"
+    },
+    {
+      "text": "Manage",
+      "href": "https://hackculture.io/my-events/manage/6ad270bf8e6ece10acd71d71"
+    },
+    {
+      "text": "Manage",
+      "href": "https://hackculture.io/my-events/manage/6ad270bf8e6ece10acd71d71"
+    },
+    {
+      "text": "hackathon Discord server",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "Bifrost GitHub repository",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "",
+      "href": "https://hackculture.io/hackathons/ai-global-hackathon"
+    },
+    {
+      "text": "",
+      "href": "https://app.tavily.com/home"
+    },
+    {
+      "text": "",
+      "href": "https://hackculture.io/hackathons/ai-global-hackathon"
+    },
+    {
+      "text": "[redacted-email]",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Manage",
+      "href": "https://hackculture.io/my-events/manage/6ad270bf8e6ece10acd71d71"
+    },
+    {
+      "text": "[redacted-email]",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "",
+      "href": "https://geekroom.co.in/"
+    },
+    {
+      "text": "",
+      "href": "https://www.instagram.com/geekroom__/"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/geekroom-community/"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/geek__room_"
+    },
+    {
+      "text": "",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "Privacy",
+      "href": "https://hackculture.io/legal/privacy-policy"
+    },
+    {
+      "text": "Terms",
+      "href": "https://hackculture.io/legal/terms-and-conditions"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/hackculture/"
+    },
+    {
+      "text": "",
+      "href": "https://www.instagram.com/hackculture.io/"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/Hack_Culture"
+    },
+    {
+      "text": "",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "HackCulture",
+      "href": "https://hackculture.io/"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://hackculture.io/legal/privacy-policy"
+    },
+    {
+      "text": "Terms & Conditions",
+      "href": "https://hackculture.io/legal/terms-and-conditions"
+    },
+    {
+      "text": "HackCulture",
+      "href": "https://hackculture.io/"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/hackculture/"
+    },
+    {
+      "text": "",
+      "href": "https://www.instagram.com/hackculture.io/"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/Hack_Culture"
+    },
+    {
+      "text": "",
+      "href": "[redacted-invite-link]"
+    }
+  ]
+}

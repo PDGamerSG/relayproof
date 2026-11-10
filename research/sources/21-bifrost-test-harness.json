@@ -1,0 +1,636 @@
+{
+  "url": "https://docs.getbifrost.ai/providers/test-harness-coverage",
+  "title": "Test Harness Coverage - Bifrost",
+  "text": "Providers & Guides\nTest Harness Coverage\n\nPer-provider matrix of features exercised by Bifrost’s end-to-end Postman/newman test harness.\n\n​\nOverview\nBifrost ships a comprehensive end-to-end test harness (tests/e2e/api/collections/provider-harness.json) that exercises every provider’s translation surface. This page documents which features are covered for each provider, sourced from each upstream’s official docs and verified against what’s in the harness collection today.\nTotal: 725 requests across 12 folders covering native API, provider-native drop-in routes (/openai, /anthropic, /bedrock, /genai), umbrella SDK drop-in shapes (/langchain, /litellm, /pydanticai, /cursor, /cohere), cross-model routing, passthrough endpoints, an endpoint × provider × modality matrix (chat / embeddings / audio / images), feature variations, and explicit backlog coverage.\n[PREVIEW] tag: 25 requests prefixed [PREVIEW] are gated behind INCLUDE_PREVIEW=1 (default-skipped) because they target account/region-scoped resources (preview-model deployments, vector stores, cached content references, MCP servers, audio-capable deployments) that the harness can’t provision in arbitrary environments. Run make run-provider-harness-test INCLUDE_PREVIEW=1 to include them.\nRun it with:\nmake run-provider-harness-test\n\nOutput:\ntmp/newman-report.html — rich HTML report\ntmp/harness-failures.md — categorized failures + coverage matrices\nInteractive viewer at http://localhost:8090 with Resend + Copy curl\n​\nStatus legend\n✅ — exercised by the harness, expected to pass against a properly-configured upstream\n✅* — exercised, but needs an environment-side resource the harness can’t manufacture (vector store, cached content reference, real audio bytes, MCP server, preview deployment, etc.). These rows are typically [PREVIEW]-tagged in the collection so they default-skip; opt in with make run-provider-harness-test INCLUDE_PREVIEW=1\n❌ — provider supports this feature but the harness doesn’t yet exercise it (gap; PRs welcome)\nFeatures a provider doesn’t natively support are simply omitted from that provider’s table — there’s no N/A row, since each table only lists features within that provider’s own API surface.\n​\nPer-provider coverage\n​\nOpenAI\nFeature\tStatus\nBasic chat\t✅\nSystem message\t✅\nMulti-turn conversation\t✅\nStreaming (SSE)\t✅\nStop sequences\t✅\nSampling params (temperature / top_p)\t✅\nLogprobs / top_logprobs\t✅\nSeed (deterministic outputs)\t✅\nPredicted outputs\t✅\nFunction calling (custom tool)\t✅\nTool choice forced (required)\t✅\nTool choice specific function\t✅\nParallel tool calls\t✅\nStrict tool input\t✅\nMCP toolset\t✅*\nWeb search (basic)\t✅\nCode interpreter (Responses API)\t✅\nFile search (vector store)\t✅*\nComputer use (Responses API)\t✅*\nVision (image input)\t✅\nPDF input\t✅*\nAudio input\t✅*\nReasoning effort (reasoning_effort)\t✅\nReasoning summary (Responses API)\t✅\nStructured output (json_schema)\t✅\nResponse format JSON object\t✅\nPrompt caching (ephemeral)\t✅\nStream options w/ usage\t✅\nService tier (auto / flex / priority)\t✅\nBackground mode (Responses async)\t✅\nTruncation strategy (auto)\t✅\nInclude array (Responses)\t✅\nCustom tool (Responses)\t✅\nSkills / container\t✅\nToken counting (/v1/responses/input_tokens)\t✅\nBatch API (create / list)\t✅\nFiles API (list)\t✅\nModels list\t✅\n​\nAnthropic\nFeature\tStatus\nBasic chat\t✅\nSystem message\t✅\nMulti-turn conversation\t✅\nStreaming (SSE)\t✅\nStop sequences\t✅\nFunction calling (custom tool)\t✅\nTool choice forced (any)\t✅\nTool choice specific function\t✅\nParallel tool calls\t✅\nStrict tool input\t✅\nTool input examples\t✅\nDefer loading\t✅\nAllowed callers\t✅\nEager input streaming\t✅\nTool search (BM25 / regex)\t✅\nMCP toolset\t✅*\nWeb search (basic / dynamic filtering / domain filter / user location)\t✅\nWeb fetch\t✅\nCode execution\t✅\nComputer use\t✅\nText editor tool\t✅\nBash tool\t✅\nMemory tool\t✅\nVision (image input)\t✅\nPDF input (URL or base64 source)\t✅\nCitations on document blocks\t✅\nExtended thinking (thinking.budget_tokens)\t✅\nAdaptive thinking (thinking.adaptive)\t✅\nInterleaved thinking (beta)\t✅\nStructured output (json_schema)\t✅\nOutput config / effort\t✅\nPrompt caching (ephemeral)\t✅\nPrompt caching (1-hour TTL)\t✅\nService tier\t✅\nanthropic-beta header\t✅\nSkills / container\t✅\nContext management / 1M context\t✅\nCompaction beta\t✅\nToken-efficient tools beta\t✅\nFine-grained tool streaming\t✅\nFast mode (Opus 4.6)\t✅*\nRedact thinking beta\t✅\nToken counting (/v1/messages/count_tokens)\t✅\nBatch API (create / list)\t✅\nFiles API (list)\t✅\nModels list\t✅\n​\nBedrock\nFeature\tStatus\nBasic chat\t✅\nSystem message\t✅\nMulti-turn conversation\t✅\nStreaming (SSE / AWS event-stream)\t✅\nStop sequences\t✅\nSampling params (temperature OR top_p, not both on Anthropic models)\t✅\nFunction calling\t✅\nTool choice forced\t✅\nTool choice specific function\t✅\nParallel tool calls\t✅\nMCP toolset\t✅\nWeb search (basic / dynamic filtering / domain filter / user location)\t✅\nWeb fetch\t✅\nCode execution\t✅\nComputer use\t✅\nText editor tool\t✅\nBash tool\t✅\nMemory tool\t✅\nVision (image; URLs auto-fetched + inlined by Bifrost)\t✅\nPDF input (URLs auto-fetched + inlined)\t✅\nCitations on document blocks\t✅\nExtended thinking (thinking.budget_tokens)\t✅\nAdaptive thinking (Opus 4.7 via /v1/chat)\t✅\nInterleaved thinking (beta)\t✅\nStructured output (json_schema via tool-mode workaround)\t✅\nOutput config / effort\t✅\nPrompt caching (ephemeral)\t✅\nPrompt caching (1-hour TTL)\t✅\nanthropic-beta header passthrough\t✅\nContext management / 1M context\t✅\nService tier (auto)\t✅\nPerformance config (latency: optimized)\t✅\nRequest metadata\t✅\nCross-region inference (global. prefix)\t✅\nCross-region inference (us. prefix)\t✅\nNative Converse (/bedrock/model/{m}/converse)\t✅\nNative InvokeModel (/bedrock/model/{m}/invoke)\t✅\nModel invocation jobs (Batch API equivalent)\t✅\nBatch API\t✅\n​\nGemini (Google AI Studio)\nFeature\tStatus\nBasic chat\t✅\nSystem message\t✅\nMulti-turn conversation\t✅\nStreaming (SSE)\t✅\nStop sequences\t✅\nSampling params (temperature / top_p / top_k)\t✅\nPresence + frequency penalty\t✅\nLogprobs\t✅\nFunction calling\t✅\nTool choice forced (any)\t✅\nTool choice specific function\t✅\nParallel tool calls\t✅\nWeb search (basic)\t✅\nCode execution\t✅\nURL context tool\t✅\nGoogle search grounding\t✅\nVision (image input)\t✅\nPDF input\t✅*\nAudio input\t✅\nYouTube URL input\t✅\nThinking budget (thinkingConfig)\t✅\nStructured output (json_schema)\t✅\nResponse MIME type\t✅\nPrompt caching (implicit, via cached content)\t✅\nCached content reference (cachedContent: \"cachedContents/{id}\")\t✅*\nCached contents lifecycle (POST/GET/PATCH/DELETE /v1beta/cachedContents)\t❌\nCached contents list (GET /v1beta/cachedContents)\t✅\nSafety settings\t✅\nToken counting (:countTokens)\t✅\nFiles API (list)\t✅\nModels list\t✅\n​\nVertex AI\nFeature\tStatus\nBasic chat\t✅\nSystem message\t✅\nMulti-turn conversation\t✅\nStreaming (SSE)\t✅\nSampling params (temperature / top_p)\t✅\nStop sequences\t✅\nFunction calling\t✅\nTool choice forced\t✅\nParallel function calls (Gemini)\t✅\nDefer loading (Anthropic)\t✅\nAllowed callers (Anthropic)\t✅\nTool search (Anthropic BM25)\t✅\nMCP toolset\t✅*\nWeb search (basic / dynamic filtering / domain filter / user location)\t✅\nWeb fetch\t✅\nCode execution\t✅\nGoogle search grounding\t✅\nComputer use (Anthropic)\t✅\nText editor tool (Anthropic)\t✅\nBash tool (Anthropic)\t✅\nMemory tool (Anthropic)\t✅\nVision (image input)\t✅\nPDF input (URLs auto-fetched + inlined for Vertex-Anthropic)\t✅\nAudio input (Gemini)\t✅*\nCitations on document blocks\t✅\nExtended thinking (thinking.budget_tokens)\t✅\nAdaptive thinking\t✅\nThinking budget (Gemini thinkingConfig)\t✅\nInterleaved thinking (Anthropic beta)\t✅\nStructured output (json_schema)\t✅\nResponse MIME type (Gemini)\t✅\nOutput config / effort (Anthropic)\t✅\nPrompt caching (ephemeral)\t✅\nPrompt caching (1-hour TTL)\t✅\nCached contents lifecycle (POST/GET/PATCH/DELETE /v1/projects/.../cachedContents)\t❌\nanthropic-beta header passthrough\t✅\nSafety settings (Gemini)\t✅\nContext management / 1M context (Anthropic)\t✅\nToken counting\t✅\nModel Garden (Llama / Mistral)\t✅*\n​\nAzure OpenAI\nFeature\tStatus\nBasic chat\t✅\nSystem message\t✅\nMulti-turn conversation\t✅\nStreaming (SSE)\t✅\nStop sequences\t✅\nSampling params (temperature / top_p)\t✅\nLogprobs / top_logprobs\t❌\nSeed (deterministic outputs)\t❌\nPredicted outputs\t❌\nFunction calling\t✅\nTool choice forced\t✅\nTool choice specific function\t❌\nParallel tool calls\t✅\nStrict tool input\t❌\nCode interpreter (Responses preview)\t✅\nFile search (Responses preview)\t✅*\nVision (image input)\t✅\nAudio input (gpt-4o-audio-preview)\t✅*\nReasoning effort (o3 deployment)\t✅*\nStructured output (json_schema)\t✅\nResponse format JSON object\t❌\nService tier (auto / flex / priority)\t✅\nSkills / container\t✅\nAzure On Your Data (azure_search)\t✅\nBifrost-side normalizations applied automatically (don’t appear as separate rows):\nVision URL images on Bedrock — fetched and inlined as base64 (Bedrock Converse only accepts inline bytes)\nPDF URL documents on Bedrock — same fetch+inline path\nPDF URL documents on Vertex Claude — same (Vertex-Anthropic doesn’t accept URL document sources)\nAnthropic-style {type:\"document\",source:{...}} blocks on /v1/chat/completions — normalized to {type:\"file\",file:{...}} at JSON unmarshal so every provider’s converter sees the same shape\n​\nModalities (8. Criss-Cross)\nThe harness exercises every non-chat modality across providers via both native /v1/<modality> routes and OpenAI / GenAI drop-in shapes. Cells marked N/A are not applicable (provider does not expose the modality through Bifrost, or the cell is the provider talking to itself through its own drop-in shape). Cells the harness deliberately skips at run time (encoded as [SKIP] in the collection) inherit N/A here.\nModality (route)\tOpenAI\tAnthropic\tBedrock\tGemini\tVertex\tAzure\nEmbeddings, native (/v1/embeddings)\t✅ (text-embedding-3-small)\tN/A\t✅ (titan-embed-text-v2)\t✅ (gemini-embedding-001)\t✅ (text-embedding-005)\t✅\nEmbeddings via OpenAI drop-in (/openai/v1/embeddings)\tN/A\tN/A\t✅\t✅\t✅\t✅\nEmbeddings via GenAI drop-in (/genai/v1beta/models/{m}:embedContent)\t✅\tN/A\t✅\tN/A\t✅\t✅\nAudio transcription, native (/v1/audio/transcriptions)\t✅ (whisper-1)\tN/A\tN/A\t✅ (gemini-2.5-flash)\tN/A\t✅\nAudio transcription via OpenAI drop-in\tN/A\tN/A\tN/A\t✅\tN/A\t✅\nText-to-speech, native (/v1/audio/speech)\t✅ (tts-1)\tN/A\tN/A\tN/A\tN/A\t✅\nText-to-speech via OpenAI drop-in\tN/A\tN/A\tN/A\tN/A\tN/A\t✅\nImage generation, native (/v1/images/generations)\t✅ (gpt-image-1)\tN/A\t✅ (titan-image-generator-v2)\t✅ (imagen-4.0)\t✅ (imagen-4.0)\t✅ (gpt-image-2)\nImage generation via OpenAI drop-in\tN/A\tN/A\t✅\t✅\t✅\t✅\nFolder 8 also contains a 8.6 Feature combinations sub-folder (26 requests) that exercises tool-calling, vision, JSON/structured-output, and reasoning across the /v1/chat/completions × /openai × /anthropic × /bedrock × /genai shape grid - these are tabulated in the cross-cutting matrices below.\n​\nCross-cutting (Bifrost-specific)\nThese exercise Bifrost’s translation layer between provider shapes — every check uses the unified POST /v1/chat/completions endpoint with provider/model prefix routing.\n​\nTranslation-layer matrices (/v1/chat/completions with provider/model prefix)\nEach row is a dedicated Round N sub-folder under 12. Backlog Coverage. The number in parentheses is the count of (provider, model) cells exercised today.\nMatrix\tStatus\nCross-model routing (50 models × 5 providers)\t✅\nSystem message matrix (11)\t✅\nMulti-turn matrix (11)\t✅\nStreaming matrix (18)\t✅\nStop sequences matrix (11)\t✅\nFunction calling matrix (19)\t✅\nTool choice forced matrix (13)\t✅\nVision matrix (15)\t✅\nPDF input matrix (4)\t✅\nStructured output / json_schema matrix (14)\t✅\nExtended / adaptive thinking matrix (6)\t✅\nPrompt caching matrix (6)\t✅\nWeb search matrix (6)\t✅\nCode execution matrix (3)\t✅\n​\nDrop-in (native-shape) matrices\nThese exercise the same features but against the provider-native drop-in routes (/openai, /anthropic, /bedrock, /genai) rather than /v1/chat/completions.\nMatrix\tStatus\nDrop-in streaming (9)\t✅\nDrop-in function calling (9)\t✅\nDrop-in vision (8)\t✅\nDrop-in structured output (8)\t✅\n​\nUmbrella-SDK drop-in shapes\nBifrost exposes umbrella SDK routes that accept the OpenAI / Anthropic / Gemini / Bedrock / Cohere request shape byte-for-byte and dispatch to the right typed provider underneath. Each umbrella has its own smoke folder plus a shared vision matrix.\nUmbrella route\tCoverage\n/cohere\tBasic chat, streaming, multi-turn, tools, list models (5)\n/langchain\tOpenAI / Anthropic / Gemini / Bedrock / Cohere shape chat (5)\n/litellm\tOpenAI / Anthropic / Gemini / Bedrock / Cohere shape chat (5)\n/pydanticai\tOpenAI / Anthropic / Gemini / Bedrock / Cohere shape chat (5)\n/cursor\tOpenAI / Anthropic / Gemini / Bedrock shape chat (4)\nDrop-in umbrella vision matrix (/langchain, /litellm, /pydanticai, /cursor × OpenAI/Anthropic/Gemini shapes)\t✅ (12)\n​\nBifrost-only behaviors\nFeature\tStatus\nFailover via X-Bifrost-Fallback-Models\t✅\nVirtual key auth via X-Bifrost-VK\t✅\nSampling-params auto-strip for Opus 4.7+\t✅\nComputer-use generation auto-correct (4.5↔4.6 pairing)\t✅\nRate limit propagation with Retry-After\t❌\n​\nPassthrough surface (*_passthrough/*)\nCatch-all forwarding routes that strip incoming auth headers and inject Bifrost’s configured provider key.\nFeature\tOpenAI\tAnthropic\tBedrock\tAzure\tGemini\nBasic chat\t✅\t✅\tN/A\t✅\t✅\nStreaming\t✅\t✅\tN/A\t✅\t✅\nMulti-turn\tN/A\t✅\tN/A\tN/A\tN/A\nVision\t✅\t✅\tN/A\t✅\t✅\nFunction calling / tool use\tN/A\t✅\tN/A\t✅\t✅\nStructured output (json_schema)\t✅\tN/A\tN/A\t✅\tN/A\nWeb search\t✅\t✅\tN/A\tN/A\t✅\nCode execution / code interpreter\t✅\tN/A\tN/A\tN/A\t✅\nComputer use\tN/A\t✅\tN/A\tN/A\tN/A\nExtended thinking\tN/A\t✅\tN/A\tN/A\tN/A\nPrompt caching\tN/A\t✅\tN/A\tN/A\tN/A\nCovered across the Passthrough Backlog folder + Cross-Cut Round 28: Passthrough Advanced Matrix (24 requests total).\nBedrock: passthrough is not supported by design. AWS SigV4 signing requires bifrost to sign the request with its own credentials, which fundamentally conflicts with byte-for-byte forwarding. Use the typed /bedrock/model/{modelId}/converse, /converse-stream, or /invoke routes instead — those go through bifrost’s typed Bedrock provider with proper sigv4 handling.\nVertex: no passthrough variant. Google OAuth bearer tokens are rotated per-request and can’t be bridged through a byte-for-byte forward.\n​\nCoverage by transport route\nRoute\tWhat it tests\ndrop-in (native)\tProvider-native shape via /openai, /anthropic, /bedrock, /genai. Most thorough coverage.\ndrop-in (umbrella)\tSDK-umbrella shapes via /langchain, /litellm, /pydanticai, /cursor, /cohere. Smoke + vision matrix.\ncross-model\tUnified /v1/chat/completions with provider/model prefix. Tests Bifrost’s translation layer.\nmodality\t8.3 – 8.5 exercise /v1/embeddings, /v1/audio/transcriptions, /v1/audio/speech, /v1/images/generations across providers + drop-ins.\npassthrough\t/*_passthrough/* byte-for-byte forwarding with auth-header strip + Bifrost key injection.\n​\nKnown gaps that need external setup\nThese cells stay ❌ even after running because they require provider-side state the harness can’t manufacture:\nOpenAI File Search — needs a real vs_* vector store ([PREVIEW]-tagged)\nOpenAI / Azure Audio Input — needs real base64 audio bytes ([PREVIEW]-tagged)\nOpenAI / Anthropic Batch creation — needs a real input file ID\nGemini Cached Content reference — the lifecycle endpoints (create/list/retrieve/update/delete) work end-to-end; only the referencing tests (passing cachedContents/{id} to generateContent) need a pre-provisioned cache with 32k+ tokens of content (Gemini’s minimum) ([PREVIEW]-tagged)\nVertex Anthropic features in us-central1 — region-restricted unless GOOGLE_LOCATION=global\nVertex preview-model deployments (Gemini-3.x, etc.) — [PREVIEW]-tagged; require account access\nVertex-Anthropic URL document sources — Vertex doesn’t accept URL document sources upstream; bifrost auto-fetches and inlines via inlineDocumentURLs for parity with direct Anthropic\nAzure preview deployments (o3 / gpt-4o-audio-preview / computer-use-preview) — [PREVIEW]-tagged; require deployment provisioning\nMCP toolset tests — [PREVIEW]-tagged; need a reachable MCP server\n​\nCoverage report layout\nWhen you run the harness, tmp/harness-failures.md is generated with three matrices:\nFeature × Provider — every feature row × every provider column\nFeature × Route — same features × drop-in / cross-model / passthrough\nPer-(provider, model) — every distinct provider/model tuple, with the exact features each one exercised\nPlus three “missing coverage” lists (per-provider, per-route, per-model) that surface gaps as a backlog.\n​\nExtending coverage\nThe full backlog of candidate test additions lives in tests/e2e/api/HARNESS_COVERAGE_BACKLOG.md — provider-by-provider feature inventory sourced from each provider’s official docs. Adding a new test is a one-line entry in the relevant sub-folder of provider-harness.json.\n\nWas this page helpful?\n\nYes\nNo\nResponse Headers\nOverview",
+  "links": [
+    {
+      "text": "/llms.txt",
+      "href": "https://docs.getbifrost.ai/llms.txt"
+    },
+    {
+      "text": "Skip to main content",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#content-area"
+    },
+    {
+      "text": "Bifrost home page",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "Request License",
+      "href": "https://www.getmaxim.ai/enterprise?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar#free-license"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Navbar"
+    },
+    {
+      "text": "OSS",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Enterprise",
+      "href": "https://docs.getbifrost.ai/enterprise/overview"
+    },
+    {
+      "text": "Edge",
+      "href": "https://docs.getbifrost.ai/edge/overview"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.getbifrost.ai/runbooks/claude-code-bedrock"
+    },
+    {
+      "text": "Deployment Guides",
+      "href": "https://docs.getbifrost.ai/deployment-guides/overview"
+    },
+    {
+      "text": "API",
+      "href": "https://docs.getbifrost.ai/api/procuring-api-keys"
+    },
+    {
+      "text": "Contributing",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo"
+    },
+    {
+      "text": "Benchmarks",
+      "href": "https://docs.getbifrost.ai/benchmarking/getting-started"
+    },
+    {
+      "text": "Discord",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "GitHub",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Try Enterprise",
+      "href": "https://www.getmaxim.ai/bifrost/enterprise"
+    },
+    {
+      "text": "Bifrost AI Gateway",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Release Cadence",
+      "href": "https://docs.getbifrost.ai/release-cadence"
+    },
+    {
+      "text": "Migrating to v2.0.0",
+      "href": "https://docs.getbifrost.ai/migration-guides/v2.0.0"
+    },
+    {
+      "text": "Migrating to v1.5.0",
+      "href": "https://docs.getbifrost.ai/migration-guides/v1.5.0"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://docs.getbifrost.ai/migration-guides/litellm"
+    },
+    {
+      "text": "What is an integration?",
+      "href": "https://docs.getbifrost.ai/integrations/what-is-an-integration"
+    },
+    {
+      "text": "Routing Rules",
+      "href": "https://docs.getbifrost.ai/providers/routing-rules"
+    },
+    {
+      "text": "Provider Routing",
+      "href": "https://docs.getbifrost.ai/providers/provider-routing"
+    },
+    {
+      "text": "Session Affinity",
+      "href": "https://docs.getbifrost.ai/providers/session-affinity"
+    },
+    {
+      "text": "Aliasing Models",
+      "href": "https://docs.getbifrost.ai/providers/aliasing-models"
+    },
+    {
+      "text": "Reasoning",
+      "href": "https://docs.getbifrost.ai/providers/reasoning"
+    },
+    {
+      "text": "Performance Tuning",
+      "href": "https://docs.getbifrost.ai/providers/performance"
+    },
+    {
+      "text": "Custom Providers",
+      "href": "https://docs.getbifrost.ai/providers/custom-providers"
+    },
+    {
+      "text": "Self-Hosted Decision Models",
+      "href": "https://docs.getbifrost.ai/providers/self-hosted-decision-models"
+    },
+    {
+      "text": "Custom Pricing",
+      "href": "https://docs.getbifrost.ai/providers/custom-pricing"
+    },
+    {
+      "text": "Request Options",
+      "href": "https://docs.getbifrost.ai/providers/request-options"
+    },
+    {
+      "text": "Response Headers",
+      "href": "https://docs.getbifrost.ai/providers/response-headers"
+    },
+    {
+      "text": "Test Harness Coverage",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/mcp/overview"
+    },
+    {
+      "text": "Connecting to Servers",
+      "href": "https://docs.getbifrost.ai/mcp/connecting-to-servers"
+    },
+    {
+      "text": "OpenAPI Specs",
+      "href": "https://docs.getbifrost.ai/mcp/openapi-servers"
+    },
+    {
+      "text": "Connections & States",
+      "href": "https://docs.getbifrost.ai/mcp/connections"
+    },
+    {
+      "text": "Virtual MCPs",
+      "href": "https://docs.getbifrost.ai/mcp/virtual-mcps"
+    },
+    {
+      "text": "Per-Caller Discovery",
+      "href": "https://docs.getbifrost.ai/mcp/per-caller-discovery"
+    },
+    {
+      "text": "Sessions",
+      "href": "https://docs.getbifrost.ai/mcp/sessions"
+    },
+    {
+      "text": "Tool Execution",
+      "href": "https://docs.getbifrost.ai/mcp/tool-execution"
+    },
+    {
+      "text": "Resources & Prompts",
+      "href": "https://docs.getbifrost.ai/mcp/resources-and-prompts"
+    },
+    {
+      "text": "Agent Mode",
+      "href": "https://docs.getbifrost.ai/mcp/agent-mode"
+    },
+    {
+      "text": "Code Mode",
+      "href": "https://docs.getbifrost.ai/mcp/code-mode"
+    },
+    {
+      "text": "Gateway Authentication",
+      "href": "https://docs.getbifrost.ai/mcp/gateway-auth"
+    },
+    {
+      "text": "Tool Hosting",
+      "href": "https://docs.getbifrost.ai/mcp/tool-hosting"
+    },
+    {
+      "text": "Filtering",
+      "href": "https://docs.getbifrost.ai/mcp/filtering"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/overview"
+    },
+    {
+      "text": "Register your first agent",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/registration"
+    },
+    {
+      "text": "Authentication",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/authentication"
+    },
+    {
+      "text": "Agent access",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/access-control"
+    },
+    {
+      "text": "Messages, tasks, and events",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/messages-and-tasks"
+    },
+    {
+      "text": "Connect model and tool calls",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/integrating-your-agent"
+    },
+    {
+      "text": "Read Agent Logs",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/observability"
+    },
+    {
+      "text": "Gateway settings and transports",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/configuration"
+    },
+    {
+      "text": "Transport selection and recovery",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/transports-and-recovery"
+    },
+    {
+      "text": "Push notifications",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/push-notifications"
+    },
+    {
+      "text": "Export agent telemetry",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/connectors"
+    },
+    {
+      "text": "Troubleshooting",
+      "href": "https://docs.getbifrost.ai/features/agent-gateway/troubleshooting"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/relays/overview"
+    },
+    {
+      "text": "Create a relay",
+      "href": "https://docs.getbifrost.ai/relays/configuration"
+    },
+    {
+      "text": "Routes",
+      "href": "https://docs.getbifrost.ai/relays/routes"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://docs.getbifrost.ai/relays/pricing"
+    },
+    {
+      "text": "Troubleshooting",
+      "href": "https://docs.getbifrost.ai/relays/troubleshooting"
+    },
+    {
+      "text": "Getting Started",
+      "href": "https://docs.getbifrost.ai/plugins/getting-started"
+    },
+    {
+      "text": "Building Dynamically Linked Bifrost Binary",
+      "href": "https://docs.getbifrost.ai/plugins/building-dynamic-binary"
+    },
+    {
+      "text": "Plugin Sequencing",
+      "href": "https://docs.getbifrost.ai/plugins/sequencing"
+    },
+    {
+      "text": "Plugin Migration Guide",
+      "href": "https://docs.getbifrost.ai/plugins/migration-guide"
+    },
+    {
+      "text": "Drop-in Replacement",
+      "href": "https://docs.getbifrost.ai/features/drop-in-replacement"
+    },
+    {
+      "text": "Retries & Fallbacks",
+      "href": "https://docs.getbifrost.ai/features/retries-and-fallbacks"
+    },
+    {
+      "text": "Complexity Router\nBeta",
+      "href": "https://docs.getbifrost.ai/features/complexity-router"
+    },
+    {
+      "text": "Warp\nAlpha",
+      "href": "https://docs.getbifrost.ai/features/warp"
+    },
+    {
+      "text": "Compatibility Plugin",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin"
+    },
+    {
+      "text": "Load Balance",
+      "href": "https://docs.getbifrost.ai/features/keys-management"
+    },
+    {
+      "text": "Async Inference",
+      "href": "https://docs.getbifrost.ai/features/async-inference"
+    },
+    {
+      "text": "Webhooks",
+      "href": "https://docs.getbifrost.ai/features/webhooks"
+    },
+    {
+      "text": "News Feeds",
+      "href": "https://docs.getbifrost.ai/features/news-feeds"
+    },
+    {
+      "text": "Telemetry",
+      "href": "https://docs.getbifrost.ai/features/telemetry"
+    },
+    {
+      "text": "OpenTelemetry",
+      "href": "https://docs.getbifrost.ai/features/otel"
+    },
+    {
+      "text": "Content Logging",
+      "href": "https://docs.getbifrost.ai/features/observability/content-logging"
+    },
+    {
+      "text": "Latency & Overhead Breakdown",
+      "href": "https://docs.getbifrost.ai/features/observability/latency-breakdown"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching"
+    },
+    {
+      "text": "Auto Prompt Caching",
+      "href": "https://docs.getbifrost.ai/features/prompt-caching"
+    },
+    {
+      "text": "Skills Repository",
+      "href": "https://docs.getbifrost.ai/features/skills-repository"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#overview"
+    },
+    {
+      "text": "Status legend",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#status-legend"
+    },
+    {
+      "text": "Per-provider coverage",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#per-provider-coverage"
+    },
+    {
+      "text": "OpenAI",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#openai"
+    },
+    {
+      "text": "Anthropic",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#anthropic"
+    },
+    {
+      "text": "Bedrock",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#bedrock"
+    },
+    {
+      "text": "Gemini (Google AI Studio)",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#gemini-google-ai-studio"
+    },
+    {
+      "text": "Vertex AI",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#vertex-ai"
+    },
+    {
+      "text": "Azure OpenAI",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#azure-openai"
+    },
+    {
+      "text": "Modalities (8. Criss-Cross)",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#modalities-8-criss-cross"
+    },
+    {
+      "text": "Cross-cutting (Bifrost-specific)",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#cross-cutting-bifrost-specific"
+    },
+    {
+      "text": "Translation-layer matrices (/v1/chat/completions with provider/model prefix)",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#translation-layer-matrices-%2Fv1%2Fchat%2Fcompletions-with-provider%2Fmodel-prefix"
+    },
+    {
+      "text": "Drop-in (native-shape) matrices",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#drop-in-native-shape-matrices"
+    },
+    {
+      "text": "Umbrella-SDK drop-in shapes",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#umbrella-sdk-drop-in-shapes"
+    },
+    {
+      "text": "Bifrost-only behaviors",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#bifrost-only-behaviors"
+    },
+    {
+      "text": "Passthrough surface (*_passthrough/*)",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#passthrough-surface-_passthrough%2F"
+    },
+    {
+      "text": "Coverage by transport route",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#coverage-by-transport-route"
+    },
+    {
+      "text": "Known gaps that need external setup",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#known-gaps-that-need-external-setup"
+    },
+    {
+      "text": "Coverage report layout",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#coverage-report-layout"
+    },
+    {
+      "text": "Extending coverage",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#extending-coverage"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#overview"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#status-legend"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#per-provider-coverage"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#openai"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#anthropic"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#bedrock"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#gemini-google-ai-studio"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#vertex-ai"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#azure-openai"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#modalities-8-criss-cross"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#cross-cutting-bifrost-specific"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#translation-layer-matrices-/v1/chat/completions-with-provider/model-prefix"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#drop-in-native-shape-matrices"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#umbrella-sdk-drop-in-shapes"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#bifrost-only-behaviors"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#passthrough-surface-_passthrough/"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#coverage-by-transport-route"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#known-gaps-that-need-external-setup"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#coverage-report-layout"
+    },
+    {
+      "text": "​",
+      "href": "https://docs.getbifrost.ai/providers/test-harness-coverage#extending-coverage"
+    },
+    {
+      "text": "tests/e2e/api/HARNESS_COVERAGE_BACKLOG.md",
+      "href": "https://github.com/maximhq/bifrost/blob/main/tests/e2e/api/HARNESS_COVERAGE_BACKLOG.md"
+    },
+    {
+      "text": "Response Headers",
+      "href": "https://docs.getbifrost.ai/providers/response-headers"
+    },
+    {
+      "text": "Overview",
+      "href": "https://docs.getbifrost.ai/mcp/overview"
+    },
+    {
+      "text": "Bifrost home page",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "x",
+      "href": "https://x.com/getbifrost"
+    },
+    {
+      "text": "linkedin",
+      "href": "https://linkedin.com/company/maxim-ai"
+    },
+    {
+      "text": "github",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Partner Program",
+      "href": "https://www.getmaxim.ai/partners-program?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Contact Us",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Security",
+      "href": "https://docs.getbifrost.ai/security"
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.getmaxim.ai/"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "https://www.getmaxim.ai/terms-of-service?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.getmaxim.ai/privacy-policy?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway",
+      "href": "https://www.getmaxim.ai/llm-gateway?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Gateway",
+      "href": "https://www.getmaxim.ai/mcp-gateway?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Governance",
+      "href": "https://www.getmaxim.ai/ai-governance?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Guardrails",
+      "href": "https://www.getmaxim.ai/ai-guardrails?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Observability",
+      "href": "https://www.getmaxim.ai/ai-observability?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Bifrost Edge",
+      "href": "https://www.getmaxim.ai/edge?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Bifrost Enterprise",
+      "href": "https://www.getmaxim.ai/enterprise?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Performance Benchmarks",
+      "href": "https://www.getmaxim.ai/bifrost/resources/benchmarks?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway Buyer's Guide",
+      "href": "https://www.getmaxim.ai/bifrost/resources/buyers-guide?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Claude Code Integration",
+      "href": "https://www.getmaxim.ai/bifrost/resources/claude-code?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://www.getmaxim.ai/bifrost/resources/migrating-from-litellm?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Blogs",
+      "href": "https://www.getmaxim.ai/bifrost/blog?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "llms-full.txt",
+      "href": "https://docs.getbifrost.ai/llms-full.txt"
+    },
+    {
+      "text": "llms.txt",
+      "href": "https://docs.getbifrost.ai/llms.txt"
+    },
+    {
+      "text": "llm-info",
+      "href": "https://www.getmaxim.ai/llm-info?utm_source=bifrost_docs&utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Powered by\nThis documentation is built and hosted on Mintlify, a developer documentation platform",
+      "href": "https://www.mintlify.com/?utm_campaign=poweredBy&utm_medium=referral&utm_source=bifrost"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:46:44.411Z"
+}

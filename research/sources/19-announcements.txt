@@ -1,0 +1,251 @@
+All Programs
+Profile
+My Programs
+Host
+Global AI Hackathon
+
+Program Dashboard
+
+Overview
+Details & Updates
+Manage Team
+Invite & Collaborate
+Submissions
+All Submission Phases
+Announcements
+Organizer updates
+Program Details
+View program page
+Back to My Programs
+Announcements
+
+Official updates and reminders from the organizers
+
+[IMP] Global AI Hackathon: Problem Statements & Prizes Announced!NEW
+Nov 7, 2026, 02:50 AM
+
+Global AI Hackathon: Problem Statements Are Live!
+
+The challenges are officially out! Check them out here:
+https://www.linkedin.com/feed/update/urn:li:activity:7522343349710946304
+
+We’re excited to have Bifrost as our Title Partner and Tavily as our Track Partner, bringing real-world AI challenges to developers worldwide.
+
+Bifrost Track
+$1,000 in cash prizes
+Direct interview opportunities for winning teams
+Challenges focused on AI agents, benchmarking, security, and open-source development
+Tavily Track
+60,000 credits for the top 3 teams
+8,000 in credits for participants building with Tavily
+Challenges focused on real-time information retrieval and AI-powered research
+
+You can either:
+
+Build one project using one problem statement from any of the tracks.
+Build two separate projects, one for each track.
+Build one integrated project addressing both challenges.
+
+The Response So Far
+
+2,000+ registrations | 50+ countries
+
+Developers from around the world are coming together to build, innovate, and compete.
+
+Explore the problem statements, pick your challenges, and start building!
+
+Read more
+Bifrost Live Workshop Tomorrow | Global AI Hackathon
+Nov 4, 2026, 03:18 PM
+
+Hi Builders!
+
+We're hosting an important live workshop with the Bifrost team as part of the Geek Room Global AI Hackathon, and we'd love to see everyone there!
+
+Live Workshop: Build with Bifrost
+
+Date: Thursday, November 5, 2026
+Time: 8:30 PM IST (UTC +5:30)
+Platform: YouTube Live https://www.youtube.com/@GeekRoom-ftw
+
+We'll be joined by Dhwanil Pithva (Founding Engineer, Bifrost) and Swaponeel (GTM Engineer, Bifrost).
+
+What will we cover?
+
+How Bifrost works and how you can use it to build AI agents.
+A walkthrough of the hackathon problem statements and what you can actually build for each challenge.
+
+Whether you've already started building or are still figuring out your approach, we strongly encourage you to attend. This session will help you understand the challenges better and make the most of the remaining building phase.
+We'll be streaming the workshop on YouTube, so feel free to join the live chat, introduce yourself, share what you're building, and ask questions directly to the team.
+
+One more important thing: Star the Bifrost GitHub repository! ⭐
+
+A lot of important technical updates, improvements, and resources are shared through the open-source repository. If you're building with Bifrost, we'd highly recommend starring the repository and keeping an eye on its updates.
+
+GitHub: https://github.com/maximhq/bifrost
+
+How to star the repository:
+
+Open the GitHub link above.
+Sign in to your GitHub account.
+Click the Star button at the top-right of the repository.
+
+It's a great way to support the open-source project and keep it handy while building.
+
+The Bifrost team is also interested in connecting with developers who want to contribute to the project beyond the hackathon. We'll share any confirmed contributor opportunities through official channels.
+
+Workshop YouTube Link: https://www.youtube.com/@GeekRoom-ftw
+
+Hackathon: https://hackculture.io/hackathons/ai-global-hackathon
+
+See you tomorrow at 8:30 PM IST! Drop by the live chat, and bring your questions and make your judges remember you ;) .We're looking forward to seeing what everyone is building.
+
+Best,
+Team Geek Room
+
+Read more
+[IMP] Global AI Hackathon: Problem Statements & Prizes Announced!
+Oct 31, 2026, 10:43 PM
+
+The problem statements for the Global AI Hackathon are officially out, check here: https://www.linkedin.com/feed/update/urn:li:activity:7522343349710946304
+
+We’re excited to have Bifrost as our Title Partner and Tavily as our Track Partner, bringing some exciting challenges for developers worldwide.
+
+Here’s what’s up for grabs:
+
+Bifrost Track
+$1,000 in cash prizes
+Direct interview opportunities for winning teams
+Challenges around AI agents, benchmarking, security, and open-source development
+Tavily Track
+$60,000 worth of credits for the top 3 teams
+$8,000 in credits for participants building with Tavily
+Challenges around real-time information retrieval and AI-powered research
+
+How does it work?
+
+Every team must select one problem statement from each track. You can either build two separate projects or combine both challenges into one integrated solution.
+
+With 1,400+ registrations from 40+ countries, we’re excited to see what developers build!
+
+Read more
+Action Required: Form Your Team & Join the WhatsApp Group
+Oct 31, 2026, 10:15 PM
+
+Hi Builders,
+
+The Global AI Hackathon is about to begin!
+
+We’ve noticed that some participants haven’t formed or joined a team yet. If you haven’t created your team, please do so as soon as possible.
+
+You can participate solo or in a team of up to 4 members.
+
+Important updates:
+
+Problem statements will be released in the next few hours.
+The build phase begins November 1, that's tomorrow!
+All important announcements and updates will be shared in our WhatsApp group.
+
+Join the WhatsApp group: [redacted-invite-link]
+
+Please make sure you’ve formed your team and joined the group so you don’t miss any updates.
+
+Happy building!
+
+Best,
+Team Geek Room
+
+Read more
+Join the Global AI Hackathon WhatsApp Group
+Oct 30, 2026, 12:17 PM
+
+Hi everyone,
+
+Thank you for registering for the Global AI Hackathon!
+
+We’ve created a dedicated WhatsApp group to share important announcements, timelines, event updates, and other information throughout the hackathon.
+
+Join the WhatsApp group here: [redacted-invite-link]
+
+Please join to stay updated and avoid missing important announcements.
+
+Looking forward to seeing what you build!
+
+Best,
+Team Geek Room
+
+Read more
+Join the Global AI Hackathon WhatsApp Group
+Oct 27, 2026, 03:56 AM
+
+Hi everyone,
+
+Thank you for registering for the Global AI Hackathon!
+
+We’ve created a dedicated WhatsApp group to share important announcements, timelines, event updates, and other information throughout the hackathon.
+
+Join the WhatsApp group here: [redacted-invite-link]
+
+Please join to stay updated and avoid missing important announcements.
+
+Looking forward to seeing what you build!
+
+Best,
+Team Geek Room
+
+Read more
+Action Required: Create Your Team for the Global AI Hackathon
+Oct 20, 2026, 03:48 PM
+
+Hey Builder!
+
+Looks like some of you haven’t created or joined a team for the Global AI Hackathon yet!
+
+Even if you’re participating solo, you still need to create a team to be eligible for the hackathon.
+
+You can participate individually or add up to 3 more members to your team (maximum 4 members).
+
+Please make sure to create or join a team as soon as possible so you don’t miss out!
+
+Happy building!
+Team Geek Room
+
+Read more
+Global AI Hackathon | Team Formation & Discord Updates
+Oct 18, 2026, 01:04 AM
+
+Hey everyone!
+
+Thanks for registering for the Global AI Hackathon by Geek Room, powered by Bifrost!
+
+Just a quick reminder that you can participate individually or form a team of up to 4 members. Feel free to invite your friends and build together. The more, the merrier!
+
+Also, make sure to join our official Discord server. We’ve created dedicated channels for announcements, team formation, discussions, technical support, and everything related to the hackathon.
+
+Join Discord: [redacted-invite-link]
+
+We’ll be sharing more exciting updates soon. Looking forward to seeing what you build!
+
+Best,
+Team Geek Room
+
+Read more
+Global AI Hackathon | Team Formation & Discord Updates
+Oct 15, 2026, 02:45 AM
+
+Hey everyone!
+
+Thanks for registering for the Global AI Hackathon by Geek Room, powered by Bifrost!
+
+Just a quick reminder that you can participate individually or form a team of up to 4 members. Feel free to invite your friends and build together. The more, the merrier!
+
+Also, make sure to join our official Discord server. We’ve created dedicated channels for announcements, team formation, discussions, technical support, and everything related to the hackathon.
+
+Join Discord: [redacted-invite-link]
+
+We’ll be sharing more exciting updates soon. Looking forward to seeing what you build!
+
+Best,
+Team Geek Room
+
+Read more

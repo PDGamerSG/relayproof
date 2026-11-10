@@ -1,0 +1,1292 @@
+{
+  "url": "https://github.com/maximhq/bifrost/commits/dev/?author=Pratham-Mishra04",
+  "title": "Commits · maximhq/bifrost · GitHub",
+  "text": "maximhq\nbifrost\nRepository navigation\nCode\nIssues\n628\n (628)\nPull requests\n879\n (879)\nDiscussions\nActions\nSecurity and quality\n3\n (3)\nInsights\nCommits\nBranch selector\ndev\nUser selector\nPratham-Mishra04\nDatepicker\nAll time\nCommit history\nCommits on Nov 7, 2026\nfix(mcp-logs): bound embedded JSON parsing in error cards and show a message when the upstream error is empty (#9728)\nPratham-Mishra04\nauthored\n6e64027\ntest(mcp): remove redundant tool refresh e2e harness tests and narrow SET-07 to unsafe tool names (#9691)\nPratham-Mishra04\nauthored\n03ead19\ntest(mcp): add SYNC e2e harness tests for upstream tool changes across every client type (#9690)\nPratham-Mishra04\nauthored\n4167249\nfeat(mcp): relay session GET stream notifications through the chaosmock STDIO bridge (#9689)\nPratham-Mishra04\nauthored\naf790c3\nfeat(mcp-logs): replace stats cards with a metric strip showing sparklines and previous-period trends (#9648)\nPratham-Mishra04\nauthored\nf9c27a6\nfeat(mcp-logs): add latency histogram, cancelled counts and compare_to_previous to MCP log stats (#9647)\nPratham-Mishra04\nauthored\na9d63e5\nfeat(mcp-logs): add searchable user, team, customer, business unit and project filters to the MCP logs sidebar (#9646)\nPratham-Mishra04\nauthored\ncd7a65c\nfeat(mcp-logs): add user, team, customer, business unit and project dimensions to MCP log filter data (#9645)\nPratham-Mishra04\nauthored\nc971b9d\nfix(logstore): match MCP tool log team, customer and business-unit filters on JSON array columns (#9644)\nPratham-Mishra04\nauthored\n963d52e\nfix(mcp): keep MCP settings input widths consistent regardless of description length (#9643)\nPratham-Mishra04\nauthored\n3efdbfb\nfeat(mcp-logs): show readable error cards with formatted upstream JSON in MCP log details (#9642)\nPratham-Mishra04\nauthored\n601662b\nfix(mcp-logs): show virtual key once as a link in log detail request details (#9641)\nPratham-Mishra04\nauthored\nfc50bb9\nfix(mcp-logs): hide generic status description for ordinary executions in log details (#9639)\nPratham-Mishra04\nauthored\ne9b1e80\nfix(mcp-logs): remove duplicate LLM request ID from log detail Request Details (#9638)\nPratham-Mishra04\nauthored\nb21ba0c\nCommits on Nov 4, 2026\ntest(mcp): add INF-78 to INF-80, AUTH-64, PUD-87 to PUD-90 and GO-37 e2e harness tests (#9623)\nPratham-Mishra04\nauthored\n0099f44\nfeat(mcp): collapse code mode binding level and limits into an accordion in MCP settings (#9622)\nPratham-Mishra04\nauthored\ndf9ceb8\ntest(mcp): add PUD-82 to PUD-86 e2e harness tests for virtual-key grants and session ID handling (#9615)\nPratham-Mishra04\nauthored\n40a945f\nrefactor(mcp): move upstream OAuth e2e helpers into the shared harness library (#9608)\nPratham-Mishra04\nauthored\na54f9f5\ntest(mcp): add AUTH-59 to AUTH-63 and ADM-88 e2e harness tests for OAuth reauthorization and header key changes (#9607)\nPratham-Mishra04\nauthored\nc02bbb7\nfix(mcp): allow OAuth clients registered without the refresh_token grant to refresh tokens (#9606)\nPratham-Mishra04\nauthored\n6062344\nrefactor(mcp-harness): extract shared collection builder helpers into lib/mcp-harness.mjs (#9605)\nPratham-Mishra04\nauthored\nd383339\ntest(mcp): add per-user discovery isolation tests for shared virtual keys and parallel callers (#9568)\nPratham-Mishra04\nauthored\n7d13a46\ntest(mcp): add PUD-72 to PUD-81 e2e harness tests for per-caller tool isolation (#9567)\nPratham-Mishra04\nauthored\nab1f5f0\nfeat(mcp): toggle tool parameters between table and JSON views and inline the View more toggle (#9566)\nPratham-Mishra04\nauthored\nbb88ae3\nfeat(mcp-registry): make client name a keyboard-accessible button and drop \"View details\" from the actions menu (#9565)\nPratham-Mishra04\nauthored\na7cd4eb\nfeat(mcp): collapse failure details, expand long descriptions, and hide TLS for plain HTTP in view sheet (#9564)\nPratham-Mishra04\nauthored\n3c4a16b\nfix(mcp): reword pending per-user server alerts and offer a new-client reregister after a failed verify sign-in (#9563)\nPratham-Mishra04\nauthored\ncd288c8\nfix(ui): verify a per-user OAuth server after per-user discovery is turned off (#9562)\nPratham-Mishra04\nauthored\n3f3db87\nfix(mcp): send a per-user OAuth server back to pending verification when per-user discovery is turned off (#9561)\nPratham-Mishra04\nauthored\naf28349\ntest(mcpconsole): let the mock authorization server forget the clients it registered (#9560)\nPratham-Mishra04\nauthored\na8093b5\nCommits on Nov 2, 2026\nrefactor(mcp): export DialBootMCPClients and accept an injectable reconnect function (#9513)\nPratham-Mishra04\nauthored\n1612883\nfix(mcp): refresh a per-call credential once when the upstream rejects it at the handshake (#9415)\nPratham-Mishra04\nauthored\nee19c8b\ntest(mcp): bind e2e harness Bifrost server to 127.0.0.1 (#9512)\nPratham-Mishra04\nauthored\n637000c\ntest(mcp): refuse browser requests carrying an Origin header on chaosmock control surfaces (#9511)\nPratham-Mishra04\nauthored\nb69f0bf\ntest(mcp): add e2e harness tests for per-user discovery (#9414)\nPratham-Mishra04\nauthored\nc5f2045\nPreviousNext",
+  "links": [
+    {
+      "text": "Skip to content",
+      "href": "https://github.com/maximhq/bifrost/commits/dev/?author=Pratham-Mishra04#start-of-content"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fmaximhq%2Fbifrost%2Fcommits%2Fdev%2F%3Fauthor%3DPratham-Mishra04"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/platform"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/actions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/code-quality"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/codespaces"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/code-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security/secret-protection"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/credentials"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/ai"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trending"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/open-source/sponsors"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/articles"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/team"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/startups"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/nonprofits"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/healthcare"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/financial-services"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/manufacturing"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry/government"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/industry"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/why-github"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/solutions/executive-insights"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/trust-center"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/security/advanced-security"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/features/copilot/copilot-business"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/enterprise/premium-support"
+    },
+    {
+      "text": "",
+      "href": "https://docs.github.com/en"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/resources/events"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/orgs/community/discussions"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/customer-stories"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/marketplace"
+    },
+    {
+      "text": "",
+      "href": "https://help.github.com/"
+    },
+    {
+      "text": "",
+      "href": "https://learn.github.com/skills"
+    },
+    {
+      "text": "",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/about"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/partners"
+    },
+    {
+      "text": "",
+      "href": "https://github.blog/changelog/"
+    },
+    {
+      "text": "",
+      "href": "https://githubuniverse.com/"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://github.com/pricing"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Fmaximhq%2Fbifrost%2Fcommits%2Fdev%2F%3Fauthor%3DPratham-Mishra04"
+    },
+    {
+      "text": "Sign up",
+      "href": "https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fcommits%2Fshow&source=header-repo&source_repo=maximhq%2Fbifrost"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/commits/dev/?author=Pratham-Mishra04"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/commits/dev/?author=Pratham-Mishra04"
+    },
+    {
+      "text": "Reload",
+      "href": "https://github.com/maximhq/bifrost/commits/dev/?author=Pratham-Mishra04"
+    },
+    {
+      "text": "maximhq",
+      "href": "https://github.com/maximhq"
+    },
+    {
+      "text": "bifrost",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Code",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Issues\n628\n (628)",
+      "href": "https://github.com/maximhq/bifrost/issues"
+    },
+    {
+      "text": "Pull requests\n879\n (879)",
+      "href": "https://github.com/maximhq/bifrost/pulls"
+    },
+    {
+      "text": "Discussions",
+      "href": "https://github.com/maximhq/bifrost/discussions"
+    },
+    {
+      "text": "Actions",
+      "href": "https://github.com/maximhq/bifrost/actions"
+    },
+    {
+      "text": "Security and quality\n3\n (3)",
+      "href": "https://github.com/maximhq/bifrost/security"
+    },
+    {
+      "text": "Insights",
+      "href": "https://github.com/maximhq/bifrost/pulse"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "fix(mcp-logs): bound embedded JSON parsing in error cards and show a message when the upstream error is empty (",
+      "href": "https://github.com/maximhq/bifrost/commit/6e640279b36337820f2088fb85f6e78f339063c3"
+    },
+    {
+      "text": "#9728",
+      "href": "https://github.com/maximhq/bifrost/pull/9728"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/6e640279b36337820f2088fb85f6e78f339063c3"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "6e64027",
+      "href": "https://github.com/maximhq/bifrost/commit/6e640279b36337820f2088fb85f6e78f339063c3"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/6e640279b36337820f2088fb85f6e78f339063c3"
+    },
+    {
+      "text": "test(mcp): remove redundant tool refresh e2e harness tests and narrow SET-07 to unsafe tool names (",
+      "href": "https://github.com/maximhq/bifrost/commit/03ead1958847eaa50158309331773b21d897e4b2"
+    },
+    {
+      "text": "#9691",
+      "href": "https://github.com/maximhq/bifrost/pull/9691"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/03ead1958847eaa50158309331773b21d897e4b2"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "03ead19",
+      "href": "https://github.com/maximhq/bifrost/commit/03ead1958847eaa50158309331773b21d897e4b2"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/03ead1958847eaa50158309331773b21d897e4b2"
+    },
+    {
+      "text": "test(mcp): add SYNC e2e harness tests for upstream tool changes across every client type (",
+      "href": "https://github.com/maximhq/bifrost/commit/41672499ce83079c05aa83b13b05d85781f1aaf9"
+    },
+    {
+      "text": "#9690",
+      "href": "https://github.com/maximhq/bifrost/pull/9690"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/41672499ce83079c05aa83b13b05d85781f1aaf9"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "4167249",
+      "href": "https://github.com/maximhq/bifrost/commit/41672499ce83079c05aa83b13b05d85781f1aaf9"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/41672499ce83079c05aa83b13b05d85781f1aaf9"
+    },
+    {
+      "text": "feat(mcp): relay session GET stream notifications through the chaosmock STDIO bridge (",
+      "href": "https://github.com/maximhq/bifrost/commit/af790c3e5f3031f8534c8a4234436ac9bc27a261"
+    },
+    {
+      "text": "#9689",
+      "href": "https://github.com/maximhq/bifrost/pull/9689"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/af790c3e5f3031f8534c8a4234436ac9bc27a261"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "af790c3",
+      "href": "https://github.com/maximhq/bifrost/commit/af790c3e5f3031f8534c8a4234436ac9bc27a261"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/af790c3e5f3031f8534c8a4234436ac9bc27a261"
+    },
+    {
+      "text": "feat(mcp-logs): replace stats cards with a metric strip showing sparklines and previous-period trends (",
+      "href": "https://github.com/maximhq/bifrost/commit/f9c27a6fd6eb7ea78510adeeb3c9c59c9f3adb81"
+    },
+    {
+      "text": "#9648",
+      "href": "https://github.com/maximhq/bifrost/pull/9648"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/f9c27a6fd6eb7ea78510adeeb3c9c59c9f3adb81"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "f9c27a6",
+      "href": "https://github.com/maximhq/bifrost/commit/f9c27a6fd6eb7ea78510adeeb3c9c59c9f3adb81"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/f9c27a6fd6eb7ea78510adeeb3c9c59c9f3adb81"
+    },
+    {
+      "text": "feat(mcp-logs): add latency histogram, cancelled counts and compare_to_previous to MCP log stats (",
+      "href": "https://github.com/maximhq/bifrost/commit/a9d63e5915d98aca7f729e5405b60c3b13c79def"
+    },
+    {
+      "text": "#9647",
+      "href": "https://github.com/maximhq/bifrost/pull/9647"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/a9d63e5915d98aca7f729e5405b60c3b13c79def"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "a9d63e5",
+      "href": "https://github.com/maximhq/bifrost/commit/a9d63e5915d98aca7f729e5405b60c3b13c79def"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/a9d63e5915d98aca7f729e5405b60c3b13c79def"
+    },
+    {
+      "text": "feat(mcp-logs): add searchable user, team, customer, business unit and project filters to the MCP logs sidebar (",
+      "href": "https://github.com/maximhq/bifrost/commit/cd7a65cd335f3e68a1f0d202cfea656a7303d93a"
+    },
+    {
+      "text": "#9646",
+      "href": "https://github.com/maximhq/bifrost/pull/9646"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/cd7a65cd335f3e68a1f0d202cfea656a7303d93a"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "cd7a65c",
+      "href": "https://github.com/maximhq/bifrost/commit/cd7a65cd335f3e68a1f0d202cfea656a7303d93a"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/cd7a65cd335f3e68a1f0d202cfea656a7303d93a"
+    },
+    {
+      "text": "feat(mcp-logs): add user, team, customer, business unit and project dimensions to MCP log filter data (",
+      "href": "https://github.com/maximhq/bifrost/commit/c971b9dba14a8f2909abaa4beb1f5c35c7a42993"
+    },
+    {
+      "text": "#9645",
+      "href": "https://github.com/maximhq/bifrost/pull/9645"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/c971b9dba14a8f2909abaa4beb1f5c35c7a42993"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "c971b9d",
+      "href": "https://github.com/maximhq/bifrost/commit/c971b9dba14a8f2909abaa4beb1f5c35c7a42993"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/c971b9dba14a8f2909abaa4beb1f5c35c7a42993"
+    },
+    {
+      "text": "fix(logstore): match MCP tool log team, customer and business-unit filters on JSON array columns (",
+      "href": "https://github.com/maximhq/bifrost/commit/963d52edeaa21bf5f8db69d99ca39f80e8fb7864"
+    },
+    {
+      "text": "#9644",
+      "href": "https://github.com/maximhq/bifrost/pull/9644"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/963d52edeaa21bf5f8db69d99ca39f80e8fb7864"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "963d52e",
+      "href": "https://github.com/maximhq/bifrost/commit/963d52edeaa21bf5f8db69d99ca39f80e8fb7864"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/963d52edeaa21bf5f8db69d99ca39f80e8fb7864"
+    },
+    {
+      "text": "fix(mcp): keep MCP settings input widths consistent regardless of description length (",
+      "href": "https://github.com/maximhq/bifrost/commit/3efdbfbb1599d919377a0adff6aca951e5e4109a"
+    },
+    {
+      "text": "#9643",
+      "href": "https://github.com/maximhq/bifrost/pull/9643"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/3efdbfbb1599d919377a0adff6aca951e5e4109a"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "3efdbfb",
+      "href": "https://github.com/maximhq/bifrost/commit/3efdbfbb1599d919377a0adff6aca951e5e4109a"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/3efdbfbb1599d919377a0adff6aca951e5e4109a"
+    },
+    {
+      "text": "feat(mcp-logs): show readable error cards with formatted upstream JSON in MCP log details (",
+      "href": "https://github.com/maximhq/bifrost/commit/601662b470574aaa63eb39518e17ab93dd350a6e"
+    },
+    {
+      "text": "#9642",
+      "href": "https://github.com/maximhq/bifrost/pull/9642"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/601662b470574aaa63eb39518e17ab93dd350a6e"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "601662b",
+      "href": "https://github.com/maximhq/bifrost/commit/601662b470574aaa63eb39518e17ab93dd350a6e"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/601662b470574aaa63eb39518e17ab93dd350a6e"
+    },
+    {
+      "text": "fix(mcp-logs): show virtual key once as a link in log detail request details (",
+      "href": "https://github.com/maximhq/bifrost/commit/fc50bb9fd32733343970d3c7a2435342b0a1d6f8"
+    },
+    {
+      "text": "#9641",
+      "href": "https://github.com/maximhq/bifrost/pull/9641"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/fc50bb9fd32733343970d3c7a2435342b0a1d6f8"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "fc50bb9",
+      "href": "https://github.com/maximhq/bifrost/commit/fc50bb9fd32733343970d3c7a2435342b0a1d6f8"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/fc50bb9fd32733343970d3c7a2435342b0a1d6f8"
+    },
+    {
+      "text": "fix(mcp-logs): hide generic status description for ordinary executions in log details (",
+      "href": "https://github.com/maximhq/bifrost/commit/e9b1e80b014f06df92d3cec6db19e8cc8a1beb13"
+    },
+    {
+      "text": "#9639",
+      "href": "https://github.com/maximhq/bifrost/pull/9639"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/e9b1e80b014f06df92d3cec6db19e8cc8a1beb13"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "e9b1e80",
+      "href": "https://github.com/maximhq/bifrost/commit/e9b1e80b014f06df92d3cec6db19e8cc8a1beb13"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/e9b1e80b014f06df92d3cec6db19e8cc8a1beb13"
+    },
+    {
+      "text": "fix(mcp-logs): remove duplicate LLM request ID from log detail Request Details (",
+      "href": "https://github.com/maximhq/bifrost/commit/b21ba0cf8f0334c43937faf66f44fcb0d98b5232"
+    },
+    {
+      "text": "#9638",
+      "href": "https://github.com/maximhq/bifrost/pull/9638"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/b21ba0cf8f0334c43937faf66f44fcb0d98b5232"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "b21ba0c",
+      "href": "https://github.com/maximhq/bifrost/commit/b21ba0cf8f0334c43937faf66f44fcb0d98b5232"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/b21ba0cf8f0334c43937faf66f44fcb0d98b5232"
+    },
+    {
+      "text": "test(mcp): add INF-78 to INF-80, AUTH-64, PUD-87 to PUD-90 and GO-37 e2e harness tests (",
+      "href": "https://github.com/maximhq/bifrost/commit/0099f44fb1e7defc32560fb1d7950fbef2558871"
+    },
+    {
+      "text": "#9623",
+      "href": "https://github.com/maximhq/bifrost/pull/9623"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/0099f44fb1e7defc32560fb1d7950fbef2558871"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "0099f44",
+      "href": "https://github.com/maximhq/bifrost/commit/0099f44fb1e7defc32560fb1d7950fbef2558871"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/0099f44fb1e7defc32560fb1d7950fbef2558871"
+    },
+    {
+      "text": "feat(mcp): collapse code mode binding level and limits into an accordion in MCP settings (",
+      "href": "https://github.com/maximhq/bifrost/commit/df9ceb8393153b0949ac5eee97a65018eeb5bb40"
+    },
+    {
+      "text": "#9622",
+      "href": "https://github.com/maximhq/bifrost/pull/9622"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/df9ceb8393153b0949ac5eee97a65018eeb5bb40"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "df9ceb8",
+      "href": "https://github.com/maximhq/bifrost/commit/df9ceb8393153b0949ac5eee97a65018eeb5bb40"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/df9ceb8393153b0949ac5eee97a65018eeb5bb40"
+    },
+    {
+      "text": "test(mcp): add PUD-82 to PUD-86 e2e harness tests for virtual-key grants and session ID handling (",
+      "href": "https://github.com/maximhq/bifrost/commit/40a945f7f528fbc5ee7eb808ae175e31dcae081c"
+    },
+    {
+      "text": "#9615",
+      "href": "https://github.com/maximhq/bifrost/pull/9615"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/40a945f7f528fbc5ee7eb808ae175e31dcae081c"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "40a945f",
+      "href": "https://github.com/maximhq/bifrost/commit/40a945f7f528fbc5ee7eb808ae175e31dcae081c"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/40a945f7f528fbc5ee7eb808ae175e31dcae081c"
+    },
+    {
+      "text": "refactor(mcp): move upstream OAuth e2e helpers into the shared harness library (",
+      "href": "https://github.com/maximhq/bifrost/commit/a54f9f5a5ff3dbfc64e82000e1425a48fc9f3212"
+    },
+    {
+      "text": "#9608",
+      "href": "https://github.com/maximhq/bifrost/pull/9608"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/a54f9f5a5ff3dbfc64e82000e1425a48fc9f3212"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "a54f9f5",
+      "href": "https://github.com/maximhq/bifrost/commit/a54f9f5a5ff3dbfc64e82000e1425a48fc9f3212"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/a54f9f5a5ff3dbfc64e82000e1425a48fc9f3212"
+    },
+    {
+      "text": "test(mcp): add AUTH-59 to AUTH-63 and ADM-88 e2e harness tests for OAuth reauthorization and header key changes (",
+      "href": "https://github.com/maximhq/bifrost/commit/c02bbb7a9925aad975b22feb622e6868f1adf6a6"
+    },
+    {
+      "text": "#9607",
+      "href": "https://github.com/maximhq/bifrost/pull/9607"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/c02bbb7a9925aad975b22feb622e6868f1adf6a6"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "c02bbb7",
+      "href": "https://github.com/maximhq/bifrost/commit/c02bbb7a9925aad975b22feb622e6868f1adf6a6"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/c02bbb7a9925aad975b22feb622e6868f1adf6a6"
+    },
+    {
+      "text": "fix(mcp): allow OAuth clients registered without the refresh_token grant to refresh tokens (",
+      "href": "https://github.com/maximhq/bifrost/commit/6062344afdc1d32e9e0690f303ef6f735b43263e"
+    },
+    {
+      "text": "#9606",
+      "href": "https://github.com/maximhq/bifrost/pull/9606"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/6062344afdc1d32e9e0690f303ef6f735b43263e"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "6062344",
+      "href": "https://github.com/maximhq/bifrost/commit/6062344afdc1d32e9e0690f303ef6f735b43263e"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/6062344afdc1d32e9e0690f303ef6f735b43263e"
+    },
+    {
+      "text": "refactor(mcp-harness): extract shared collection builder helpers into lib/mcp-harness.mjs (",
+      "href": "https://github.com/maximhq/bifrost/commit/d383339f25e526183cb63270cb91b83faa509a0a"
+    },
+    {
+      "text": "#9605",
+      "href": "https://github.com/maximhq/bifrost/pull/9605"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/d383339f25e526183cb63270cb91b83faa509a0a"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "d383339",
+      "href": "https://github.com/maximhq/bifrost/commit/d383339f25e526183cb63270cb91b83faa509a0a"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/d383339f25e526183cb63270cb91b83faa509a0a"
+    },
+    {
+      "text": "test(mcp): add per-user discovery isolation tests for shared virtual keys and parallel callers (",
+      "href": "https://github.com/maximhq/bifrost/commit/7d13a460c64dc02725bf8c347115e11276a904f4"
+    },
+    {
+      "text": "#9568",
+      "href": "https://github.com/maximhq/bifrost/pull/9568"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/7d13a460c64dc02725bf8c347115e11276a904f4"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "7d13a46",
+      "href": "https://github.com/maximhq/bifrost/commit/7d13a460c64dc02725bf8c347115e11276a904f4"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/7d13a460c64dc02725bf8c347115e11276a904f4"
+    },
+    {
+      "text": "test(mcp): add PUD-72 to PUD-81 e2e harness tests for per-caller tool isolation (",
+      "href": "https://github.com/maximhq/bifrost/commit/ab1f5f090533cf57b50f8070bc9f26d48f3631d0"
+    },
+    {
+      "text": "#9567",
+      "href": "https://github.com/maximhq/bifrost/pull/9567"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/ab1f5f090533cf57b50f8070bc9f26d48f3631d0"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "ab1f5f0",
+      "href": "https://github.com/maximhq/bifrost/commit/ab1f5f090533cf57b50f8070bc9f26d48f3631d0"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/ab1f5f090533cf57b50f8070bc9f26d48f3631d0"
+    },
+    {
+      "text": "feat(mcp): toggle tool parameters between table and JSON views and inline the View more toggle (",
+      "href": "https://github.com/maximhq/bifrost/commit/bb88ae31c86f3146c8a37ec7ec4ba1e9ed6b798c"
+    },
+    {
+      "text": "#9566",
+      "href": "https://github.com/maximhq/bifrost/pull/9566"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/bb88ae31c86f3146c8a37ec7ec4ba1e9ed6b798c"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "bb88ae3",
+      "href": "https://github.com/maximhq/bifrost/commit/bb88ae31c86f3146c8a37ec7ec4ba1e9ed6b798c"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/bb88ae31c86f3146c8a37ec7ec4ba1e9ed6b798c"
+    },
+    {
+      "text": "feat(mcp-registry): make client name a keyboard-accessible button and drop \"View details\" from the actions menu (",
+      "href": "https://github.com/maximhq/bifrost/commit/a7cd4eb95263296afb4a7713ab5cffa0ddb18aae"
+    },
+    {
+      "text": "#9565",
+      "href": "https://github.com/maximhq/bifrost/pull/9565"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/a7cd4eb95263296afb4a7713ab5cffa0ddb18aae"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "a7cd4eb",
+      "href": "https://github.com/maximhq/bifrost/commit/a7cd4eb95263296afb4a7713ab5cffa0ddb18aae"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/a7cd4eb95263296afb4a7713ab5cffa0ddb18aae"
+    },
+    {
+      "text": "feat(mcp): collapse failure details, expand long descriptions, and hide TLS for plain HTTP in view sheet (",
+      "href": "https://github.com/maximhq/bifrost/commit/3c4a16b660ab5eca2d076288b0521921df3882c1"
+    },
+    {
+      "text": "#9564",
+      "href": "https://github.com/maximhq/bifrost/pull/9564"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/3c4a16b660ab5eca2d076288b0521921df3882c1"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "3c4a16b",
+      "href": "https://github.com/maximhq/bifrost/commit/3c4a16b660ab5eca2d076288b0521921df3882c1"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/3c4a16b660ab5eca2d076288b0521921df3882c1"
+    },
+    {
+      "text": "fix(mcp): reword pending per-user server alerts and offer a new-client reregister after a failed verify sign-in (",
+      "href": "https://github.com/maximhq/bifrost/commit/cd288c80fb552b5b72d593ac6265d30c811b895c"
+    },
+    {
+      "text": "#9563",
+      "href": "https://github.com/maximhq/bifrost/pull/9563"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/cd288c80fb552b5b72d593ac6265d30c811b895c"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "cd288c8",
+      "href": "https://github.com/maximhq/bifrost/commit/cd288c80fb552b5b72d593ac6265d30c811b895c"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/cd288c80fb552b5b72d593ac6265d30c811b895c"
+    },
+    {
+      "text": "fix(ui): verify a per-user OAuth server after per-user discovery is turned off (",
+      "href": "https://github.com/maximhq/bifrost/commit/3f3db87f00ec7c82df4de876b1eedcba2edb372b"
+    },
+    {
+      "text": "#9562",
+      "href": "https://github.com/maximhq/bifrost/pull/9562"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/3f3db87f00ec7c82df4de876b1eedcba2edb372b"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "3f3db87",
+      "href": "https://github.com/maximhq/bifrost/commit/3f3db87f00ec7c82df4de876b1eedcba2edb372b"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/3f3db87f00ec7c82df4de876b1eedcba2edb372b"
+    },
+    {
+      "text": "fix(mcp): send a per-user OAuth server back to pending verification when per-user discovery is turned off (",
+      "href": "https://github.com/maximhq/bifrost/commit/af28349157c6ce1f61a960fcccf0d8e1dfebbe9d"
+    },
+    {
+      "text": "#9561",
+      "href": "https://github.com/maximhq/bifrost/pull/9561"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/af28349157c6ce1f61a960fcccf0d8e1dfebbe9d"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "af28349",
+      "href": "https://github.com/maximhq/bifrost/commit/af28349157c6ce1f61a960fcccf0d8e1dfebbe9d"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/af28349157c6ce1f61a960fcccf0d8e1dfebbe9d"
+    },
+    {
+      "text": "test(mcpconsole): let the mock authorization server forget the clients it registered (",
+      "href": "https://github.com/maximhq/bifrost/commit/a8093b516a614b2a31bd33f8f317846f8177c592"
+    },
+    {
+      "text": "#9560",
+      "href": "https://github.com/maximhq/bifrost/pull/9560"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/a8093b516a614b2a31bd33f8f317846f8177c592"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "a8093b5",
+      "href": "https://github.com/maximhq/bifrost/commit/a8093b516a614b2a31bd33f8f317846f8177c592"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/a8093b516a614b2a31bd33f8f317846f8177c592"
+    },
+    {
+      "text": "refactor(mcp): export DialBootMCPClients and accept an injectable reconnect function (",
+      "href": "https://github.com/maximhq/bifrost/commit/16128831cfc757d7526c5fa047de729b6d3ff375"
+    },
+    {
+      "text": "#9513",
+      "href": "https://github.com/maximhq/bifrost/pull/9513"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/16128831cfc757d7526c5fa047de729b6d3ff375"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "1612883",
+      "href": "https://github.com/maximhq/bifrost/commit/16128831cfc757d7526c5fa047de729b6d3ff375"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/16128831cfc757d7526c5fa047de729b6d3ff375"
+    },
+    {
+      "text": "fix(mcp): refresh a per-call credential once when the upstream rejects it at the handshake (",
+      "href": "https://github.com/maximhq/bifrost/commit/ee19c8b16ce83e3d5ba65482405c583db9b2822e"
+    },
+    {
+      "text": "#9415",
+      "href": "https://github.com/maximhq/bifrost/pull/9415"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/ee19c8b16ce83e3d5ba65482405c583db9b2822e"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "ee19c8b",
+      "href": "https://github.com/maximhq/bifrost/commit/ee19c8b16ce83e3d5ba65482405c583db9b2822e"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/ee19c8b16ce83e3d5ba65482405c583db9b2822e"
+    },
+    {
+      "text": "test(mcp): bind e2e harness Bifrost server to 127.0.0.1 (",
+      "href": "https://github.com/maximhq/bifrost/commit/637000c4a3ebd307e4e4e41633d7d02e8a96ac48"
+    },
+    {
+      "text": "#9512",
+      "href": "https://github.com/maximhq/bifrost/pull/9512"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/637000c4a3ebd307e4e4e41633d7d02e8a96ac48"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "637000c",
+      "href": "https://github.com/maximhq/bifrost/commit/637000c4a3ebd307e4e4e41633d7d02e8a96ac48"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/637000c4a3ebd307e4e4e41633d7d02e8a96ac48"
+    },
+    {
+      "text": "test(mcp): refuse browser requests carrying an Origin header on chaosmock control surfaces (",
+      "href": "https://github.com/maximhq/bifrost/commit/b69f0bf8beeb26e368b6b8da0fc8ff3aca8fd018"
+    },
+    {
+      "text": "#9511",
+      "href": "https://github.com/maximhq/bifrost/pull/9511"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/b69f0bf8beeb26e368b6b8da0fc8ff3aca8fd018"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "b69f0bf",
+      "href": "https://github.com/maximhq/bifrost/commit/b69f0bf8beeb26e368b6b8da0fc8ff3aca8fd018"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/b69f0bf8beeb26e368b6b8da0fc8ff3aca8fd018"
+    },
+    {
+      "text": "test(mcp): add e2e harness tests for per-user discovery (",
+      "href": "https://github.com/maximhq/bifrost/commit/c5f2045c2ddfb9b0778bca1cd5c959432a6be7f4"
+    },
+    {
+      "text": "#9414",
+      "href": "https://github.com/maximhq/bifrost/pull/9414"
+    },
+    {
+      "text": ")",
+      "href": "https://github.com/maximhq/bifrost/commit/c5f2045c2ddfb9b0778bca1cd5c959432a6be7f4"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/Pratham-Mishra04"
+    },
+    {
+      "text": "Pratham-Mishra04",
+      "href": "https://github.com/maximhq/bifrost/commits?author=Pratham-Mishra04"
+    },
+    {
+      "text": "c5f2045",
+      "href": "https://github.com/maximhq/bifrost/commit/c5f2045c2ddfb9b0778bca1cd5c959432a6be7f4"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/tree/c5f2045c2ddfb9b0778bca1cd5c959432a6be7f4"
+    },
+    {
+      "text": "Next",
+      "href": "https://github.com/maximhq/bifrost/commits/dev?author=Pratham-Mishra04&after=354472245f1699ce430d2d9d11fbcadd50396a9e+34"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/"
+    },
+    {
+      "text": "Terms",
+      "href": "https://docs.github.com/site-policy/github-terms/github-terms-of-service"
+    },
+    {
+      "text": "Privacy",
+      "href": "https://docs.github.com/site-policy/privacy-policies/github-privacy-statement"
+    },
+    {
+      "text": "Security",
+      "href": "https://github.com/security"
+    },
+    {
+      "text": "Status",
+      "href": "https://www.githubstatus.com/"
+    },
+    {
+      "text": "Community",
+      "href": "https://github.community/"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.github.com/"
+    },
+    {
+      "text": "Contact",
+      "href": "https://support.github.com/?tags=dotcom-footer"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:50:15.261Z"
+}

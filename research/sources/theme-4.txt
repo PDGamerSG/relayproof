@@ -1,0 +1,35 @@
+PAGE 1
+GLOBAL AI HACKATHON
+ BIFROST BY MAXIM AI
+PROBLEM STATEMENT 04 · CONTRIBUTOR TRACK
+Build a Feature the Open-Source
+Gateway Is Missing
+AI gateways are becoming essential infrastructure for teams building production AI applications. Developers
+need gateways that support their preferred model providers, integrate with existing databases and
+development tools, and provide flexible routing, caching, and observability.
+Bifrost offers extension points that developers can use to introduce new capabilities into the open-source
+gateway.
+GOAL
+Extend Bifrost with a practical feature that solves a real operational or developer problem: a
+plugin, integration, UI, routing or caching strategy, or developer tool that could potentially be
+contributed upstream.
+MANDATORY REQUIREMENTS
+/ Real operator problem: Identify a meaningful limitation or
+missing capability and solve it end to end.
+/ Public extension points: Build using supported interfaces
+such as plugins, logging APIs, routing rules, or the MCP
+gateway.
+/ Reproducible integration: Demonstrate the feature working
+with a standard Bifrost installation and provide clear setup
+instructions.
+/ Contribution quality: Include appropriate tests,
+documentation, and a repository prepared for a potential
+upstream pull request.
+EXPECTED OUTCOME
+A working, documented, and tested Bifrost extension that solves a meaningful problem for gateway operators or
+developers and is suitable for consideration as an open-source contribution.
+OPTIONAL IMPLEMENTATION GUIDANCE
+A new model-provider integration, a Postgres/pgvector caching backend, a gateway migration utility, a prompt optimization plugin, or a
+VS Code extension displaying usage and remaining budgets. These are examples, not mandatory features; check existing functionality
+before selecting a contribution.
+BUILD 1–15 NOV 2026 TEAM 1–4 FORMAT ONLINE · GLOBAL JUDGING 29 NOV 2026 INTEGRATE BIFROST + TAVILY 04 / 05

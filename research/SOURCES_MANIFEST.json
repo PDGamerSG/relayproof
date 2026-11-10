@@ -1,0 +1,1032 @@
+{
+  "research_date": "2026-11-10",
+  "privacy_note": "Emails and private chat invite links removed from retained text/JSON copies. Git blob SHA metadata still identifies the original upstream version. Do not publish private dashboard snapshots or third-party archive wholesale.",
+  "files": [
+    {
+      "path": "sources/01-event-public.json",
+      "source_url": "https://hackculture.io/hackathons/ai-global-hackathon",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "page snapshot",
+      "size_bytes": 15995,
+      "sha256": "1945235ee6b19fbfa7dc5b2937848f219ccf5efaf26a185680644b40424fcd0c",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/02-account-initial.json",
+      "source_url": "https://hackculture.io/my-events/manage/6ad270bf8e6ece10acd71d71",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "page snapshot",
+      "size_bytes": 1872,
+      "sha256": "73f9be3cc8d7df1877b5932f24a43b7fd1e303484dac3b26fd8c69e09f3fb5d9",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/03-submission-access.txt",
+      "source_url": "https://hackculture.io/my-events/manage/6ad270bf8e6ece10acd71d71",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "authorized private UI text",
+      "size_bytes": 2117,
+      "sha256": "b7adeb65d1c75cd32193d478df047cded60c2509617b6e2c39337c26e5a76fd9",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/04-benchmark-modal.json",
+      "source_url": "https://hackculture.io/hackathons/ai-global-hackathon",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "modal snapshot",
+      "size_bytes": 1764,
+      "sha256": "9ad1885404905193cb46aedfaa237d96151d4087e081735294e27b139a5f2041",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/05-bifrost-github.json",
+      "source_url": "https://github.com/maximhq/bifrost",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "page snapshot",
+      "size_bytes": 23357,
+      "sha256": "d841b7144c975c9cad6c4baca1753a3abfc352042885a6dec036d144766961a8",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/06-company-home.json",
+      "source_url": "https://www.getmaxim.ai/",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "page snapshot",
+      "size_bytes": 21341,
+      "sha256": "163515360194eaad059adc532dcb9971523604194e02d1effc2ae83fc69898f8",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/07-bifrost-latest-release.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/releases/latest",
+      "retrieved_at": "2026-11-10T14:40:15.120Z",
+      "status": "200",
+      "size_bytes": 3571,
+      "sha256": "a48b196ba416bb677cdcbf632f8d4d70f862934aabb2788fdb33d1b374832ef5",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/08-bifrost-recent-commits.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/commits?per_page=12",
+      "retrieved_at": "2026-11-10T14:40:14.790Z",
+      "status": "200",
+      "size_bytes": 133105,
+      "sha256": "dc017f705bc17de4f83e1883d4f3be3d80fc183ead22376b73b0ac4b1de1fd31",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/09-bifrost-open-prs.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/pulls?state=open&per_page=20&sort=updated&direction=desc",
+      "retrieved_at": "2026-11-10T14:40:16.182Z",
+      "status": "200",
+      "size_bytes": 537009,
+      "sha256": "b3099e36bd767c40e2de1393442983db237534bc47fe41281197c18551859f6d",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/10-bifrost-contributors.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/contributors?per_page=15",
+      "retrieved_at": "2026-11-10T14:40:15.592Z",
+      "status": "200",
+      "size_bytes": 17372,
+      "sha256": "ef0494aa6af97027148b76b7049d0bba58f9d7b4533210f3bc5c7dda9dd1d652",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/11-maxim-careers.json",
+      "source_url": "https://www.getmaxim.ai/careers",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "page snapshot",
+      "size_bytes": 12833,
+      "sha256": "66fd424f3b3eaa91c4780bdceacd2ad682ed6d67a495f0a3851772861648b252",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/12-maxim-mts-role.json",
+      "source_url": "https://www.getmaxim.ai/careers/member-of-technical-staff",
+      "retrieved_at": "2026-11-10T14:42:13.596Z",
+      "status": "page snapshot",
+      "size_bytes": 13511,
+      "sha256": "139477f7712e914da707bb0eb87bcde7ec7aeae0973aec4eecec3d9f7e486f2b",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/13-maxim-about.json",
+      "source_url": "https://www.getmaxim.ai/about-us",
+      "retrieved_at": "2026-11-10T14:42:14.189Z",
+      "status": "page snapshot",
+      "size_bytes": 12754,
+      "sha256": "c63fbb8262a7e59affb95f5cea11000e70d6bd183a18aa8cbf4dd1e4e9621747",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/14-maxim-agent-evaluation.json",
+      "source_url": "https://www.getmaxim.ai/evals/products/agent-simulation-evaluation",
+      "retrieved_at": "2026-11-10T14:42:15.990Z",
+      "status": "page snapshot",
+      "size_bytes": 10936,
+      "sha256": "9798e32978a5b19b16c32d487a1f156a9007fa9f728a6565f8fc13c243e0a7fc",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/15-bifrost-edge.json",
+      "source_url": "https://www.getmaxim.ai/edge",
+      "retrieved_at": "2026-11-10T14:42:19.359Z",
+      "status": "page snapshot",
+      "size_bytes": 14418,
+      "sha256": "ee5a904016fc7cbce433e0d76c277e4aa7e3be411ddad778c474b8488824d0d0",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/16-bifrost-retries.json",
+      "source_url": "https://docs.getbifrost.ai/features/retries-and-fallbacks",
+      "retrieved_at": "2026-11-10T14:42:53.738Z",
+      "status": "page snapshot",
+      "size_bytes": 52991,
+      "sha256": "df7da9cfec087a65e1d101c7c543306f0b8891fd9b8cc17744fe8526ad48c663",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/17-bifrost-telemetry.json",
+      "source_url": "https://docs.getbifrost.ai/features/telemetry",
+      "retrieved_at": "2026-11-10T14:42:55.401Z",
+      "status": "page snapshot",
+      "size_bytes": 37659,
+      "sha256": "b4738b345f1ddb1e73180725a97df0f59a0c1d4e65cda4177a3f5b2b1a6ee21c",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/18-bifrost-custom-plugins.json",
+      "source_url": "https://docs.getbifrost.ai/plugins/writing-go-plugin",
+      "retrieved_at": "2026-11-10T14:42:56.619Z",
+      "status": "page snapshot",
+      "size_bytes": 92897,
+      "sha256": "11c8ce34391567348ce52cba07380ccbef1cc1fc387ee170484af86e19fb7c5c",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/19-announcements.txt",
+      "source_url": "https://hackculture.io/my-events/manage/6ad270bf8e6ece10acd71d71",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "authorized private UI text",
+      "size_bytes": 8465,
+      "sha256": "dcc212423a00aa4021954df6920c4019f73b36d2e758cc93db21f91ead32ab78",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/21-bifrost-test-harness.json",
+      "source_url": "https://docs.getbifrost.ai/providers/test-harness-coverage",
+      "retrieved_at": "2026-11-10T14:46:44.411Z",
+      "status": "page snapshot",
+      "size_bytes": 38159,
+      "sha256": "e8913f9855465e1b264fbade40db5b9a41971590c196d282a8c2464df272e07b",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/22-bifrost-compat.json",
+      "source_url": "https://docs.getbifrost.ai/features/compat-plugin",
+      "retrieved_at": "2026-11-10T14:46:45.357Z",
+      "status": "page snapshot",
+      "size_bytes": 35109,
+      "sha256": "93f1cf88f811787a24bd816a094786a35a1620e1763cbc20d296c09a1897ea6b",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/23-bifrost-custom-provider.json",
+      "source_url": "https://docs.getbifrost.ai/providers/custom-providers",
+      "retrieved_at": "2026-11-10T14:46:46.231Z",
+      "status": "page snapshot",
+      "size_bytes": 41307,
+      "sha256": "b5fcf07c2a0a74c4a50045e2e73ecea465fda4ffc0c690665e19414429257d8c",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/24-tavily-search.json",
+      "source_url": "https://docs.tavily.com/documentation/api-reference/endpoint/search",
+      "retrieved_at": "2026-11-10T14:46:48.895Z",
+      "status": "page snapshot",
+      "size_bytes": 22489,
+      "sha256": "47b7d8bcb51164c0b54a2cb99efa0819e14712fa9d9883c1015d26844e29aaaa",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/25-tavily-extract.json",
+      "source_url": "https://docs.tavily.com/documentation/api-reference/endpoint/extract",
+      "retrieved_at": "2026-11-10T14:46:49.181Z",
+      "status": "page snapshot",
+      "size_bytes": 11032,
+      "sha256": "2bcb7534d126c0123fdcbc426f65f656bdcbb7dc43d681ee023405aa3c20f933",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/26-issue-mcp-role.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/issues/9721",
+      "retrieved_at": "2026-11-10T14:48:06.386Z",
+      "status": "403",
+      "size_bytes": 438,
+      "sha256": "0ffa5f745eb87990b506fb2310ddae932801863ae9e6463b097a76d2de8488ca",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/27-issue-stream-usage.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/issues/8983",
+      "retrieved_at": "2026-11-10T14:48:06.428Z",
+      "status": "403",
+      "size_bytes": 438,
+      "sha256": "82c9133be23763986126cdfefed17e67c50c77d8443ba9801c4cf89abe012ad1",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/28-issue-web-search-version.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/issues/9520",
+      "retrieved_at": "2026-11-10T14:48:06.469Z",
+      "status": "403",
+      "size_bytes": 438,
+      "sha256": "e86b8c2413a5f3c0ca43bd53dabb0d66007dcf1bba1dad8409b1e18dec4a80e9",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/29-pr-conformance-existing.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/pulls/4384",
+      "retrieved_at": "2026-11-10T14:48:06.553Z",
+      "status": "403",
+      "size_bytes": 437,
+      "sha256": "65a771b6605668b98465acb317ff3dd33ed572246952e6af9c7186fba82784dc",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/30-pratham-commits.json",
+      "source_url": "https://api.github.com/repos/maximhq/bifrost/commits?author=Pratham-Mishra04&per_page=4",
+      "retrieved_at": "2026-11-10T14:48:06.511Z",
+      "status": "403",
+      "size_bytes": 469,
+      "sha256": "207fc10f089341456e0d5dc776dcd8aa0ad7943a2afa8e5d20552425df5c81ec",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/31-dhwanil-profile.json",
+      "source_url": "https://api.github.com/users/danpiths",
+      "retrieved_at": "2026-11-10T14:48:06.595Z",
+      "status": "403",
+      "size_bytes": 419,
+      "sha256": "d7f93d9f489d48b6cd85a383283bbc614766e1a1c1425ce7c35c6da6e143b38b",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/32-agent-gateway-announcement.json",
+      "source_url": "https://www.getmaxim.ai/bifrost/blog/introducing-agent-gateway-in-bifrost-one-gateway-for-models-tools-and-agents",
+      "retrieved_at": "2026-11-10T14:48:17.945Z",
+      "status": "page snapshot",
+      "size_bytes": 15914,
+      "sha256": "ced7bf32fd6cb3be163cd587db1fb914bce00e2ba3b3dbe3a2518b4b3d50bb99",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/33-OpenAI-streaming.json",
+      "source_url": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events",
+      "retrieved_at": "2026-11-10T14:48:20.842Z",
+      "status": "page snapshot",
+      "size_bytes": 114850,
+      "sha256": "19939e51516cb6b5a0f6918203803289a21d4469d82c929c86184a7e858a1a67",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/34-Claude-streaming.json",
+      "source_url": "https://platform.claude.com/docs/en/build-with-claude/streaming",
+      "retrieved_at": "2026-11-10T14:48:23.003Z",
+      "status": "page snapshot",
+      "size_bytes": 50536,
+      "sha256": "5ac8ed99f011975276c6156cba1e46b28bccdb6befc0eed1ee2f12a2afc37c9c",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/35-Keploy.json",
+      "source_url": "https://keploy.io/record-replay-testing",
+      "retrieved_at": "2026-11-10T14:48:33.330Z",
+      "status": "page snapshot",
+      "size_bytes": 31520,
+      "sha256": "8f7b1e0e0fcff2b99868085aa01bed640789b46415de4450929e88c63a0286a5",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/36-tavily-october.json",
+      "source_url": "https://www.tavily.com/blog/what-shipped-october-2026",
+      "retrieved_at": "2026-11-10T14:50:04.695Z",
+      "status": "page snapshot",
+      "size_bytes": 14923,
+      "sha256": "0dfaac6e9880d3376ccacc26326981cef56fa19f7e5b59b9dc756c0b85948603",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/37-tavily-nebius.json",
+      "source_url": "https://nebius.com/blog/posts/bringing-agentic-search-into-the-production-ai-stack",
+      "retrieved_at": "2026-11-10T14:50:07.927Z",
+      "status": "page snapshot",
+      "size_bytes": 24849,
+      "sha256": "b52df13d006e717de268e7f5ced322f1727b9c0bcb97bb270bf5c7490cd78ef5",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/38-issue-stream-usage-public.json",
+      "source_url": "https://github.com/maximhq/bifrost/issues/8983",
+      "retrieved_at": "2026-11-10T14:50:10.365Z",
+      "status": "page snapshot",
+      "size_bytes": 17236,
+      "sha256": "f1d574c6b09571b717b490f4dc1d968ed1d4104327125bb3c2a982b51a716a5b",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/39-issue-mcp-role-public.json",
+      "source_url": "https://github.com/maximhq/bifrost/issues/9721",
+      "retrieved_at": "2026-11-10T14:50:11.952Z",
+      "status": "page snapshot",
+      "size_bytes": 15565,
+      "sha256": "59dd90ccd9dede5c6fe62aba2f9e5fc038a032f63f455df8dfdfc0a5f174af2b",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/40-dhwanil-profile-public.json",
+      "source_url": "https://github.com/danpiths",
+      "retrieved_at": "2026-11-10T14:50:13.379Z",
+      "status": "page snapshot",
+      "size_bytes": 15804,
+      "sha256": "008594b6d581008c6ad730b44abe869324a592ad3df86d35f584c28992171133",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/41-pratham-commits-public.json",
+      "source_url": "https://github.com/maximhq/bifrost/commits/dev/?author=Pratham-Mishra04",
+      "retrieved_at": "2026-11-10T14:50:15.261Z",
+      "status": "page snapshot",
+      "size_bytes": 45137,
+      "sha256": "1b249f0e5fd268618b89b848c4b8c9dbf6412ef21c1f845e08c336f13bac11fe",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/42-local-environment.json",
+      "source_url": "",
+      "retrieved_at": "2026-11-10",
+      "status": "local read-only observations",
+      "size_bytes": 677,
+      "sha256": "19011b1102c5016652b9eb46609b656d663fac8738cbc96299c608636ecbbb32",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/gap-search-1.json",
+      "source_url": "https://api.github.com/search/issues?q=repo%3Amaximhq%2Fbifrost%20conformance%20in%3Atitle&per_page=8",
+      "retrieved_at": "2026-11-10T14:45:02.320Z",
+      "status": "200",
+      "size_bytes": 11173,
+      "sha256": "2d1964056797dc3b623021d6e1f95a12aadc325051177af64ff33d8a54c2f8d4",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/gap-search-2.json",
+      "source_url": "https://api.github.com/search/issues?q=repo%3Amaximhq%2Fbifrost%20traffic%20replay&per_page=8",
+      "retrieved_at": "2026-11-10T14:45:03.045Z",
+      "status": "200",
+      "size_bytes": 69537,
+      "sha256": "6ffd73cfe67402b16a7bbd69cca4cb96aa5e8318ce72b718c180efe550fa1506",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/gap-search-3.json",
+      "source_url": "https://api.github.com/search/issues?q=repo%3Amaximhq%2Fbifrost%20shadow%20traffic&per_page=8",
+      "retrieved_at": "2026-11-10T14:45:03.758Z",
+      "status": "200",
+      "size_bytes": 94763,
+      "sha256": "9d8058348837e1a2c8715552d41a3c241a071694a17ac4584d078d8c26970ef1",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/gap-search-4.json",
+      "source_url": "https://api.github.com/search/issues?q=repo%3Amaximhq%2Fbifrost%20minimize&per_page=8",
+      "retrieved_at": "2026-11-10T14:45:04.375Z",
+      "status": "200",
+      "size_bytes": 57130,
+      "sha256": "e76de9e27eaab4458ce316c12fd141312dafc4659e0875b5a590e2c31e7604c8",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/issues-benchmark.json",
+      "source_url": "https://api.github.com/search/issues?q=repo%3Amaximhq%2Fbifrost%20benchmark&per_page=10",
+      "retrieved_at": "2026-11-10T14:40:43.625Z",
+      "status": "200",
+      "size_bytes": 87205,
+      "sha256": "cb3cb62d40378f4c36e2c52b4410a68e3f3488ee47afd71879c3b4812160442a",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/issues-chaos.json",
+      "source_url": "https://api.github.com/search/issues?q=repo%3Amaximhq%2Fbifrost%20chaos&per_page=10",
+      "retrieved_at": "2026-11-10T14:40:41.992Z",
+      "status": "200",
+      "size_bytes": 106438,
+      "sha256": "30686cb1ad8973673e1dfdf565b5c4e6a28cde765feeaf37904a80903cd6a24d",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/issues-replay.json",
+      "source_url": "https://api.github.com/search/issues?q=repo%3Amaximhq%2Fbifrost%20replay&per_page=10",
+      "retrieved_at": "2026-11-10T14:40:42.769Z",
+      "status": "200",
+      "size_bytes": 76583,
+      "sha256": "da66043fcf5429761bdf6fe384c89a3cf9a08556ddcf13296f8676d209223172",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/profile-BearTS.json",
+      "source_url": "https://api.github.com/users/BearTS",
+      "retrieved_at": "2026-11-10T14:40:39.659Z",
+      "status": "200",
+      "size_bytes": 1572,
+      "sha256": "501aea4067278fcc6fd35b9eb4c0a14c7be43ef38f5be6dddad2a7c41993fba6",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/profile-Pratham-Mishra04.json",
+      "source_url": "https://api.github.com/users/Pratham-Mishra04",
+      "retrieved_at": "2026-11-10T14:40:40.800Z",
+      "status": "200",
+      "size_bytes": 1683,
+      "sha256": "50ca7fa84ca4aa7bc037d9fa0ba47048ec9606882d899bf43089c976a0d388a1",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/profile-TejasGhatte.json",
+      "source_url": "https://api.github.com/users/TejasGhatte",
+      "retrieved_at": "2026-11-10T14:40:40.436Z",
+      "status": "200",
+      "size_bytes": 1607,
+      "sha256": "7827aa63871ddbb1c2f0fe704e0fc722a78378aab8b2c0238da4e2f0e77c0211",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/profile-akshaydeo.json",
+      "source_url": "https://api.github.com/users/akshaydeo",
+      "retrieved_at": "2026-11-10T14:40:39.242Z",
+      "status": "200",
+      "size_bytes": 1703,
+      "sha256": "8193327ec8c89ab6301f80cebfcd20efe8756266a8fdea1cfcd4d6c0cd70718a",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/profile-impoiler.json",
+      "source_url": "https://api.github.com/users/impoiler",
+      "retrieved_at": "2026-11-10T14:40:40.084Z",
+      "status": "200",
+      "size_bytes": 1629,
+      "sha256": "6380e52aa6c11ebf2b4bf572f968647ec5a971200563c1c9e6af3c8af26d268f",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/profile-kohlivrinda.json",
+      "source_url": "https://api.github.com/users/kohlivrinda",
+      "retrieved_at": "2026-11-10T14:40:41.166Z",
+      "status": "200",
+      "size_bytes": 1660,
+      "sha256": "185367c75dbea6454aec86af4b8aab288daea3e7dc414d16cdce6a8113030102",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-AgentPulse.json",
+      "source_url": "https://api.github.com/repos/UTSAVS26/AgentPulse/readme",
+      "retrieved_at": "2026-11-10T14:43:31.069Z",
+      "status": "200",
+      "size_bytes": 297,
+      "sha256": "9fe2b49792aa4a7b8172b40f6db3394e7f74ead655132d8a2ad345eaa541db35",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-AgentPulse.md",
+      "source_url": "https://github.com/UTSAVS26/AgentPulse/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:31.069Z",
+      "status": "README text",
+      "size_bytes": 13220,
+      "sha256": "f12233233258cd41a5a7c10310ed9482dd15cba2c0192bcb622e504cfdf0cef2",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-Assay-research.json",
+      "source_url": "https://api.github.com/repos/HeyJudo/Assay-research/readme",
+      "retrieved_at": "2026-11-10T14:43:29.243Z",
+      "status": "200",
+      "size_bytes": 306,
+      "sha256": "b7846d36daf9ca993d7cbe729d7041863c4ddd9124a5ad3640d823c43265430f",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-Assay-research.md",
+      "source_url": "https://github.com/HeyJudo/Assay-research/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:29.243Z",
+      "status": "README text",
+      "size_bytes": 7875,
+      "sha256": "9aef7888716595700f16d1bb0690998ba2956ad5b6e7412fe142407a46277e0a",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-EPOCH-AI.json",
+      "source_url": "https://api.github.com/repos/Devparth7-coder/EPOCH-AI/readme",
+      "retrieved_at": "2026-11-10T14:43:32.057Z",
+      "status": "200",
+      "size_bytes": 312,
+      "sha256": "4c56b7d5fe035777e4e41fa4a7ea9a3b24b404667e79874697262f3ccf4195af",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-EPOCH-AI.md",
+      "source_url": "https://github.com/Devparth7-coder/EPOCH-AI/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:32.057Z",
+      "status": "README text",
+      "size_bytes": 12383,
+      "sha256": "f36c82bbfd0f2db3b74661ca8a4286de4f47dcd35514ed63babe368c8a58ecc6",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-agent-gauntlet.json",
+      "source_url": "https://api.github.com/repos/ArjunAJ7/agent-gauntlet/readme",
+      "retrieved_at": "2026-11-10T14:43:28.138Z",
+      "status": "200",
+      "size_bytes": 309,
+      "sha256": "bbaeb6e9aadff2a420b0dc422fe5ac8f1ec2030f27173b925e34840c2ba18277",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-agent-gauntlet.md",
+      "source_url": "https://github.com/ArjunAJ7/agent-gauntlet/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:28.138Z",
+      "status": "README text",
+      "size_bytes": 6294,
+      "sha256": "455c4e97d20eef42b0806ff9a9ae736286179b429a89245edbb21ccbf111d389",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-agentbench-arena.json",
+      "source_url": "https://api.github.com/repos/Mohan-M04/agentbench-arena/readme",
+      "retrieved_at": "2026-11-10T14:43:28.690Z",
+      "status": "200",
+      "size_bytes": 318,
+      "sha256": "3daccdfd95622b996f458acff8042091d840b236120b9db257d6a1691bd4bda7",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-agentbench-arena.md",
+      "source_url": "https://github.com/Mohan-M04/agentbench-arena/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:28.690Z",
+      "status": "README text",
+      "size_bytes": 17395,
+      "sha256": "19b822206d8c5f31f43199870e687b4eac31f6dc3722e43311413a6a0e50206c",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-bifrost-fresh-cache.json",
+      "source_url": "https://api.github.com/repos/MadhusudhanM23/bifrost-fresh-cache/readme",
+      "retrieved_at": "2026-11-10T14:43:29.762Z",
+      "status": "200",
+      "size_bytes": 342,
+      "sha256": "9bb735ab3563a04528dd91a1b22ddd9216b82a000bd4167c675b2432d0dcf064",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-bifrost-fresh-cache.md",
+      "source_url": "https://github.com/MadhusudhanM23/bifrost-fresh-cache/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:29.762Z",
+      "status": "README text",
+      "size_bytes": 28315,
+      "sha256": "863c4631d0b3fdd516df85c347ac289736bebb62e2f74cf6a7c1c1ab86a14a94",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-crucible.json",
+      "source_url": "https://api.github.com/repos/NitinSukthe-G/crucible/readme",
+      "retrieved_at": "2026-11-10T14:43:27.669Z",
+      "status": "200",
+      "size_bytes": 306,
+      "sha256": "7816525970c0916e64192b7068c683b309e7b17d9fd507ee3bfc4c9939a1814d",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-crucible.md",
+      "source_url": "https://github.com/NitinSukthe-G/crucible/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:27.669Z",
+      "status": "README text",
+      "size_bytes": 23531,
+      "sha256": "267a596714a8d8b4f42a1b20dfa2bc14930598aee2e7d368795a2326dda057c3",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-freshnessguard-ai.json",
+      "source_url": "https://api.github.com/repos/apoorv2202/freshnessguard-ai/readme",
+      "retrieved_at": "2026-11-10T14:43:31.564Z",
+      "status": "200",
+      "size_bytes": 324,
+      "sha256": "460357cfd6b6d154e71745db1a0ddfeb3dfd0eafc82fea2fb177886afe3f1f2d",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-freshnessguard-ai.md",
+      "source_url": "https://github.com/apoorv2202/freshnessguard-ai/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:31.564Z",
+      "status": "README text",
+      "size_bytes": 27768,
+      "sha256": "1ae45c4878282e316653ee78c6a27af2eb813edf16e6d39fe75df771efa586e3",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-tokenshield.json",
+      "source_url": "https://api.github.com/repos/Shristi1611/tokenshield/readme",
+      "retrieved_at": "2026-11-10T14:43:30.309Z",
+      "status": "200",
+      "size_bytes": 309,
+      "sha256": "6beaf76e10c0607afb1ed3c838144b9b61fbb215120b1328d777b89590744413",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/project-tokenshield.md",
+      "source_url": "https://github.com/Shristi1611/tokenshield/blob/main/README.md",
+      "retrieved_at": "2026-11-10T14:43:30.309Z",
+      "status": "README text",
+      "size_bytes": 4397,
+      "sha256": "6376c22ebc97e595c7165104e65e840b11b0cc15ff85890e908a7334f71eccfe",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/repo-search-1.json",
+      "source_url": "https://api.github.com/search/repositories?q=%22Global%20AI%20Hackathon%22%20Bifrost%20in%3Areadme&sort=updated&per_page=20",
+      "retrieved_at": "2026-11-10T14:42:50.523Z",
+      "status": "200",
+      "size_bytes": 132316,
+      "sha256": "5e38ddabeaa39ca49803ee07b8dcd6c24f2cc1fb89b5609f31500b1ce37a7eac",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/repo-search-2.json",
+      "source_url": "https://api.github.com/search/repositories?q=%22Geek%20Room%22%20hackathon%20in%3Areadme&sort=updated&per_page=20",
+      "retrieved_at": "2026-11-10T14:42:51.357Z",
+      "status": "200",
+      "size_bytes": 133233,
+      "sha256": "09c9c6aecf7e103cfe10388f9b2bb3f01aca46cc0cb967041f940cb2f1cc9124",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/repo-search-full.json",
+      "source_url": "https://api.github.com/search/repositories?q=%22Global%20AI%20Hackathon%22%20Bifrost%20in%3Areadme&sort=updated&per_page=100",
+      "retrieved_at": "2026-11-10T14:45:01.746Z",
+      "status": "200",
+      "size_bytes": 304596,
+      "sha256": "f2d1514d1f76f56592114d6dea4f7f1fa9dd5a7b99112a3ce95d5858d66251f0",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/search-01-event-winners.json",
+      "source_url": "https://www.google.com/search?q=Global+AI+Hackathon+Geek+Room+Bifrost+Maxim+winners+2026",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "page snapshot",
+      "size_bytes": 6779,
+      "sha256": "361a90ec7ead604d883a109e8da4ddee70cf4e7b7a2b4442c517d80272340ad3",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-2.json",
+      "source_url": "https://www.google.com/search?udm=14&q=Maxim%20AI%20agent%20simulation%20evaluation%20platform%20replay%20founders%20hiring",
+      "retrieved_at": "2026-11-10T14:41:18.040Z",
+      "status": "page snapshot",
+      "size_bytes": 6221,
+      "sha256": "735bc687ff38e45fb1e9dd324ef8f99ba5c428a160598244217bb980af6da700",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/search-3.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Geek%20Room%22%20%22Global%20AI%20Hackathon%22%20%22winner%22",
+      "retrieved_at": "2026-11-10T14:41:18.893Z",
+      "status": "page snapshot",
+      "size_bytes": 5749,
+      "sha256": "46e81abcdb2fc0c60b8f81ae9a97be106154861e7493312f75a9b43f6a07faec",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-4.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Bifrost%22%20%22hackathon%22%20%22project%22%20%222026%22",
+      "retrieved_at": "2026-11-10T14:41:19.501Z",
+      "status": "page snapshot",
+      "size_bytes": 5728,
+      "sha256": "6ea4315d5949d74f62794765bf4496db12dbc760f0b7f9c76023ec360a2e1fe5",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-5.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Global%20AI%20Hackathon%22%20%22Bifrost%22%20%22github.com%22",
+      "retrieved_at": "2026-11-10T14:41:19.983Z",
+      "status": "page snapshot",
+      "size_bytes": 5162,
+      "sha256": "6a55c9e8718b00e0f1ee4cd8d7db2fa73a7fb02dfab8feb861099f82722ca9fb",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-1.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Geek%20Room%22%20%22Global%20AI%20Hackathon%22%20winners%20-site%3Ainstagram.com%20-site%3Afacebook.com",
+      "retrieved_at": "2026-11-10T14:47:15.313Z",
+      "status": "page snapshot",
+      "size_bytes": 5543,
+      "sha256": "d957cb5fd23cae3b90bb9ac98e7cd00fe162fdc99cb547d1155f4cbb9193b935",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-10.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Maxim%20AI%22%20%22hackathon%22%20winners",
+      "retrieved_at": "2026-11-10T14:47:21.381Z",
+      "status": "page snapshot",
+      "size_bytes": 5539,
+      "sha256": "28eb41073c7b321b416a73f8a422a568782f283d0b6d1ddb9acfae83caf5baa0",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-2.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Hack%20Geek%20Room%22%20winners%202026%20Bifrost",
+      "retrieved_at": "2026-11-10T14:47:16.040Z",
+      "status": "page snapshot",
+      "size_bytes": 5510,
+      "sha256": "09580f7d6b72e95b116216038c013d7a1a2a5be18893e6b28cf87ed5f0f1f6a4",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-3.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Bifrost%22%20%22hackathon%22%20winner%20Maxim",
+      "retrieved_at": "2026-11-10T14:47:16.654Z",
+      "status": "page snapshot",
+      "size_bytes": 5529,
+      "sha256": "dc590b7647a205ecc09d6d565a287cf1571486368cb539b285fee5b33d888b84",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-4.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22LLM%20gateway%22%20%22conformance%22%20replay",
+      "retrieved_at": "2026-11-10T14:47:17.382Z",
+      "status": "page snapshot",
+      "size_bytes": 5805,
+      "sha256": "f000dff1b127ea42594d9415952f1baa0a59802109f66f90b2a9286a38bf6202",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-5.json",
+      "source_url": "https://www.google.com/search?udm=14&q=Keploy%20LLM%20streaming%20record%20replay%20test%20official",
+      "retrieved_at": "2026-11-10T14:47:17.966Z",
+      "status": "page snapshot",
+      "size_bytes": 5492,
+      "sha256": "756a18448585f1e6e43a80a05071106a16aac870e16b5c2e0961c2ff489a9754",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-6.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Bifrost%22%20%22replay%22%20%22studio%22",
+      "retrieved_at": "2026-11-10T14:47:18.780Z",
+      "status": "page snapshot",
+      "size_bytes": 5889,
+      "sha256": "81c8b4c58de5f8c3649ae1e32bb97f9df4e00ee572deede23eea76e0e3ba6b65",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-7.json",
+      "source_url": "https://www.google.com/search?udm=14&q=OpenAI%20Chat%20Completions%20streaming%20include_usage%20tool_calls%20official%20docs",
+      "retrieved_at": "2026-11-10T14:47:19.525Z",
+      "status": "page snapshot",
+      "size_bytes": 6381,
+      "sha256": "ab69da89dcda97c00344018e0f8620a7cfd01c4585bfb15a16aa14eddd83cc7d",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-deep-8.json",
+      "source_url": "https://www.google.com/search?udm=14&q=Anthropic%20Messages%20streaming%20input_json_delta%20message_delta%20usage%20official",
+      "retrieved_at": "2026-11-10T14:47:20.151Z",
+      "status": "page snapshot",
+      "size_bytes": 5687,
+      "sha256": "48777fe6e94e0115f7ca7313449f1d4cfe314c25ff364af5f9682279cb10dd96",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/search-deep-9.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Dhwanil%20Pithva%22%20Bifrost%20Maxim",
+      "retrieved_at": "2026-11-10T14:47:20.769Z",
+      "status": "page snapshot",
+      "size_bytes": 5574,
+      "sha256": "50645b82bfa60d2b80dcbbca3a0c21955c89653b5b3cab8204c410d77b760640",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-final-1.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Bifrost%22%20%22protocol%22%20%22differential%22",
+      "retrieved_at": "2026-11-10T14:49:32.829Z",
+      "status": "page snapshot",
+      "size_bytes": 5966,
+      "sha256": "6d45d8b5970e9b7ffb49175a297bafd533777922c7ac5981a6facc16fbb3ddac",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-final-2.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22LLM%22%20%22conformance%22%20%22minimization%22%20gateway",
+      "retrieved_at": "2026-11-10T14:49:33.441Z",
+      "status": "page snapshot",
+      "size_bytes": 6287,
+      "sha256": "5353cdd86746d45c6955c8bf826fe269898b9a62b789d824e5fbd2b135b198db",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-final-3.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Tavily%22%20%22Nebius%22%20acquisition%20official",
+      "retrieved_at": "2026-11-10T14:49:34.030Z",
+      "status": "page snapshot",
+      "size_bytes": 6113,
+      "sha256": "a86d550427a89609a981e655887fc7155c3e1aaa832ffa9a81150d0a4b517916",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-final-4.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Tavily%22%20%22research%22%20%222026%22%20site%3Atavily.com%2Fblog",
+      "retrieved_at": "2026-11-10T14:49:34.700Z",
+      "status": "page snapshot",
+      "size_bytes": 5909,
+      "sha256": "83aaa41779021c073b3d803baf989b14107ad3c23822e5f42e688e03c8fc020b",
+      "privacy_sanitized": true
+    },
+    {
+      "path": "sources/search-final-5.json",
+      "source_url": "https://www.google.com/search?udm=14&q=site%3Agithub.com%2Fmaximhq%2Fbifrost%20%22Dhwanil%22%20%22danpiths%22",
+      "retrieved_at": "2026-11-10T14:49:35.209Z",
+      "status": "page snapshot",
+      "size_bytes": 961,
+      "sha256": "d6b61c1cb3bbe3176a829ae9b65b8a4cf4304bb529d79b753441c4692b1acdc7",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/search-final-6.json",
+      "source_url": "https://www.google.com/search?udm=14&q=%22Global%20AI%20Hackathon%22%20%22Hack-Nation%22%20winners%20official",
+      "retrieved_at": "2026-11-10T14:49:35.802Z",
+      "status": "page snapshot",
+      "size_bytes": 5839,
+      "sha256": "2848dc67a034796e5fd1176440cac2e6a5dfed96d0e2ee2d6e77670fbc2053a8",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-1.json",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_ck1ellfr6qh.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "brief metadata",
+      "size_bytes": 767,
+      "sha256": "2c1e94e566e66d8e15fd44a38a0fc0250e77787d46abcd41e053e09890bcd0a9",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-1.pdf",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_ck1ellfr6qh.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "official PDF",
+      "size_bytes": 239223,
+      "sha256": "5931f1eddc429945231c7bc19a85be8b17ae3f8d13eafa2eaf55987a47dc1194",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-1.txt",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_ck1ellfr6qh.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "PDF extraction",
+      "size_bytes": 2097,
+      "sha256": "4f68d1c821c5ed7b8ce42518d45239412f8ba60216754bec8146485cf79a7e0b",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-2.json",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_q2jha91frd9.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "brief metadata",
+      "size_bytes": 812,
+      "sha256": "9d3fe30ab762762fa43c8b07e40ef48e99d82d8c2feb798ba0d50e32164cfed4",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-2.pdf",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_q2jha91frd9.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "official PDF",
+      "size_bytes": 240654,
+      "sha256": "97675f14ee84344546b663ce98e886e6dbd414b20601e5b59b90a57bff2cfaf7",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-2.txt",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_q2jha91frd9.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "PDF extraction",
+      "size_bytes": 2118,
+      "sha256": "5fcf38804d5f10ed1000feef4074f4f909e263f686445b7f870d61e15dff7817",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-3.json",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_lawn3ha165.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "brief metadata",
+      "size_bytes": 794,
+      "sha256": "c696a7f422fe216693bb3f716e66e733608cbc1e7346cfc60e6203e596c72356",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-3.pdf",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_lawn3ha165.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "official PDF",
+      "size_bytes": 241523,
+      "sha256": "7a1a85fb98bbd55597f2a2eab2eff5272327b99f15afc56fa3cdc26aa57daa13",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-3.txt",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_lawn3ha165.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "PDF extraction",
+      "size_bytes": 2291,
+      "sha256": "2747f1c28542790be5f8b3157f377b2aa205a2b117b8436569530509f1e0fcc2",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-4.json",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_xssoky9neyn.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "brief metadata",
+      "size_bytes": 764,
+      "sha256": "3a02454717b6389f272068ba41f17013991d229e6c045c07e6e1b993e61238fd",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-4.pdf",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_xssoky9neyn.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "official PDF",
+      "size_bytes": 239869,
+      "sha256": "de34ebd6b3fcfb9dbbfc09c2e50260a4c9fb05b38f5b0a5de6acce59eb969cfa",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-4.txt",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_xssoky9neyn.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "PDF extraction",
+      "size_bytes": 1927,
+      "sha256": "71335424dc81a43d6ffbd12171ef1c6164525e8029e2658871edc57b46c11b04",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-5.json",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_a1nx56ua55u.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "brief metadata",
+      "size_bytes": 694,
+      "sha256": "03bc25a92929ee4e1e73714e760157d47f170f14d71e3a646d2164032379bcf8",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-5.pdf",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_a1nx56ua55u.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "official PDF",
+      "size_bytes": 231475,
+      "sha256": "a0ec57864453de7ff8ac4375bc504fc8d5391395e8475587b54ef3d1ee9685e4",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-5.txt",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_a1nx56ua55u.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "PDF extraction",
+      "size_bytes": 2017,
+      "sha256": "3a67344b238185735c7c535a972efb2a4a8e8a9e4a3700cfbb8e25f3bda36853",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-6.json",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_urf74r9ydml.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "brief metadata",
+      "size_bytes": 746,
+      "sha256": "8ec142241a23230046fd2cff984e5d514b579b46081e7e5c1ce34e536dd7ed37",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-6.pdf",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_urf74r9ydml.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "official PDF",
+      "size_bytes": 265558,
+      "sha256": "7621c0604cf1c485fd54149bab5f0999cacfce73e53d0c63224dbb5b7e5aabe0",
+      "privacy_sanitized": false
+    },
+    {
+      "path": "sources/theme-6.txt",
+      "source_url": "https://hackcultureplatform.blob.core.windows.net/event-assets/hackathons/6ac5c8240037f69fb28e23ec/problem_explanation_urf74r9ydml.pdf",
+      "retrieved_at": "2026-11-10 (exact time not stored)",
+      "status": "PDF extraction",
+      "size_bytes": 2177,
+      "sha256": "e9992314aa52288b7fa92935ddc0a7e8e6c9eb3e7ea02d81996c8f7f33bd6823",
+      "privacy_sanitized": false
+    }
+  ]
+}

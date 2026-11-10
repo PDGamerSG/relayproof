@@ -1,0 +1,2 @@
+# Preserve source-snapshot whitespace; source integrity is checked by SHA-256.
+research/sources/** -whitespace

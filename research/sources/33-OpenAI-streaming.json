@@ -1,0 +1,2336 @@
+{
+  "url": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events",
+  "title": "Chat Completions streaming events | OpenAI API Reference",
+  "text": "API Reference\nChat\nCompletions\nCopy Markdown\nStreaming events\n\nStream Chat Completions in real time. Receive chunks of completions returned from the model using server-sent events. Learn more.\n\nchat.completion.chunk\n\nRepresents a streamed chunk of a chat completion response returned by the model, based on the provided input. Learn more.\n\nid: string\n\nA unique identifier for the chat completion. Each chunk has the same ID.\n\nchoices: array of { delta, index, finish_reason, logprobs }\n\nA list of chat completion choices. Can contain more than one elements if n is greater than 1. Can also be empty for the last chunk if you set stream_options: {\"include_usage\": true}.\n\ncreated: integer\n\nThe Unix timestamp (in seconds) of when the chat completion was created. Each chunk has the same timestamp.\n\nformatunixtime\nmodel: string\n\nThe model to generate the completion.\n\nobject: \"chat.completion.chunk\"\n\nThe object type, which is always chat.completion.chunk.\n\nmoderation: optional object or null\n\nModeration results for the request input and generated output. Present on the moderation chunk when moderated completions are requested.\n\nobfuscation: optional string\n\nAn obfuscation string added to normalize the size of streamed chunks as a mitigation to certain side-channel attacks. The field is included by default and omitted when stream_options.include_obfuscation is false.\n\nservice_tier: optional \"auto\" or \"default\" or \"flex\" or 3 more or null (default: \"auto\")\n\nSpecifies the processing type used for serving the request.\n\nIf set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.\nIf set to 'default', then the request will be processed with the standard pricing and performance for the selected model.\nIf set to 'flex', then the request will be processed with the Flex Processing service tier.\nTo opt-in to Fast mode at the request level, include the service_tier=fast or service_tier=priority parameter for Responses or Chat Completions. The response will show service_tier=priority regardless of if you specify service_tier=fast or priority in your request.\nWhen not set, the default behavior is 'auto'.\n\nWhen the service_tier parameter is set, the response body will include the service_tier value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.\n\nsystem_fingerprint: optional string\n\nDeprecated.\n\nThis fingerprint represents the backend configuration that the model runs with. Can be used in conjunction with the seed request parameter to understand when backend changes have been made that might impact determinism.\n\nusage: optional CompletionUsage or null\n\nAn optional field that will only be present when you set stream_options: {\"include_usage\": true} in your request. When present, it contains a null value except for the last chunk which contains the token usage statistics for the entire request.\n\nNOTE: If the stream is interrupted or cancelled, you may not receive the final usage chunk which contains the total token usage for the request.\n\nchat.completion.chunk\n{\"id\":\"chatcmpl-123\",\"object\":\"chat.completion.chunk\",\"created\":1694268190,\"model\":\"gpt-6-astra\", \"system_fingerprint\": \"fp_44709d6fcb\", \"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"logprobs\":null,\"finish_reason\":null}],\"obfuscation\":\"r4N7vQ2m\"}",
+  "links": [
+    {
+      "text": "Skip to content",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#_top"
+    },
+    {
+      "text": "llms.txt",
+      "href": "https://developers.openai.com/llms.txt"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/"
+    },
+    {
+      "text": "API Dashboard",
+      "href": "https://platform.openai.com/login"
+    },
+    {
+      "text": "Try ChatGPT",
+      "href": "https://chatgpt.com/"
+    },
+    {
+      "text": "Home",
+      "href": "https://developers.openai.com/"
+    },
+    {
+      "text": "API",
+      "href": "https://developers.openai.com/api/docs"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/docs"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/docs/guides/agents"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/docs/guides/tools"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/docs/guides/audio"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/docs/guides/production-best-practices"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/overview"
+    },
+    {
+      "text": "ChatGPT",
+      "href": "https://developers.openai.com/chatgpt"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/plugins"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/siwc"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/commerce"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/ads"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/workspace-agents"
+    },
+    {
+      "text": "",
+      "href": "https://learn.chatgpt.com/docs"
+    },
+    {
+      "text": "",
+      "href": "https://learn.chatgpt.com/use-cases"
+    },
+    {
+      "text": " Docs  ",
+      "href": "https://developers.openai.com/codex"
+    },
+    {
+      "text": " Use cases  ",
+      "href": "https://learn.chatgpt.com/use-cases"
+    },
+    {
+      "text": " Resources  ",
+      "href": "https://developers.openai.com/codex/resources"
+    },
+    {
+      "text": "Resources",
+      "href": "https://developers.openai.com/learn"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/showcase"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/blog"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/cookbook"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/learn"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/community"
+    },
+    {
+      "text": "Overview",
+      "href": "https://developers.openai.com/api/docs"
+    },
+    {
+      "text": "Models",
+      "href": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "text": "Agents",
+      "href": "https://developers.openai.com/api/docs/guides/agents"
+    },
+    {
+      "text": "Tools",
+      "href": "https://developers.openai.com/api/docs/guides/tools"
+    },
+    {
+      "text": "Audio & voice",
+      "href": "https://developers.openai.com/api/docs/guides/audio"
+    },
+    {
+      "text": "Production",
+      "href": "https://developers.openai.com/api/docs/guides/production-best-practices"
+    },
+    {
+      "text": "API reference",
+      "href": "https://developers.openai.com/api/reference/overview"
+    },
+    {
+      "text": " Overview  ",
+      "href": "https://developers.openai.com/api/docs"
+    },
+    {
+      "text": " Models  ",
+      "href": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "text": " Agents  ",
+      "href": "https://developers.openai.com/api/docs/guides/agents"
+    },
+    {
+      "text": " Tools  ",
+      "href": "https://developers.openai.com/api/docs/guides/tools"
+    },
+    {
+      "text": " Audio & voice  ",
+      "href": "https://developers.openai.com/api/docs/guides/audio"
+    },
+    {
+      "text": " Production  ",
+      "href": "https://developers.openai.com/api/docs/guides/production-best-practices"
+    },
+    {
+      "text": " API reference  ",
+      "href": "https://developers.openai.com/api/reference/overview"
+    },
+    {
+      "text": " Overview  ",
+      "href": "https://developers.openai.com/chatgpt"
+    },
+    {
+      "text": " Plugins  ",
+      "href": "https://developers.openai.com/plugins"
+    },
+    {
+      "text": " Sign in with ChatGPT  ",
+      "href": "https://developers.openai.com/siwc"
+    },
+    {
+      "text": " Commerce  ",
+      "href": "https://developers.openai.com/commerce"
+    },
+    {
+      "text": " Ads  ",
+      "href": "https://developers.openai.com/ads"
+    },
+    {
+      "text": " Workspace Agents  ",
+      "href": "https://developers.openai.com/workspace-agents"
+    },
+    {
+      "text": " ChatGPT + Codex user docs  ",
+      "href": "https://learn.chatgpt.com/docs"
+    },
+    {
+      "text": " Use cases  ",
+      "href": "https://learn.chatgpt.com/use-cases"
+    },
+    {
+      "text": " Showcase  ",
+      "href": "https://developers.openai.com/showcase"
+    },
+    {
+      "text": " Blog  ",
+      "href": "https://developers.openai.com/blog"
+    },
+    {
+      "text": " Cookbook  ",
+      "href": "https://developers.openai.com/cookbook"
+    },
+    {
+      "text": " Learn  ",
+      "href": "https://developers.openai.com/learn"
+    },
+    {
+      "text": " Community  ",
+      "href": "https://developers.openai.com/community"
+    },
+    {
+      "text": "API Dashboard",
+      "href": "https://platform.openai.com/login"
+    },
+    {
+      "text": "Try ChatGPT",
+      "href": "https://chatgpt.com/"
+    },
+    {
+      "text": " API ",
+      "href": "https://developers.openai.com/api/docs"
+    },
+    {
+      "text": " ChatGPT ",
+      "href": "https://developers.openai.com/chatgpt"
+    },
+    {
+      "text": " Docs ",
+      "href": "https://developers.openai.com/codex"
+    },
+    {
+      "text": " Use cases ",
+      "href": "https://learn.chatgpt.com/use-cases"
+    },
+    {
+      "text": " Resources ",
+      "href": "https://developers.openai.com/resources"
+    },
+    {
+      "text": " Resources ",
+      "href": "https://developers.openai.com/learn"
+    },
+    {
+      "text": " Overview ",
+      "href": "https://developers.openai.com/api/docs"
+    },
+    {
+      "text": " Models ",
+      "href": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "text": " Agents ",
+      "href": "https://developers.openai.com/api/docs/guides/agents"
+    },
+    {
+      "text": " Tools ",
+      "href": "https://developers.openai.com/api/docs/guides/tools"
+    },
+    {
+      "text": " Audio & voice ",
+      "href": "https://developers.openai.com/api/docs/guides/audio"
+    },
+    {
+      "text": " Production ",
+      "href": "https://developers.openai.com/api/docs/guides/production-best-practices"
+    },
+    {
+      "text": " API reference ",
+      "href": "https://developers.openai.com/api/reference/overview"
+    },
+    {
+      "text": "Introduction",
+      "href": "https://developers.openai.com/api/reference/overview"
+    },
+    {
+      "text": "Authentication",
+      "href": "https://developers.openai.com/api/reference/overview#authentication"
+    },
+    {
+      "text": "Workload identity tokens",
+      "href": "https://developers.openai.com/api/reference/workload-identity-federation"
+    },
+    {
+      "text": "Debugging requests",
+      "href": "https://developers.openai.com/api/reference/overview#debugging-requests"
+    },
+    {
+      "text": "Backwards compatibility",
+      "href": "https://developers.openai.com/api/reference/overview#backwards-compatibility"
+    },
+    {
+      "text": "Overview",
+      "href": "https://developers.openai.com/api/reference/responses/overview"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/subresources/input_items/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/methods/compact"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/responses/methods/connect"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/subresources/items/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/subresources/items/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/subresources/items/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/conversations/subresources/items/methods/list"
+    },
+    {
+      "text": "Streaming events",
+      "href": "https://developers.openai.com/api/reference/resources/responses/streaming-events"
+    },
+    {
+      "text": "WebSocket events",
+      "href": "https://developers.openai.com/api/reference/resources/responses/websocket-events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/methods/compact"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/methods/connect"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/subresources/input_items/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/subresources/input_tokens/methods/count"
+    },
+    {
+      "text": "Streaming events",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/streaming-events"
+    },
+    {
+      "text": "WebSocket events",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/responses/websocket-events"
+    },
+    {
+      "text": "Events",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks"
+    },
+    {
+      "text": "Create a webhook",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks/methods/create"
+    },
+    {
+      "text": "Retrieve a webhook",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks/methods/retrieve"
+    },
+    {
+      "text": "Update a webhook",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks/methods/update"
+    },
+    {
+      "text": "Delete a webhook",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks/methods/delete"
+    },
+    {
+      "text": "List webhooks",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks/methods/list"
+    },
+    {
+      "text": "Rotate Webhook Endpoint Signing Secret",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks/methods/rotate_secret"
+    },
+    {
+      "text": "Test Webhook Endpoint",
+      "href": "https://developers.openai.com/api/reference/resources/webhooks/methods/test"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/primary-websocket"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/sideband-websocket"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/fork-websocket"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/subresources/sessions/methods/accept"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/subresources/sessions/methods/download_recording"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/subresources/sessions/methods/fork"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/subresources/sessions/methods/hangup"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/subresources/sessions/methods/refer"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/live/subresources/sessions/methods/reject"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/speech/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/streaming-events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/translations/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/voice_consents/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/voice_consents/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/voice_consents/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/voice_consents/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/voice_consents/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/voices/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/audio/subresources/voices/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/images/methods/generate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/images/methods/edit"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/images/methods/create_variation"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/images/generation-streaming-events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/images/edit-streaming-events"
+    },
+    {
+      "text": "Decisions",
+      "href": "https://developers.openai.com/api/reference/resources/decisions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/embeddings/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/subresources/runs/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/subresources/runs/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/subresources/runs/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/subresources/runs/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/subresources/runs/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/subresources/runs/subresources/output_items/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/evals/subresources/runs/subresources/output_items/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/alpha/subresources/graders/methods/run"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/alpha/subresources/graders/methods/validate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/checkpoints/subresources/permissions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/checkpoints/subresources/permissions/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/checkpoints/subresources/permissions/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/checkpoints/subresources/permissions/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/list_events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/pause"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/resume"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/subresources/checkpoints/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/batches/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/batches/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/batches/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/batches/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/files/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/files/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/files/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/files/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/files/methods/content"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/uploads/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/uploads/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/uploads/methods/complete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/uploads/subresources/parts/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/models/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/models/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/models/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/moderations/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/safety/subresources/alerts/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/safety/subresources/cases/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/content_provenance_checks/methods/create"
+    },
+    {
+      "text": "Create an agent",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/methods/create"
+    },
+    {
+      "text": "Retrieve an agent",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/methods/retrieve"
+    },
+    {
+      "text": "Update an agent",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/methods/update"
+    },
+    {
+      "text": "Delete an agent",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/methods/delete"
+    },
+    {
+      "text": "List agents",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/methods/pause"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/methods/resume"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/subresources/invocations/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/subresources/invocations/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/automations/subresources/invocations/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/subresources/files/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/subresources/files/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/subresources/templates/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/subresources/templates/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/subresources/templates/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/subresources/templates/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/environments/subresources/templates/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/artifacts/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/artifacts/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/artifacts/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/artifacts/methods/content"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/events/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/events/methods/stream"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/streaming-events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/items/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/subagents/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/subagents/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/subagents/subresources/items/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/subagents/subresources/turns/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/subagents/subresources/turns/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/subagents/subresources/turns/subresources/items/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/traces/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/turns/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/turns/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/sessions/subresources/turns/subresources/items/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/subresources/credentials/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/subresources/credentials/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/subresources/credentials/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/subresources/credentials/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/agents/subresources/vaults/subresources/credentials/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/methods/search"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/file_batches/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/file_batches/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/file_batches/methods/list_files"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/file_batches/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/files/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/files/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/files/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/files/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/files/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/vector_stores/subresources/files/methods/content"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/chatkit/subresources/sessions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/chatkit/subresources/sessions/methods/cancel"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/chatkit/subresources/threads/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/chatkit/subresources/threads/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/chatkit/subresources/threads/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/beta/subresources/chatkit/subresources/threads/methods/list_items"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/subresources/files/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/subresources/files/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/subresources/files/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/subresources/files/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/containers/subresources/files/subresources/content/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/subresources/content/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/subresources/versions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/subresources/versions/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/subresources/versions/subresources/content/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/subresources/versions/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/skills/subresources/versions/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/translations/methods/connect"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/translations/subresources/client_secrets/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/translation-client-events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/translation-server-events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/calls/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/calls/methods/accept"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/calls/methods/hangup"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/calls/methods/refer"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/calls/methods/reject"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets/methods/create"
+    },
+    {
+      "text": "Connect",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/methods/connect"
+    },
+    {
+      "text": "Client events",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/client-events"
+    },
+    {
+      "text": "Server events",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/server-events"
+    },
+    {
+      "text": "Overview",
+      "href": "https://developers.openai.com/api/reference/administration/overview"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/admin_api_keys/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/admin_api_keys/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/admin_api_keys/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/admin_api_keys/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/audit_logs/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/certificates/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/certificates/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/certificates/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/certificates/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/certificates/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/certificates/methods/activate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/certificates/methods/deactivate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/data_retention/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/data_retention/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_keys/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_keys/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_keys/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_keys/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_keys/methods/validate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_storage/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_storage/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_storage/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_storage/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/external_storage/methods/validate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/roles/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/roles/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/roles/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/roles/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/users/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/users/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/users/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/groups/subresources/users/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/invites/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/invites/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/invites/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/invites/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/methods/archive"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/api_keys/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/api_keys/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/api_keys/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/api_keys/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/certificates/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/certificates/methods/activate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/certificates/methods/deactivate"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/data_retention/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/data_retention/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/subresources/roles/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/subresources/roles/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/subresources/roles/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/groups/subresources/roles/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/hosted_tool_permissions/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/hosted_tool_permissions/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/model_permissions/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/model_permissions/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/model_permissions/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/rate_limits/methods/update_rate_limit"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/rate_limits/methods/list_rate_limits"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/roles/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/roles/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/roles/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/roles/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/roles/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_accounts/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_accounts/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_accounts/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_accounts/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_accounts/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_accounts/subresources/api_keys/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_tier_settings/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/service_tier_settings/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_alerts/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_alerts/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_alerts/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_alerts/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_alerts/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_limit/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_limit/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/spend_limit/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/subresources/roles/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/subresources/roles/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/subresources/roles/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/projects/subresources/users/subresources/roles/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/roles/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/roles/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/roles/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/roles/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/roles/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_alerts/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_alerts/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_alerts/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_alerts/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_alerts/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_limit/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_limit/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/spend_limit/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/audio_speeches"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/audio_transcriptions"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/code_interpreter_sessions"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/completions"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/decisions"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/embeddings"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/file_search_calls"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/images"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/moderations"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/vector_stores"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/web_search_calls"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/subresources/roles/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/subresources/roles/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/subresources/roles/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/users/subresources/roles/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/methods/list"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/subresources/federation_rules/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/subresources/federation_rules/methods/retrieve"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/subresources/federation_rules/methods/update"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/subresources/federation_rules/methods/delete"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/workload_identity_providers/subresources/federation_rules/methods/list"
+    },
+    {
+      "text": "Overview",
+      "href": "https://developers.openai.com/api/reference/chat-completions/overview"
+    },
+    {
+      "text": "Create a chat completion",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create"
+    },
+    {
+      "text": "Retrieve a chat completion",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/retrieve"
+    },
+    {
+      "text": "Update a chat completion",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/update"
+    },
+    {
+      "text": "Delete a chat completion",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/delete"
+    },
+    {
+      "text": "List chat completions",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/list"
+    },
+    {
+      "text": "List chat completions",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/subresources/messages/methods/list"
+    },
+    {
+      "text": "Streaming events",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/realtime-beta/overview"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/sessions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/realtime/subresources/transcription_sessions/methods/create"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/completions/methods/create"
+    },
+    {
+      "text": "API Reference",
+      "href": "https://developers.openai.com/api/reference"
+    },
+    {
+      "text": "Chat",
+      "href": "https://developers.openai.com/api/reference/resources/chat"
+    },
+    {
+      "text": "Completions",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions"
+    },
+    {
+      "text": "Learn more",
+      "href": "https://developers.openai.com/api/docs/guides/streaming-responses"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#chat.completion.chunk"
+    },
+    {
+      "text": "Learn more",
+      "href": "https://developers.openai.com/api/docs/guides/streaming-responses"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20id"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20audio%20%3E%20(property)%20id"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20audio%20%3E%20(property)%20data"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20audio%20%3E%20(property)%20expires_at"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20audio%20%3E%20(property)%20transcript"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20audio"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20content"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20function_call%20%3E%20(property)%20arguments"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20function_call%20%3E%20(property)%20name"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20function_call"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20refusal"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20role%20%3E%20(member)%200"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20role%20%3E%20(member)%201"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20role%20%3E%20(member)%202"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20role%20%3E%20(member)%203"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20role%20%3E%20(member)%204"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20role"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20tool_calls%20%3E%20(items)%20%3E%20(property)%20index"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20tool_calls%20%3E%20(items)%20%3E%20(property)%20id"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20tool_calls%20%3E%20(items)%20%3E%20(property)%20function%20%3E%20(property)%20arguments"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20tool_calls%20%3E%20(items)%20%3E%20(property)%20function%20%3E%20(property)%20name"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20tool_calls%20%3E%20(items)%20%3E%20(property)%20function"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20tool_calls%20%3E%20(items)%20%3E%20(property)%20type"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta%20%3E%20(property)%20tool_calls"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20delta"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20index"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20finish_reason%20%3E%20(member)%200"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20finish_reason%20%3E%20(member)%201"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20finish_reason%20%3E%20(member)%202"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20finish_reason%20%3E%20(member)%203"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20finish_reason%20%3E%20(member)%204"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20finish_reason"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20token"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20bytes"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20logprob"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs%20%3E%20(items)%20%3E%20(property)%20token"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs%20%3E%20(items)%20%3E%20(property)%20bytes"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs%20%3E%20(items)%20%3E%20(property)%20logprob"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20logprobs%20%3E%20(property)%20content"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20token"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20bytes"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20logprob"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs%20%3E%20(items)%20%3E%20(property)%20token"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs%20%3E%20(items)%20%3E%20(property)%20bytes"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs%20%3E%20(items)%20%3E%20(property)%20logprob"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_token_logprob%20%3E%20(schema)%20%3E%20(property)%20top_logprobs"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20logprobs%20%3E%20(property)%20refusal"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices%20%3E%20(items)%20%3E%20(property)%20logprobs"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20choices"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20created"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20model"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20object"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20model"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20categories"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_applied_input_types%20%3E%20(items)%20%3E%20(items)%20%3E%20(member)%200"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_applied_input_types%20%3E%20(items)%20%3E%20(items)%20%3E%20(member)%201"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_applied_input_types"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_scores"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20flagged"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20model"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20type"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20results"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200%20%3E%20(property)%20type"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%200"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%201%20%3E%20(property)%20code"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%201%20%3E%20(property)%20message"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%201%20%3E%20(property)%20type"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input%20%3E%20(variant)%201"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20input"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20model"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20categories"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_applied_input_types%20%3E%20(items)%20%3E%20(items)%20%3E%20(member)%200"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_applied_input_types%20%3E%20(items)%20%3E%20(items)%20%3E%20(member)%201"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_applied_input_types"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20category_scores"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20flagged"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20model"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results%20%3E%20(items)%20%3E%20(property)%20type"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20results"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200%20%3E%20(property)%20type"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%200"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%201%20%3E%20(property)%20code"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%201%20%3E%20(property)%20message"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%201%20%3E%20(property)%20type"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output%20%3E%20(variant)%201"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation%20%3E%20(property)%20output"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20moderation"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20obfuscation"
+    },
+    {
+      "text": "flex",
+      "href": "https://developers.openai.com/api/docs/guides/flex-processing"
+    },
+    {
+      "text": "Fast mode",
+      "href": "https://developers.openai.com/api/docs/guides/fast-mode"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20service_tier%20%3E%20(member)%200"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20service_tier%20%3E%20(member)%201"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20service_tier%20%3E%20(member)%202"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20service_tier%20%3E%20(member)%203"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20service_tier%20%3E%20(member)%204"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20service_tier%20%3E%20(member)%205"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20service_tier"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20system_fingerprint"
+    },
+    {
+      "text": "CompletionUsage",
+      "href": "https://developers.openai.com/api/reference/resources/completions#(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20completion_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20prompt_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20total_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20completion_tokens_details%20%3E%20(property)%20accepted_prediction_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20completion_tokens_details%20%3E%20(property)%20audio_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20completion_tokens_details%20%3E%20(property)%20reasoning_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20completion_tokens_details%20%3E%20(property)%20rejected_prediction_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20completion_tokens_details%20%3E%20(property)%20text_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20completion_tokens_details"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20prompt_tokens_details%20%3E%20(property)%20audio_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20prompt_tokens_details%20%3E%20(property)%20cache_write_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20prompt_tokens_details%20%3E%20(property)%20cached_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20prompt_tokens_details%20%3E%20(property)%20image_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20prompt_tokens_details%20%3E%20(property)%20text_tokens"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage%20%2B%20(resource)%20completions%20%3E%20(model)%20completion_usage%20%3E%20(schema)%20%3E%20(property)%20prompt_tokens_details"
+    },
+    {
+      "text": "",
+      "href": "https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events#(resource)%20chat.completions%20%3E%20(model)%20chat_completion_chunk%20%3E%20(schema)%20%3E%20(property)%20usage"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:48:20.842Z"
+}

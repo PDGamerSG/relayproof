@@ -1,0 +1,335 @@
+{
+  "url": "https://github.com/maximhq/bifrost",
+  "title": "GitHub - maximhq/bifrost: Open-source, high-performance AI gateway that works as your LLM gateway, MCP gateway and agent gateway. One OpenAI-compatible API for 10,000+ models, with failover, load balancing, semantic caching, virtual keys, budgets and MCP Code Mode. Works with any SDK or agent and adds under 200µs of overhead at 5k RPS. · GitHub",
+  "text": "Skip to content\nNavigation Menu\nProducts\nDevelopers\nBusinesses\nResources\nPricing\nSearch\n/\nSign in\nSign up\nmaximhq\nbifrost\nRepository navigation\nCode\nIssues\n628\n (628)\nPull requests\n878\n (878)\nDiscussions\nActions\nSecurity and quality\n3\n (3)\nInsights\nbifrost\nPublic\nNotifications\nFork1.6k\n (1.6k)\nStar9.5k\n (9.5k)\ndev\n848 Branches\n2443 Tags\nCode\nLatest commit\nimpoiler\nfix(ui): only show the upgrading screen when the server confirms a ch…\n3544722\n · \nHistory\n9,089 Commits\nFolders and files\nName\tLast commit message\tLast commit date\n\n.claude/skills\n\t\nfix(core): bound each list-models page, not the whole walk, in ListAl…\n\t\n\n\n.github\n\t\nmain backmerge\n\t\n\n\n.greptile\n\t\nmigration rollback warnings for codereviews (#3846)\n\t\n\n\ncli\n\t\nwarp fixes\n\t\n\n\ncmd/e2eseed\n\t\nchore: pin mcp-go to fork release for Apps support (#9555)\n\t\n\n\ncommunity\n\t\nfix(mcp): skip invalid MCP library catalog entries and stop retrying …\n\t\n\n\ncore\n\t\nmain backmerge\n\t\n\n\ndocs\n\t\nmain backmerge\n\t\n\n\nexamples\n\t\nmain backmerge\n\t\n\n\nframework\n\t\nmain backmerge\n\t\n\n\nhelm-charts\n\t\nchore(helm): sync chart with config.schema.json for 2.1.48 (#9604)\n\t\n\n\nnix\n\t\ngo 1.27.0 upgrade (#6535)\n\t\n\n\nnpx\n\t\nfix(npx): verify downloaded gateway binary checksum (#9010)\n\t\n\n\nplugins\n\t\nmain backmerge\n\t\n\n\nrecipes\n\t\nfeat: remove direct key bypass from HTTP gateway and Go SDK (#3241)\n\t\n\n\nscripts\n\t\nfeat: add terraform module for SageMaker on AWS (#8952)\n\t\n\n\nterraform\n\t\nreadme fixes\n\t\n\n\ntests\n\t\nmain backmerge\n\t\n\n\ntransports\n\t\nfix(ui): only show the upgrading screen when the server confirms a ch…\n\t\n\n\nui\n\t\nfix(ui): only show the upgrading screen when the server confirms a ch…\n\t\n\n\n.coderabbit.yaml\n\t\nrefactor: deprecate attribution context keys in favour of `ctx.Grant(…\n\t\n\n\n.cursorignore\n\t\nnormalize tool_search_tool_* on the Responses path (#5891)\n\t\n\n\n.dockerignore\n\t\nadds zerolog logger (#251)\n\t\n\n\n.editorconfig\n\t\ndeadlock fix\n\t\n\n\n.envrc\n\t\n[Nix Support] Adds nix flake support for bifrost\n\t\n\n\n.gitattributes\n\t\nfixes integration tests flow\n\t\n\n\n.gitignore\n\t\ntest(mcp): add Newman MCP harness e2e suite and make target (#9085)\n\t\n\n\n.infisical.json\n\t\nadds structredoutput fallback for bedrock converse api (#3184)\n\t\n\n\n.nvmrc\n\t\ndocs updates\n\t\n\n\n.pre-commit-config.yaml\n\t\n[StepSecurity] Apply security best practices (#2372)\n\t\n\n\n.snyk\n\t\nfeat: add vllm provider support (#1649)\n\t\n\n\nAGENTS.md\n\t\ndocs,infra: state the server.base_path prefix everywhere a self URL i…\n\t\n\n\nCODE_OF_CONDUCT.md\n\t\nCreate CODE_OF_CONDUCT.md\n\t\n\n\nLICENSE\n\t\nfeat: readMe\n\t\n\n\nMakefile\n\t\nfix(relays): match passthrough for headers and streams in relays (#9453)\n\t\n\n\nREADME.md\n\t\nci: add CodSpeed benchmarks for the request hot path (#7409)\n\t\n\n\nSECURITY.md\n\t\nRevise SECURITY.md with reporting and security details (#2439)\n\t\n\n\nTHIRD_PARTY_NOTICES.md\n\t\nthird party notice (#5735)\n\t\n\n\nflake.lock\n\t\nchore: update agent gateway development environment (#7783)\n\t\n\n\nflake.nix\n\t\nupgrade to go 1.27.3 (#8770) --skip-core-test\n\t\n\n\npulse.yaml\n\t\ndocs: require cluster mode for multi-replica, document Consul auth/TL…\n\t\nRepository files navigation\nREADME\nCode of conduct\nApache-2.0 license\nSecurity\nBifrost AI Gateway\n\n      \n\nThe fastest way to build AI applications that never go down\n\nBifrost is a high-performance AI gateway that unifies access to 23+ providers (OpenAI, Anthropic, AWS Bedrock, Google Vertex, and more) through a single OpenAI-compatible API. Deploy in seconds with zero configuration and get automatic failover, load balancing, semantic caching, and enterprise-grade features.\n\nQuick Start\n\nGo from zero to production-ready AI gateway in under a minute.\n\nStep 1: Start Bifrost Gateway\n\n# Install and run locally\nnpx -y @maximhq/bifrost\n\n# Or use Docker\ndocker run -p 8080:8080 maximhq/bifrost\n\nStep 2: Configure via Web UI\n\n# Open the built-in web interface\nopen http://localhost:8080\n\nStep 3: Make your first API call\n\ncurl -X POST http://localhost:8080/v1/chat/completions \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"model\": \"openai/gpt-4o-mini\",\n    \"messages\": [{\"role\": \"user\", \"content\": \"Hello, Bifrost!\"}]\n  }'\n\nThat's it! Your AI gateway is running with a web interface for visual configuration, real-time monitoring, and analytics.\n\nComplete Setup Guides:\n\nGateway Setup - HTTP API deployment\nGo SDK Setup - Direct integration\nEnterprise Deployments\n\nBifrost supports enterprise-grade, private deployments for teams running production AI systems at scale. In addition to private networking, custom security controls, and governance, enterprise deployments unlock advanced capabilities including adaptive load balancing, clustering, guardrails, MCP gateway, and other features designed for enterprise-grade scale and reliability.\n\nExplore enterprise capabilities\nKey Features\nCore Infrastructure\nUnified Interface - Single OpenAI-compatible API for all providers\nMulti-Provider Support - OpenAI, Anthropic, AWS Bedrock, Google Vertex, Azure, Cerebras, Cohere, Mistral, Ollama, Groq, and more\nAutomatic Fallbacks - Seamless failover between providers and models with zero downtime\nLoad Balancing - Intelligent request distribution across multiple API keys and providers\nAdvanced Features\nModel Context Protocol (MCP) - Enable AI models to use external tools (filesystem, web search, databases)\nSemantic Caching - Intelligent response caching based on semantic similarity to reduce costs and latency\nMultimodal Support - Support for text, images, audio, and streaming, all behind a common interface.\nCustom Plugins - Extensible middleware architecture for analytics, monitoring, and custom logic\nGovernance - Usage tracking, rate limiting, and fine-grained access control\nEnterprise & Security\nBudget Management - Hierarchical cost control with virtual keys, teams, and customer budgets\nUser Provisioning (OIDC) - OAuth 2.0 / OIDC login with background directory sync for teams, roles, and business units\nObservability - Native Prometheus metrics, distributed tracing, and comprehensive logging\nSecrets Management - Secure API key management with environment variables and deployment secrets\nDeveloper Experience\nZero-Config Startup - Start immediately with dynamic provider configuration\nDrop-in Replacement - Replace OpenAI/Anthropic/GenAI APIs with one line of code\nSDK Integrations - Native support for popular AI SDKs with zero code changes\nConfiguration Flexibility - Web UI, API-driven, or file-based configuration options\nRepository Structure\n\nBifrost uses a modular architecture for maximum flexibility:\n\nbifrost/\n├── npx/                 # NPX script for easy installation\n├── core/                # Core functionality and shared components\n│   ├── providers/       # Provider-specific implementations (OpenAI, Anthropic, etc.)\n│   ├── schemas/         # Interfaces and structs used throughout Bifrost\n│   └── bifrost.go       # Main Bifrost implementation\n├── framework/           # Framework components for data persistence\n│   ├── configstore/     # Configuration storage backends\n│   ├── logstore/        # Request logging storage backends\n│   └── vectorstore/     # Vector storages\n├── transports/          # HTTP gateway and other interface layers\n│   └── bifrost-http/    # HTTP transport implementation\n├── ui/                  # Web interface for HTTP gateway\n├── plugins/             # Extensible plugin system\n│   ├── governance/      # Budget management and access control\n│   ├── jsonparser/      # JSON parsing and manipulation utilities\n│   ├── logging/         # Request logging and analytics\n│   ├── maxim/           # Maxim's observability integration\n│   ├── mocker/          # Mock responses for testing and development\n│   ├── semanticcache/   # Intelligent response caching\n│   └── telemetry/       # Monitoring and observability\n├── docs/                # Documentation and guides\n└── tests/               # Comprehensive test suites\n\nGetting Started Options\n\nChoose the deployment method that fits your needs:\n\n1. Gateway (HTTP API)\n\nBest for: Language-agnostic integration, microservices, and production deployments\n\n# NPX - Get started in 30 seconds\nnpx -y @maximhq/bifrost\n\n# Docker - Production ready\ndocker run -p 8080:8080 -v $(pwd)/data:/app/data maximhq/bifrost\n\nFeatures: Web UI, real-time monitoring, multi-provider management, zero-config startup\n\nLearn More: Gateway Setup Guide\n\n2. Go SDK\n\nBest for: Direct Go integration with maximum performance and control\n\ngo get github.com/maximhq/bifrost/core\n\nFeatures: Native Go APIs, embedded deployment, custom middleware integration\n\nLearn More: Go SDK Guide\n\n3. Drop-in Replacement\n\nBest for: Migrating existing applications with zero code changes\n\n# OpenAI SDK\n- base_url = \"https://api.openai.com\"\n+ base_url = \"http://localhost:8080/openai\"\n\n# Anthropic SDK\n- base_url = \"https://api.anthropic.com\"\n+ base_url = \"http://localhost:8080/anthropic\"\n\n# Google GenAI SDK\n- api_endpoint = \"https://generativelanguage.googleapis.com\"\n+ api_endpoint = \"http://localhost:8080/genai\"\n\nLearn More: Integration Guides\n\nPerformance\n\nBifrost adds virtually zero overhead to your AI requests. In sustained 5,000 RPS benchmarks, the gateway added only 11 µs of overhead per request.\n\nMetric\tt3.medium\tt3.xlarge\tImprovement\nAdded latency (Bifrost overhead)\t59 µs\t11 µs\t-81%\nSuccess rate @ 5k RPS\t100%\t100%\tNo failed requests\nAvg. queue wait time\t47 µs\t1.67 µs\t-96%\nAvg. request latency (incl. provider)\t2.12 s\t1.61 s\t-24%\n\nKey Performance Highlights:\n\nPerfect Success Rate - 100% request success rate even at 5k RPS\nMinimal Overhead - Less than 15 µs additional latency per request\nEfficient Queuing - Sub-microsecond average wait times\nFast Key Selection - ~10 ns to pick weighted API keys\n\nComplete Benchmarks: Performance Analysis\n\nDocumentation\n\nComplete Documentation: https://docs.getbifrost.ai\n\nQuick Start\nGateway Setup - HTTP API deployment in 30 seconds\nGo SDK Setup - Direct Go integration\nProvider Configuration - Multi-provider setup\nFeatures\nMulti-Provider Support - Single API for all providers\nMCP Integration - External tool calling\nSemantic Caching - Intelligent response caching\nFallbacks & Load Balancing - Reliability features\nBudget Management - Cost control and governance\nIntegrations\nOpenAI SDK - Drop-in OpenAI replacement\nAnthropic SDK - Drop-in Anthropic replacement\nAWS Bedrock SDK - AWS Bedrock integration\nGoogle GenAI SDK - Drop-in GenAI replacement\nLiteLLM SDK - LiteLLM integration\nLangChain SDK - LangChain integration\nEnterprise\nCustom Plugins - Extend functionality\nClustering - Multi-node deployment\nSecrets Management - Secure key management\nProduction Deployment - Scaling and monitoring\nNeed Help?\n\nJoin our Discord for community support and discussions.\n\nGet help with:\n\nQuick setup assistance and troubleshooting\nBest practices and configuration tips\nCommunity discussions and support\nReal-time help with integrations\nContributing\n\nWe welcome contributions of all kinds! See our Contributing Guide for:\n\nSetting up the development environment\nCode conventions and best practices\nHow to submit pull requests\nBuilding and testing locally\n\nFor development requirements and build instructions, see our Development Setup Guide.\n\nLicense\n\nThis project is licensed under the Apache 2.0 License - see the LICENSE file for details.\n\nBuilt with ❤️ by Maxim\n\nAbout\n\nOpen-source, high-performance AI gateway that works as your LLM gateway, MCP gateway and agent gateway. One OpenAI-compatible API for 10,000+ models, with failover, load balancing, semantic caching, virtual keys, budgets and MCP Code Mode. Works with any SDK or agent and adds under 200µs of overhead at 5k RPS.\n\nwww.getmaxim.ai/bifrost\nTopics\nagent-gateway\nai-gateway\nai-governance\napi-gateway\nclaude-code\ncoding-agents\nfailover\ngateway\nguardrails\nllm-cost\nllm-gateway\nllm-observability\nllm-proxy\nllm-router\nload-balancing\nmcp-gateway\nmodel-context-protocol\nmodel-router\nopenai-compatible\nsemantic-cache\nResources\nReadme\nApache-2.0 license\nCode of conduct\nCode of conduct\nSecurity policy\nSecurity policy\nActivity\nCustom properties\nStars\n9.5k stars\nWatchers\n35 watching\nForks\n1.6k forks\nReport repository\nReleases\n2,359\n (2,359)\nBifrost HTTP v2.5.1\nLatest\n+ 2,358 releases\nContributors\n221\n (221)\n+ 207 contributors\nLanguages\nGo\n78.1%\nTypeScript\n13.6%\nJavaScript\n4.6%\nPython\n1.9%\nShell\n0.7%\nHCL\n0.5%\nOther\n0.6%\nFooter\n© 2026 GitHub, Inc.\nFooter navigation\nTerms\nPrivacy\nSecurity\nStatus\nCommunity\nDocs\nContact\nManage cookies\nDo not share my personal information",
+  "links": [
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#bifrost-ai-gateway"
+    },
+    {
+      "text": "",
+      "href": "https://trendshift.io/repositories/14529?utm_source=repository-badge&utm_medium=badge&utm_campaign=badge-repository-14529"
+    },
+    {
+      "text": "",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "",
+      "href": "https://codecov.io/gh/maximhq/bifrost"
+    },
+    {
+      "text": "",
+      "href": "https://camo.githubusercontent.com/b0899925aadfed8626116707178a4015d8cf4aaa0b80acb632cb4782c6dc7272/68747470733a2f2f696d672e736869656c64732e696f2f646f636b65722f70756c6c732f6d6178696d68712f626966726f7374"
+    },
+    {
+      "text": "",
+      "href": "https://app.getpostman.com/run-collection/31642484-2ba0e658-4dcd-49f4-845a-0c7ed745b916?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D31642484-2ba0e658-4dcd-49f4-845a-0c7ed745b916%26entityType%3Dcollection%26workspaceId%3D63e853c8-9aec-477f-909c-7f02f543150e"
+    },
+    {
+      "text": "",
+      "href": "https://artifacthub.io/packages/search?repo=bifrost"
+    },
+    {
+      "text": "",
+      "href": "https://app.codspeed.io/maximhq/bifrost?utm_source=badge"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/blob/dev/LICENSE"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#the-fastest-way-to-build-ai-applications-that-never-go-down"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#quick-start"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/blob/dev/docs/media/getting-started.png"
+    },
+    {
+      "text": "Gateway Setup",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/setting-up"
+    },
+    {
+      "text": "Go SDK Setup",
+      "href": "https://docs.getbifrost.ai/quickstart/go-sdk/setting-up"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#enterprise-deployments"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost/blob/dev/.github/assets/features.png"
+    },
+    {
+      "text": "",
+      "href": "https://calendly.com/maximai/bifrost-demo"
+    },
+    {
+      "text": "Explore enterprise capabilities",
+      "href": "https://www.getmaxim.ai/bifrost/enterprise"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#key-features"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#core-infrastructure"
+    },
+    {
+      "text": "Unified Interface",
+      "href": "https://docs.getbifrost.ai/providers/supported-providers/overview"
+    },
+    {
+      "text": "Multi-Provider Support",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/provider-configuration"
+    },
+    {
+      "text": "Automatic Fallbacks",
+      "href": "https://docs.getbifrost.ai/features/retries-and-fallbacks"
+    },
+    {
+      "text": "Load Balancing",
+      "href": "https://docs.getbifrost.ai/features/retries-and-fallbacks"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#advanced-features"
+    },
+    {
+      "text": "Model Context Protocol (MCP)",
+      "href": "https://docs.getbifrost.ai/mcp/overview"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching"
+    },
+    {
+      "text": "Multimodal Support",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/streaming"
+    },
+    {
+      "text": "Custom Plugins",
+      "href": "https://docs.getbifrost.ai/enterprise/custom-plugins"
+    },
+    {
+      "text": "Governance",
+      "href": "https://docs.getbifrost.ai/features/governance/virtual-keys"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#enterprise--security"
+    },
+    {
+      "text": "Budget Management",
+      "href": "https://docs.getbifrost.ai/features/governance/budget-and-limits"
+    },
+    {
+      "text": "User Provisioning (OIDC)",
+      "href": "https://docs.getbifrost.ai/enterprise/user-provisioning"
+    },
+    {
+      "text": "Observability",
+      "href": "https://docs.getbifrost.ai/features/observability/default"
+    },
+    {
+      "text": "Secrets Management",
+      "href": "https://docs.getbifrost.ai/deployment-guides/config-json#environment-variable-references"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#developer-experience"
+    },
+    {
+      "text": "Zero-Config Startup",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/setting-up"
+    },
+    {
+      "text": "Drop-in Replacement",
+      "href": "https://docs.getbifrost.ai/features/drop-in-replacement"
+    },
+    {
+      "text": "SDK Integrations",
+      "href": "https://docs.getbifrost.ai/integrations/what-is-an-integration"
+    },
+    {
+      "text": "Configuration Flexibility",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/provider-configuration"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#repository-structure"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#getting-started-options"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#1-gateway-http-api"
+    },
+    {
+      "text": "Gateway Setup Guide",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/setting-up"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#2-go-sdk"
+    },
+    {
+      "text": "Go SDK Guide",
+      "href": "https://docs.getbifrost.ai/quickstart/go-sdk/setting-up"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#3-drop-in-replacement"
+    },
+    {
+      "text": "Integration Guides",
+      "href": "https://docs.getbifrost.ai/integrations/what-is-an-integration"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#performance"
+    },
+    {
+      "text": "Performance Analysis",
+      "href": "https://docs.getbifrost.ai/benchmarking/getting-started"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#documentation"
+    },
+    {
+      "text": "https://docs.getbifrost.ai",
+      "href": "https://docs.getbifrost.ai/"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#quick-start-1"
+    },
+    {
+      "text": "Gateway Setup",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/setting-up"
+    },
+    {
+      "text": "Go SDK Setup",
+      "href": "https://docs.getbifrost.ai/quickstart/go-sdk/setting-up"
+    },
+    {
+      "text": "Provider Configuration",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/provider-configuration"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#features"
+    },
+    {
+      "text": "Multi-Provider Support",
+      "href": "https://docs.getbifrost.ai/providers/supported-providers/overview"
+    },
+    {
+      "text": "MCP Integration",
+      "href": "https://docs.getbifrost.ai/mcp/overview"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching"
+    },
+    {
+      "text": "Fallbacks & Load Balancing",
+      "href": "https://docs.getbifrost.ai/features/retries-and-fallbacks"
+    },
+    {
+      "text": "Budget Management",
+      "href": "https://docs.getbifrost.ai/features/governance/budget-and-limits"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#integrations"
+    },
+    {
+      "text": "OpenAI SDK",
+      "href": "https://docs.getbifrost.ai/integrations/openai-sdk/overview"
+    },
+    {
+      "text": "Anthropic SDK",
+      "href": "https://docs.getbifrost.ai/integrations/anthropic-sdk/overview"
+    },
+    {
+      "text": "AWS Bedrock SDK",
+      "href": "https://docs.getbifrost.ai/integrations/bedrock-sdk/overview"
+    },
+    {
+      "text": "Google GenAI SDK",
+      "href": "https://docs.getbifrost.ai/integrations/genai-sdk/overview"
+    },
+    {
+      "text": "LiteLLM SDK",
+      "href": "https://docs.getbifrost.ai/integrations/litellm-sdk"
+    },
+    {
+      "text": "LangChain SDK",
+      "href": "https://docs.getbifrost.ai/integrations/langchain-sdk"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#enterprise"
+    },
+    {
+      "text": "Custom Plugins",
+      "href": "https://docs.getbifrost.ai/enterprise/custom-plugins"
+    },
+    {
+      "text": "Clustering",
+      "href": "https://docs.getbifrost.ai/enterprise/clustering"
+    },
+    {
+      "text": "Secrets Management",
+      "href": "https://docs.getbifrost.ai/deployment-guides/config-json#environment-variable-references"
+    },
+    {
+      "text": "Production Deployment",
+      "href": "https://docs.getbifrost.ai/deployment-guides/k8s"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#need-help"
+    },
+    {
+      "text": "Join our Discord",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#contributing"
+    },
+    {
+      "text": "Contributing Guide",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo"
+    },
+    {
+      "text": "Development Setup Guide",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo#development-environment-setup"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq/bifrost#license"
+    },
+    {
+      "text": "LICENSE",
+      "href": "https://github.com/maximhq/bifrost/blob/dev/LICENSE"
+    },
+    {
+      "text": "Maxim",
+      "href": "https://github.com/maximhq"
+    }
+  ]
+}

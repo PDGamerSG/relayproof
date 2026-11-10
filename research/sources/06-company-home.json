@@ -1,0 +1,483 @@
+{
+  "url": "https://www.getmaxim.ai/",
+  "title": "Bifrost (by Maxim AI) | Enterprise AI Gateway Built for Scale",
+  "text": "TRY BIFROST ENTERPRISE FREE FOR 14 DAYS.\n\nREQUEST ACCESS\n\nPRODUCTS\nENTERPRISE\nPRICING\nDOCS\nBLOG\nCOMPANY\nDISCORD\nGITHUB\nBOOK A DEMO\nALL YOUR AI, ONE PLATFORM\nTRY BIFROST EDGE\n\n[ WE’RE OPEN SOURCE ]\n\nThe Fastest Enterprise\nAI Gateway\n\nBuilt for enterprise-grade reliability, governance, and scale.\n\nBOOK A DEMO\nGET STARTED\n/* Start in 30 sec …\n$\nnpx @maximhq/bifrost\n\n[\n\nOUR NUMBERS AT A GLANCE\n\n]\n\n$ADDED_LATENCY\n20 MICRO-S\n$THROUGHPUT\n5,000 REQ/S\n$PEAK_MEMORY\n3.3 GB\n\n[OVER 1,000+ TEAMS USE BIFROST]\n\n[BENCHMARK]\n\n50x faster than LiteLLM\n\n(P99 latency) Bifrost vs LiteLLM at 500 RPS on identical hardware\n\n(beyond this, LiteLLM breaks with latency going up to 4 minutes).\n\nMEMORY USAGE\n\n68% LESS\n\nBIFROST\n\n0MB\n\nLITELLM\n\n0MB\n\nP99 LATENCY\n\n54X FASTER\n\nBIFROST\n\n0S\n\nLITELLM\n\n0S\n\nTHROUGHPUT\n\n9.5X HIGHER\n\nBIFROST\n\n0/S\n\nLITELLM\n\n0/S\n\nSUCCESS RATE\n\n11.22% HIGHER\n\nBIFROST\n\n0%\n\nLITELLM\n\n0%\n\n[PLUG ANY MODEL IN]\n\nBuilt for Real-World Scale\n\nCompatible with all model SDKs, with outputs sent anywhere you need.\n\nGOVERNANCE\n\nOrganizations can manage budgets per team or virtual key, track audit logs and maintain access control via SSO.\n\nMCP GATEWAY\n\nBuilt in MCP gateway to use all tools within the agent.\n\nGUARDRAILS\n\nReal-time model protection that blocks unsafe outputs, enforces compliance, and keeps your agents secure.\n\n[QUICK SETUP]\n\nDrop-in replacement for any AI SDK\n\nChange just one line of code. Works with OpenAI, Anthropic, Vercel AI SDK, LangChain, and more.\n\nAND MANY MORE\n\nOPEN AI.PY\n\nANTHROPIC.PY\n\nLITELLM.PY\n\nGENAI.PY\n\nCOPY CODE\n\nDROP IN ONCE, RUN EVERYWHERE.\n\n1\n\nimport os\n\n2\n\nfrom openai import OpenAI\n\n3\n\n4\n\nclient = OpenAI(\n\n5\n\n    api_key=os.environ.get(\"OPENAI_API_KEY\"),\n\n6\n\nbase url =\"https: //<your_bifrost_deployment_base_url>/openai\",\n\n7\n\n)\n\n8\n\n9\n\nresponse = client.chat.completions.create(\n\n10\n\n    model=\"gpt-4o-mini\",\n\n11\n\n    messages=[\n\n12\n\n        {\"role\": \"user\", \"content\": \"Hello world\"}\n\n13\n\n    ]\n\n14\n\n)\n\n[BUILD FREELY, SCALE SECURELY]\n\nProduction-ready features out of the box\n\nEverything you need to deploy, monitor, and scale AI applications in production environments.\n\nOSS FEATURES\n\nENTERPRISE FEATURES\n\n01 Model Catalog\n\nAccess 8+ providers and 1000+ AI models from multiple providers through a unified interface. Also support custom deployed models!\n\n02 Budgeting\n\nSet spending limits and track costs across teams, projects, and models.\n\n03 Provider Fallback\n\nAutomatic failover between providers ensures 99.99% uptime for your applications.\n\n04 MCP Gateway\n\nCentralize all MCP tool connections, governance, security, and auth. Your AI can safely use MCP tools with centralized policy enforcement. Bye bye chaos!\n\n05 Virtual Key Management\n\nCreate different virtual keys for different use-cases with independent budgets and access control.\n\n06 Unified Interface\n\nOne consistent API for all providers. Switch models without changing code.\n\n07 Drop-in Replacement\n\nReplace your existing SDK with just one line change. Compatible with OpenAI, Anthropic, LiteLLM, Google Genai, Langchain and more.\n\n08 Built-in Observability\n\nOut-of-the-box OpenTelemetry support for observability. Built-in dashboard for quick glances without any complex setup.\n\n09 Community Support\n\nActive Discord community with responsive support and regular updates.\n\n[ SHIP RELIABLE AI ]\n\nTry Bifrost Enterprise with a 14-day Free Trial\nSelect company size ...\n1-10\n11-50\n51-100\n101-500\n501-1000\n1000+\nSelect company HQ ...\nNorth America\nAsia-Pacific\nEurope, Middle East and Africa\nLatin America\nHave you tried Bifrost OSS?\nYes, actively using\nYes, tried locally / briefly\nNo\nAre you using an LLM Gateway today?\nYes\nNo\nREQUEST LICENSE\n\nFAQ\n\nFrequently Asked Questions\n\nEverything you need to know about Bifrost.\n\nNeed more support ? We’re here for you.\n\nCONTACT US\n\nWhat is Bifrost?\nBifrost is the fastest open-source LLM gateway, introducing just 11 microseconds of overhead at 5k RPS on a t3.xlarge machine. Built for reliability, security, and scale, it provides a unified layer for managing model access, enforcing guardrails, and ensuring governance across AI systems.\nHow is my data protected?\nBifrost offers zero-touch in-VPC deployments, so no data ever leaves your environment or passes through Bifrost/Maxim servers.\nCan Bifrost integrate with my existing AI stack?\nYes. Bifrost works seamlessly with all major LLM frameworks, APIs, and model providers — including OpenAI, Anthropic, and Mistral SDKs — as well as popular frameworks like LangChain, LangGraph, and LiteLLM.\nHow much does Bifrost cost?\nBifrost is completely free and open source. For enterprise features and support, you can reach out to us at [redacted-email] or book a demo with us.\nHow can I get started with Bifrost?\nYou can get started with the open-source version in seconds: npx @maximhq/bifrost\n\n\nIf you’d like assistance with Enterprise Features or a guided demo, contact us at [redacted-email] or book a demo with us.\nReady to build reliable AI applications?\n\nJoin developers who trust Bifrost for their AI infrastructure\n\nBOOK A DEMO\n\n© 2025 H3 Labs Inc. Open source under Apache 2.0 License.\n\n[ FEATURES ]\n\nGuardrails\n\nAdaptive Load Balancing\n\nGovernance\n\nObservability\n\nCost Optimization\n\nLiteLLM Compatibility\n\nTelemetry\n\nSemantic Caching\n\n[ RESOURCES ]\n\nLLM Cost Calculator\n\nBlogs\n\nPerformance Benchmarks\n\nLLM Gateway Buyer's Guide\n\nClaude Code Integration\n\nMCP Gateway\n\nMigrating from LiteLLM\n\nProvider Status\n\nMCP Server Directory\n\nAI Information\n\n[ INDUSTRIES ]\n\nFinancial Services & Banking\n\nHealthcare & Life Sciences\n\nInsurance\n\nRetail\n\nCybersecurity & Threat Intelligence\n\nBiotechnology & Pharmaceutical\n\nGovernment & Public Sector\n\nTelecommunications\n\nEnergy & Utilities\n\n[ DEVELOPERS ]\n\nEnterprise\n\nGithub\n\nDocs\n\nCommunity\n\nAPI Reference\n\nIntegrations\n\nDeveloper Guides\n\nDeployment Guides\n\nArchitecture\n\nChangelog\n\nOSS Friends\n\n[ COMPANY ]\n\nBook a Demo\n\nSecurity\n\nTrust Center\n\nCareers\n\nContact Us\n\nTerms of Service\n\nPrivacy Policy\n\nCookie Settings\n\nPartner Program\n\nBrand Assets\n\nMADE WITH LOTS OF ❤️ BY\n\nMAXIM TEAM\n\nPRODUCT HUNT\n\n#3 Product of the Day",
+  "links": [
+    {
+      "text": "Try Bifrost Enterprise free for 14 days.",
+      "href": "https://www.getmaxim.ai/#enterprise-trial"
+    },
+    {
+      "text": "REQUEST ACCESS",
+      "href": "https://www.getmaxim.ai/#enterprise-trial"
+    },
+    {
+      "text": "",
+      "href": "https://www.getmaxim.ai/"
+    },
+    {
+      "text": "ENTERPRISE",
+      "href": "https://www.getmaxim.ai/enterprise"
+    },
+    {
+      "text": "PRICING",
+      "href": "https://www.getmaxim.ai/pricing"
+    },
+    {
+      "text": "DOCS",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "BLOG",
+      "href": "https://www.getmaxim.ai/bifrost/blog"
+    },
+    {
+      "text": "DISCORD",
+      "href": "https://discord.com/invite/EN6EMhQduQ"
+    },
+    {
+      "text": "GITHUB",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "BOOK A DEMO",
+      "href": "https://www.getmaxim.ai/book-a-demo"
+    },
+    {
+      "text": "",
+      "href": "https://www.getmaxim.ai/"
+    },
+    {
+      "text": "",
+      "href": "https://www.getmaxim.ai/edge"
+    },
+    {
+      "text": "ALL YOUR AI, ONE PLATFORM",
+      "href": "https://www.getmaxim.ai/edge"
+    },
+    {
+      "text": "TRY BIFROST EDGE",
+      "href": "https://www.getmaxim.ai/edge"
+    },
+    {
+      "text": "BOOK A DEMO",
+      "href": "https://www.getmaxim.ai/book-a-demo"
+    },
+    {
+      "text": "GET STARTED",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "OSS FEATURES",
+      "href": "https://www.getmaxim.ai/#oss-vs-enterprise"
+    },
+    {
+      "text": "CONTACT US",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Enterprise Features",
+      "href": "https://www.getmaxim.ai/enterprise"
+    },
+    {
+      "text": "BOOK A DEMO",
+      "href": "https://www.getmaxim.ai/book-a-demo"
+    },
+    {
+      "text": "",
+      "href": "https://www.getmaxim.ai/"
+    },
+    {
+      "text": "Guardrails",
+      "href": "https://docs.getbifrost.ai/enterprise/guardrails?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Adaptive Load Balancing",
+      "href": "https://docs.getbifrost.ai/enterprise/adaptive-routing/overview?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Governance",
+      "href": "https://docs.getbifrost.ai/enterprise/user-provisioning?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Observability",
+      "href": "https://docs.getbifrost.ai/features/observability/default?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Cost Optimization",
+      "href": "https://docs.getbifrost.ai/features/governance/budget-and-limits?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LiteLLM Compatibility",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Telemetry",
+      "href": "https://docs.getbifrost.ai/features/telemetry?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Cost Calculator",
+      "href": "https://www.getmaxim.ai/bifrost/llm-cost-calculator?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Blogs",
+      "href": "https://www.getmaxim.ai/bifrost/blog?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Performance Benchmarks",
+      "href": "https://www.getmaxim.ai/resources/benchmarks?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway Buyer's Guide",
+      "href": "https://www.getmaxim.ai/resources/buyers-guide?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Claude Code Integration",
+      "href": "https://www.getmaxim.ai/resources/claude-code?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Gateway",
+      "href": "https://www.getmaxim.ai/resources/mcp-gateway?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://www.getmaxim.ai/resources/migrating-from-litellm?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Provider Status",
+      "href": "https://www.getmaxim.ai/bifrost/provider-status?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Server Directory",
+      "href": "https://www.getmaxim.ai/bifrost/mcp-servers?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "AI Information",
+      "href": "https://www.getmaxim.ai/llm-info"
+    },
+    {
+      "text": "Financial Services & Banking",
+      "href": "https://www.getmaxim.ai/industry-pages/financial-services-and-banking?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Healthcare & Life Sciences",
+      "href": "https://www.getmaxim.ai/industry-pages/healthcare-life-sciences?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Insurance",
+      "href": "https://www.getmaxim.ai/industry-pages/insurance?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Retail",
+      "href": "https://www.getmaxim.ai/industry-pages/retail?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Cybersecurity & Threat Intelligence",
+      "href": "https://www.getmaxim.ai/industry-pages/cybersecurity?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Biotechnology & Pharmaceutical",
+      "href": "https://www.getmaxim.ai/industry-pages/biotech-pharma?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Government & Public Sector",
+      "href": "https://www.getmaxim.ai/industry-pages/government?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Telecommunications",
+      "href": "https://www.getmaxim.ai/industry-pages/telecommunication?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Energy & Utilities",
+      "href": "https://www.getmaxim.ai/industry-pages/energy?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Enterprise",
+      "href": "https://www.getmaxim.ai/enterprise"
+    },
+    {
+      "text": "Github",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Community",
+      "href": "https://discord.com/invite/EN6EMhQduQ"
+    },
+    {
+      "text": "API Reference",
+      "href": "https://docs.getbifrost.ai/api-reference/models/list-available-models?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/integrations?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Developer Guides",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Deployment Guides",
+      "href": "https://docs.getbifrost.ai/deployment-guides/k8s?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Architecture",
+      "href": "https://docs.getbifrost.ai/architecture/core/concurrency?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Changelog",
+      "href": "https://docs.getbifrost.ai/changelogs?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "OSS Friends",
+      "href": "https://www.getmaxim.ai/oss-friends?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo"
+    },
+    {
+      "text": "Security",
+      "href": "https://docs.getbifrost.ai/security?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.getmaxim.ai/"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Contact Us",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "https://www.getmaxim.ai/terms-of-service?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.getmaxim.ai/privacy-policy?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Partner Program",
+      "href": "https://www.getmaxim.ai/partners-program?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Brand Assets",
+      "href": "https://www.getmaxim.ai/brand-assets?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Guardrails",
+      "href": "https://docs.getbifrost.ai/enterprise/guardrails?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Adaptive Load Balancing",
+      "href": "https://docs.getbifrost.ai/enterprise/adaptive-routing/overview?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Governance",
+      "href": "https://docs.getbifrost.ai/enterprise/user-provisioning?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Observability",
+      "href": "https://docs.getbifrost.ai/features/observability/default?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Cost Optimization",
+      "href": "https://docs.getbifrost.ai/features/governance/budget-and-limits?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LiteLLM Compatibility",
+      "href": "https://docs.getbifrost.ai/features/compat-plugin?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Telemetry",
+      "href": "https://docs.getbifrost.ai/features/telemetry?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Semantic Caching",
+      "href": "https://docs.getbifrost.ai/features/semantic-caching?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Financial Services & Banking",
+      "href": "https://www.getmaxim.ai/industry-pages/financial-services-and-banking?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Healthcare & Life Sciences",
+      "href": "https://www.getmaxim.ai/industry-pages/healthcare-life-sciences?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Insurance",
+      "href": "https://www.getmaxim.ai/industry-pages/insurance?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Retail",
+      "href": "https://www.getmaxim.ai/industry-pages/retail?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Cybersecurity & Threat Intelligence",
+      "href": "https://www.getmaxim.ai/industry-pages/cybersecurity?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Biotechnology & Pharmaceutical",
+      "href": "https://www.getmaxim.ai/industry-pages/biotech-pharma?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Government & Public Sector",
+      "href": "https://www.getmaxim.ai/industry-pages/government?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Telecommunications",
+      "href": "https://www.getmaxim.ai/industry-pages/telecommunication?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Energy & Utilities",
+      "href": "https://www.getmaxim.ai/industry-pages/energy?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Enterprise",
+      "href": "https://www.getmaxim.ai/enterprise"
+    },
+    {
+      "text": "Github",
+      "href": "https://github.com/maximhq/bifrost"
+    },
+    {
+      "text": "Docs",
+      "href": "https://docs.getbifrost.ai/overview"
+    },
+    {
+      "text": "Community",
+      "href": "https://discord.com/invite/EN6EMhQduQ"
+    },
+    {
+      "text": "API Reference",
+      "href": "https://docs.getbifrost.ai/api-reference/models/list-available-models?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Integrations",
+      "href": "https://docs.getbifrost.ai/quickstart/gateway/integrations?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Developer Guides",
+      "href": "https://docs.getbifrost.ai/contributing/setting-up-repo?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Deployment Guides",
+      "href": "https://docs.getbifrost.ai/deployment-guides/k8s?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Architecture",
+      "href": "https://docs.getbifrost.ai/architecture/core/concurrency?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Changelog",
+      "href": "https://docs.getbifrost.ai/changelogs?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "OSS Friends",
+      "href": "https://www.getmaxim.ai/oss-friends?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Cost Calculator",
+      "href": "https://www.getmaxim.ai/bifrost/llm-cost-calculator?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Blogs",
+      "href": "https://www.getmaxim.ai/bifrost/blog?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Performance Benchmarks",
+      "href": "https://www.getmaxim.ai/resources/benchmarks?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "LLM Gateway Buyer's Guide",
+      "href": "https://www.getmaxim.ai/resources/buyers-guide?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Claude Code Integration",
+      "href": "https://www.getmaxim.ai/resources/claude-code?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Gateway",
+      "href": "https://www.getmaxim.ai/resources/mcp-gateway?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Migrating from LiteLLM",
+      "href": "https://www.getmaxim.ai/resources/migrating-from-litellm?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Provider Status",
+      "href": "https://www.getmaxim.ai/bifrost/provider-status?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MCP Server Directory",
+      "href": "https://www.getmaxim.ai/bifrost/mcp-servers?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "AI Information",
+      "href": "https://www.getmaxim.ai/llm-info"
+    },
+    {
+      "text": "Book a Demo",
+      "href": "https://www.getmaxim.ai/book-a-demo"
+    },
+    {
+      "text": "Security",
+      "href": "https://docs.getbifrost.ai/security?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Trust Center",
+      "href": "https://trust.getmaxim.ai/"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Contact Us",
+      "href": "mailto:[redacted-email]"
+    },
+    {
+      "text": "Terms of Service",
+      "href": "https://www.getmaxim.ai/terms-of-service?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Privacy Policy",
+      "href": "https://www.getmaxim.ai/privacy-policy?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Partner Program",
+      "href": "https://www.getmaxim.ai/partners-program?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "Brand Assets",
+      "href": "https://www.getmaxim.ai/brand-assets?utm_medium=Bifrost_Footer"
+    },
+    {
+      "text": "MAXIM TEAM",
+      "href": "https://www.getmaxim.ai/about-us"
+    },
+    {
+      "text": "PRODUCT HUNT\n\n#3 Product of the Day",
+      "href": "https://www.producthunt.com/products/maxim-ai?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_source=badge-bifrost-2"
+    },
+    {
+      "text": "",
+      "href": "https://peerlist.io/getmaximai/project/bifrost"
+    },
+    {
+      "text": "Join Discord instead",
+      "href": "https://getmax.im/bifrost-discord"
+    }
+  ]
+}

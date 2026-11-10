@@ -1,0 +1,308 @@
+{
+  "url": "https://www.getmaxim.ai/evals/products/agent-simulation-evaluation",
+  "title": "Agent Simulation Evaluation",
+  "text": "Products\nCompany\nPricing\nBlog\nDocs\nSign in\nGet started free\nSimulation and evaluation\nplatform for your agents\nSave days of manual testing and tedious processes to ship reliable agents\nGet started free\nSimulation\nSimulate real-world interactions across a\nwide range of scenarios and user personas for your agent\nAI-powered simulations\nSimulate multi-turn interactions across real-world scenarios\nScalability\nScale testing across thousands of scenarios and test cases rapidly\nCustom testing\nCreate simulation environments tailored to your context and needs\nEvaluation\nRun evaluations on end-to-end agent quality and performance\nusing a suite of pre-built or custom evaluators\nComprehensive evaluations\nLeverage a suite of prebuilt evaluators or custom metrics to test your agents\nDashboards\nVisualize and compare evaluation runs across multiple versions and test suites\nLast-mile\nLeverage scalable and seamless human evaluation pipelines alongside auto evals\nAI evaluation, simplified\nAutomations\nBuild automated evaluation pipelines that integrate seamlessly with your CI/CD workflows\nData curation\nCurate robust datasets using synthetic and real-world data, and evolve datasets seamlessly as your agent evolves\nAnalytics\nGain insights into agent performance through detailed metrics, dashboards, and performance tracking across different scenarios.\nSDK\nUtilize powerful SDKs to integrate simulation and evaluation tools directly into your workflows, enabling rapid iteration and deployment.\nEnterprise-ready\nBuilt for the enterprise\nMaxim is designed for companies with a security mindset.\nIn-VPC deployment\nSecurely deploy within your private cloud\nCustom SSO\nIntegrate personalised single sign-on\nSOC 2 Type 2\nEnsure advanced data security compliance\nRole-based access controls\nImplement precise user permissions\nMulti-player collaboration\nCollaborate with your team in real-time seamlessly\nPriority support 24*7\nReceive top-tier assistance any time, day or night\nFrequently Asked Questions\nWhat is AI agent evaluation?\nHow does Maxim AI evaluate multi-turn agent trajectories before deployment?\nWhat types of evaluators does Maxim provide?\nHow do I integrate evaluations into my CI/CD pipeline?\nCan I curate and evolve datasets for agent evals in Maxim?\nDoes Maxim support human-in-the-loop evaluation for agents?\nShip your AI agents 5x faster ⚡️\nGet in touch to learn how AI teams are saving 100s of hours of development time\n\nGet started free\n© Copyright H3 Labs Inc,\nAll rights reserved.\nIntegrations\nLangchain\nLangGraph\nOpenAI\nOpenAI Agents\nLiveKit\nCrew AI\nAgno\nLiteLLM\nLiteLLM Proxy\nAnthropic\nBedrock\nMistral\nProduct\nExperimentation\nAgent simulation & evaluations\nAgent observability\nBifrost LLM gateway\nPlatform\nDocs\nPricing\nStatus\nTrust center\nOSS friends\nCompany\nAbout us\nCareers\nBlog\nContact us\nLLMs.txt\nLegal\nTerms\nPrivacy\nCookie Settings",
+  "links": [
+    {
+      "text": "",
+      "href": "https://getmaxim.ai/evals"
+    },
+    {
+      "text": "ExperimentationIterate on prompts and agents, run evaluations, and deploy confidently",
+      "href": "https://getmaxim.ai/evals/products/experimentation"
+    },
+    {
+      "text": "Agent simulation and evaluationSimulate and evaluate agent interactions across scenarios and user personas",
+      "href": "https://getmaxim.ai/evals/products/agent-simulation-evaluation"
+    },
+    {
+      "text": "Agent observabilityMonitor granular traces and ensure quality of agent in production",
+      "href": "https://getmaxim.ai/evals/products/agent-observability"
+    },
+    {
+      "text": "Bifrost: The fastest LLM gatewayGovern AI traffic across 1000+ models and usage across organization",
+      "href": "https://www.getmaxim.ai/"
+    },
+    {
+      "text": "About us",
+      "href": "https://www.getmaxim.ai/about-us"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://getmaxim.ai/evals/pricing"
+    },
+    {
+      "text": "Blog",
+      "href": "https://getmaxim.ai/blog"
+    },
+    {
+      "text": "Docs",
+      "href": "https://www.getmaxim.ai/docs/introduction/overview"
+    },
+    {
+      "text": "Sign in",
+      "href": "https://app.getmaxim.ai/login"
+    },
+    {
+      "text": "Get started free",
+      "href": "https://app.getmaxim.ai/sign-up"
+    },
+    {
+      "text": "Get started free",
+      "href": "https://app.getmaxim.ai/sign-up"
+    },
+    {
+      "text": "",
+      "href": "https://www.mindtickle.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.comm100.com/"
+    },
+    {
+      "text": "",
+      "href": "https://thoughtful.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.atomicwork.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.ey.com/en_us"
+    },
+    {
+      "text": "",
+      "href": "https://www.lifetime.life/"
+    },
+    {
+      "text": "",
+      "href": "https://clinc.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.recurclub.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.qure.ai/"
+    },
+    {
+      "text": "",
+      "href": "https://www.mindtickle.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.comm100.com/"
+    },
+    {
+      "text": "",
+      "href": "https://thoughtful.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.atomicwork.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.ey.com/en_us"
+    },
+    {
+      "text": "",
+      "href": "https://www.lifetime.life/"
+    },
+    {
+      "text": "",
+      "href": "https://clinc.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.recurclub.com/"
+    },
+    {
+      "text": "",
+      "href": "https://www.qure.ai/"
+    },
+    {
+      "text": "Offline Evaluation",
+      "href": "https://www.getmaxim.ai/docs/offline-evals/overview"
+    },
+    {
+      "text": "Online Evaluation",
+      "href": "https://www.getmaxim.ai/docs/online-evals/overview"
+    },
+    {
+      "text": "here",
+      "href": "https://www.getmaxim.ai/docs/simulations/text-simulation/overview"
+    },
+    {
+      "text": "Custom evaluators",
+      "href": "https://www.getmaxim.ai/docs/library/evaluators/custom-evaluators#custom-evaluators"
+    },
+    {
+      "text": "evaluator store",
+      "href": "https://www.getmaxim.ai/docs/library/concepts#evaluator-store"
+    },
+    {
+      "text": "documentation",
+      "href": "https://www.getmaxim.ai/docs/offline-evals/via-sdk/prompts/ci-cd-integration#github-actions-setup"
+    },
+    {
+      "text": "GitHub repository",
+      "href": "https://github.com/maximhq/actions"
+    },
+    {
+      "text": "Curate dataset ",
+      "href": "https://www.getmaxim.ai/docs/library/datasets/curate-datasets#curate-datasets"
+    },
+    {
+      "text": "Human-annotated ",
+      "href": "https://www.getmaxim.ai/docs/offline-evals/via-ui/prompts/human-annotation#human-annotation"
+    },
+    {
+      "text": "Get started free",
+      "href": "https://app.getmaxim.ai/sign-up"
+    },
+    {
+      "text": "",
+      "href": "https://www.getmaxim.ai/evals/products/agent-simulation-evaluation#"
+    },
+    {
+      "text": "",
+      "href": "https://x.com/getmaximai"
+    },
+    {
+      "text": "",
+      "href": "https://www.linkedin.com/company/maxim-ai"
+    },
+    {
+      "text": "",
+      "href": "https://github.com/maximhq"
+    },
+    {
+      "text": "",
+      "href": "[redacted-invite-link]"
+    },
+    {
+      "text": "Langchain",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/langchain/langchain"
+    },
+    {
+      "text": "LangGraph",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/langgraph/langgraph-without-decorator"
+    },
+    {
+      "text": "OpenAI",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/openai/one-line-integration"
+    },
+    {
+      "text": "OpenAI Agents",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/openai/agents-sdk"
+    },
+    {
+      "text": "LiveKit",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/livekit/livekit"
+    },
+    {
+      "text": "Crew AI",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/crewai/crewai"
+    },
+    {
+      "text": "Agno",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/agno/agno"
+    },
+    {
+      "text": "LiteLLM",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/litellm/litellm-sdk"
+    },
+    {
+      "text": "LiteLLM Proxy",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/litellm/litellm-proxy"
+    },
+    {
+      "text": "Anthropic",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/anthropic/anthropic"
+    },
+    {
+      "text": "Bedrock",
+      "href": "https://github.com/maximhq/maxim-cookbooks/blob/main/python/observability-online-eval/bedrock/single-line-integration.ipynb"
+    },
+    {
+      "text": "Mistral",
+      "href": "https://www.getmaxim.ai/docs/sdk/python/integrations/mistral/mistral"
+    },
+    {
+      "text": "Experimentation",
+      "href": "https://www.getmaxim.ai/evals/products/experimentation"
+    },
+    {
+      "text": "Agent simulation & evaluations",
+      "href": "https://www.getmaxim.ai/evals/products/agent-simulation-evaluation"
+    },
+    {
+      "text": "Agent observability",
+      "href": "https://www.getmaxim.ai/evals/products/agent-observability"
+    },
+    {
+      "text": "Bifrost LLM gateway",
+      "href": "https://www.getmaxim.ai/"
+    },
+    {
+      "text": "Docs",
+      "href": "https://getmaxim.ai/docs"
+    },
+    {
+      "text": "Pricing",
+      "href": "https://www.getmaxim.ai/pricing"
+    },
+    {
+      "text": "Status",
+      "href": "https://status.getmaxim.ai/"
+    },
+    {
+      "text": "Trust center",
+      "href": "https://trust.getmaxim.ai/"
+    },
+    {
+      "text": "OSS friends",
+      "href": "https://www.getmaxim.ai/bifrost/oss-friends"
+    },
+    {
+      "text": "About us",
+      "href": "https://www.getmaxim.ai/about-us"
+    },
+    {
+      "text": "Careers",
+      "href": "https://www.getmaxim.ai/careers"
+    },
+    {
+      "text": "Blog",
+      "href": "https://www.getmaxim.ai/blog"
+    },
+    {
+      "text": "Contact us",
+      "href": "https://www.getmaxim.ai/contact"
+    },
+    {
+      "text": "LLMs.txt",
+      "href": "https://www.getmaxim.ai/llms.txt"
+    },
+    {
+      "text": "Terms",
+      "href": "https://www.getmaxim.ai/terms-of-service"
+    },
+    {
+      "text": "Privacy",
+      "href": "https://www.getmaxim.ai/privacy-policy"
+    },
+    {
+      "text": "Cookie Settings",
+      "href": "https://www.getmaxim.ai/evals/products/agent-simulation-evaluation#"
+    }
+  ],
+  "retrieved_at": "2026-11-10T14:42:15.990Z"
+}

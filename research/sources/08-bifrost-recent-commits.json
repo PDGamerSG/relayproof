@@ -1,0 +1,991 @@
+{
+  "url": "https://api.github.com/repos/maximhq/bifrost/commits?per_page=12",
+  "retrieved_at": "2026-11-10T14:40:14.790Z",
+  "status": 200,
+  "data": [
+    {
+      "sha": "354472245f1699ce430d2d9d11fbcadd50396a9e",
+      "node_id": "C_kwDOOLDdQNoAKDM1NDQ3MjI0NWYxNjk5Y2U0MzBkMmQ5ZDExZmJjYWRkNTAzOTZhOWU",
+      "commit": {
+        "author": {
+          "name": "Suresh Chaudhary",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T10:23:32Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T10:23:32Z"
+        },
+        "message": "fix(ui): only show the upgrading screen when the server confirms a chunk is gone (#9805)\n\nAny failed /assets/ load was treated as a rollout, so a proxy, firewall or\nbrowser extension blocking a chunk told users Bifrost was upgrading and to\ncontact their administrator.\n\nOn a chunk failure the dashboard now re-requests the asset. Only Bifrost's own\n\"404 - Static asset not found\" body counts as an upgrade and keeps the version\npoll and auto-reload. Anything else shows a \"couldn't load, check your network,\nproxy or extensions\" message with a Reload button and no auto-reload. When the\nbrowser error names no URL (Safari), the probe uses the running chunk's own\nURL. The pre-boot script in index.html applies the same check.",
+        "tree": {
+          "sha": "5021377665fe01967486a862ce397cb61742e8f8",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/5021377665fe01967486a862ce397cb61742e8f8"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/354472245f1699ce430d2d9d11fbcadd50396a9e",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8vCkCRC1aQ7uu5UhlAAAhLoQAHo6dy+rag/eL5eji1Hm+cCF\njwS8Kn/b/otjPdYik132jYAsEOwDTmU/YVT65cVgNH1OZwj+HYXr1G1W+EEwqcsM\nuD5npZfnzRtvi3g5gHE1FmT3406k3VI0bHBUsr5/W5gmulLVORemARnOR5yZoXt1\nwlBcIYKDJ7XB9YUwwT/utQUbBa1Srk/N7skb8qYsl5JVBG7sn6CrTKoC5dTWPpQG\nBl3lhcCZUX7j42HCNQ+9ubxVD/NZ5usjwuHiN55HoZEWNax/xmLUNE9LzgTpv+ts\nbO0KLy6UBHlrXX02UQThXsKCCsOphI1nfQWhCQAgKYJ2ajnRw7v90A2nON/1h2YP\nVu/BOAf4vpb7JPb3tljwJkiThYRBBRNSYF2U+40wXXGtadnRvtwG5zFmLZGCrxIx\nxNmUY7ZvTaXOZRn+6p2rmQ5nkCGsShnCfXZ9j2hoo065ksUHZOjR+Jm4Ro0/Zpl4\nCY/ZobclJXY2bUWSkMITKbA2uRqbmRcjE79ee6RMvDENq7h9TULGTSs0wl5YY0nN\nNX0bYs8XaBiPqn9uJrv+hCBg1IcjWckmkn8VecDz4AKl7XVePt5KiK4/IaKKCr0s\ng/ZWRPm2EOYcN0ucrv2Kgb0463XmJbyHBzwM6GmBYL4+4hl/pEjbHlOAAsCFgWaC\n/eATTVkFNCsEaOwnQbyB\n=bFAA\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree 5021377665fe01967486a862ce397cb61742e8f8\nparent 57218cb1523694b3684d8ca83796b93e10bc592e\nauthor Suresh Chaudhary <[redacted-email]> 1794306212 +0530\ncommitter GitHub <[redacted-email]> 1794306212 +0530\n\nfix(ui): only show the upgrading screen when the server confirms a chunk is gone (#9805)\n\nAny failed /assets/ load was treated as a rollout, so a proxy, firewall or\nbrowser extension blocking a chunk told users Bifrost was upgrading and to\ncontact their administrator.\n\nOn a chunk failure the dashboard now re-requests the asset. Only Bifrost's own\n\"404 - Static asset not found\" body counts as an upgrade and keeps the version\npoll and auto-reload. Anything else shows a \"couldn't load, check your network,\nproxy or extensions\" message with a Reload button and no auto-reload. When the\nbrowser error names no URL (Safari), the probe uses the running chunk's own\nURL. The pre-boot script in index.html applies the same check.",
+          "verified_at": "2026-11-10T10:23:33Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/354472245f1699ce430d2d9d11fbcadd50396a9e",
+      "html_url": "https://github.com/maximhq/bifrost/commit/354472245f1699ce430d2d9d11fbcadd50396a9e",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/354472245f1699ce430d2d9d11fbcadd50396a9e/comments",
+      "author": {
+        "login": "impoiler",
+        "id": 83772622,
+        "node_id": "MDQ6VXNlcjgzNzcyNjIy",
+        "avatar_url": "https://avatars.githubusercontent.com/u/83772622?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/impoiler",
+        "html_url": "https://github.com/impoiler",
+        "followers_url": "https://api.github.com/users/impoiler/followers",
+        "following_url": "https://api.github.com/users/impoiler/following{/other_user}",
+        "gists_url": "https://api.github.com/users/impoiler/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/impoiler/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/impoiler/subscriptions",
+        "organizations_url": "https://api.github.com/users/impoiler/orgs",
+        "repos_url": "https://api.github.com/users/impoiler/repos",
+        "events_url": "https://api.github.com/users/impoiler/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/impoiler/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "57218cb1523694b3684d8ca83796b93e10bc592e",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/57218cb1523694b3684d8ca83796b93e10bc592e",
+          "html_url": "https://github.com/maximhq/bifrost/commit/57218cb1523694b3684d8ca83796b93e10bc592e"
+        }
+      ]
+    },
+    {
+      "sha": "57218cb1523694b3684d8ca83796b93e10bc592e",
+      "node_id": "C_kwDOOLDdQNoAKDU3MjE4Y2IxNTIzNjk0YjM2ODRkOGNhODM3OTZiOTNlMTBiYzU5MmU",
+      "commit": {
+        "author": {
+          "name": "akshaydeo",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:38:04Z"
+        },
+        "committer": {
+          "name": "akshaydeo",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:38:04Z"
+        },
+        "message": "main backmerge",
+        "tree": {
+          "sha": "374eb03f3cc77b7a3dce369199045a4e0c73f3b0",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/374eb03f3cc77b7a3dce369199045a4e0c73f3b0"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/57218cb1523694b3684d8ca83796b93e10bc592e",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\niQJPBAABCAA5FiEEy2+OQAvTskO0s8ObSo1vjWliY50FAmryyeIbFIAAAAAABAAO\nbWFudTIsMi41KzEuMTIsMCwzAAoJEEqNb41pYmOdAx0P/0/cyUPS5pMbca9w3F1K\nOCDVJPuWszLeTPheff0BWFOTitxPhxSI+K/XExuqImfkqYgrZZ88bi41UIrRyyUg\nLUAoFrqpOx/oeZS2USTUR9KMZHDDntkNH3eNKKDpfAPq0UeUxU8UUW/PiE4KLojV\nZ5p1nJkMCG3iDLqbG4cjNm5eGWjYlF975G98X1Pu8nvpFGHjljiUhzfom6iFTxcq\nO/fr8hyxed6FZSFqdQadzdpiZ1lrKHRigG8Vep3qP/MvpTS8geg+oihsFqt8ooCe\nKebiUIb1z4NYfqes/Ro5rnkXHBQMwjM3vYJ/ci2tXT7/U3F2Lb+zs0t2fe1KceWG\nVvz4FG39hwKU5hDFMOM5BvXeiv09Sd9ScU2Q2HLZPdUviVlQlZzontj27fYg00bj\nqow99IiVtdq+4Pfr4noHcyFoDmmpF7Yrps8qMOIRZrRO6HHvBQOk7fIOiPEu9+yM\nSHxuIWfZi8sVuPVimsjs07qhWE3js6V038Je4B0yvDUHdm+Zhrrv3etY47lJwVdp\njkeRJwx7DqRR9Sw845XrO4FQEgOd3rqxnIoXfCL8tZEcp0a+BkFgvSflvdW06qDd\ngtYww+elckJRXAbM9/DMm99BD1vwIdYY7peaaE7gkrTPta9y16qY2RTbuFK/NBDF\nGaoKp8AhNw/j79U+0P8EljGU\n=iCR2\n-----END PGP SIGNATURE-----",
+          "payload": "tree 374eb03f3cc77b7a3dce369199045a4e0c73f3b0\nparent fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e\nauthor akshaydeo <[redacted-email]> 1794296284 -0800\ncommitter akshaydeo <[redacted-email]> 1794296284 -0800\n\nmain backmerge\n",
+          "verified_at": "2026-11-10T07:38:42Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/57218cb1523694b3684d8ca83796b93e10bc592e",
+      "html_url": "https://github.com/maximhq/bifrost/commit/57218cb1523694b3684d8ca83796b93e10bc592e",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/57218cb1523694b3684d8ca83796b93e10bc592e/comments",
+      "author": {
+        "login": "akshaydeo",
+        "id": 1050029,
+        "node_id": "MDQ6VXNlcjEwNTAwMjk=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1050029?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/akshaydeo",
+        "html_url": "https://github.com/akshaydeo",
+        "followers_url": "https://api.github.com/users/akshaydeo/followers",
+        "following_url": "https://api.github.com/users/akshaydeo/following{/other_user}",
+        "gists_url": "https://api.github.com/users/akshaydeo/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/akshaydeo/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/akshaydeo/subscriptions",
+        "organizations_url": "https://api.github.com/users/akshaydeo/orgs",
+        "repos_url": "https://api.github.com/users/akshaydeo/repos",
+        "events_url": "https://api.github.com/users/akshaydeo/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/akshaydeo/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "akshaydeo",
+        "id": 1050029,
+        "node_id": "MDQ6VXNlcjEwNTAwMjk=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1050029?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/akshaydeo",
+        "html_url": "https://github.com/akshaydeo",
+        "followers_url": "https://api.github.com/users/akshaydeo/followers",
+        "following_url": "https://api.github.com/users/akshaydeo/following{/other_user}",
+        "gists_url": "https://api.github.com/users/akshaydeo/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/akshaydeo/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/akshaydeo/subscriptions",
+        "organizations_url": "https://api.github.com/users/akshaydeo/orgs",
+        "repos_url": "https://api.github.com/users/akshaydeo/repos",
+        "events_url": "https://api.github.com/users/akshaydeo/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/akshaydeo/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e",
+          "html_url": "https://github.com/maximhq/bifrost/commit/fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e"
+        }
+      ]
+    },
+    {
+      "sha": "fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e",
+      "node_id": "C_kwDOOLDdQNoAKGZkYjNjYmFkMWFmZDU5ZWQ4N2M3OTYxY2M1ZjY2YjFlNWZlYWI0MmU",
+      "commit": {
+        "author": {
+          "name": "Akshay Deo",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:24:12Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:24:12Z"
+        },
+        "message": "fix: message serialization for vertex (#9807)\n\n## Summary\n\nVertex's Anthropic prompt cache is sensitive to the raw top-level key order of the request body. When the growing `messages` array comes before the stable `tools`/`system` prefix, turn-to-turn cache reads miss on a per-request coin flip. They usually read only a short stale prefix, and the rest of the context is re-billed. Before this fix, every Vertex Claude body Bifrost built put `messages` first:\n\n- The typed path follows the field declaration order of `AnthropicMessageRequest`, which declares `Messages` before `System` and `Tools`.\n- The raw-body path keeps the client's order, and clients such as Claude Code send `messages` first.\n\nThis PR makes Vertex Claude request bodies always end with `tools`, `system`, `messages`, in that order.\n\n## Changes\n\n- Added `moveCachePrefixKeysLast` in `core/providers/anthropic/requestbuilder.go`. It re-emits the top-level `tools`, `system` and `messages` members as the last keys of the body, in that order, and leaves all other members where they were.\n  - Member bytes are copied verbatim, so values are never re-encoded or re-serialized.\n  - The body is returned unchanged if it is not a JSON object, if it has a duplicate cache-prefix key, or if it is already ordered.\n  - Otherwise the cost is one top-level parse and one allocation no larger than the body. Parsing uses `gjson` over a zero-copy string view of the body.\n- Added a `CachePrefixKeysLast` flag to `AnthropicProviderRequestDefaults`, enabled only for Vertex. Other providers keep their exact bytes.\n- Applied the reorder at the very end of both `BuildAnthropicChatRequestBody` and `BuildAnthropicResponsesRequestBody`, so later edits (for example, beta headers injected into the body) cannot append a key after `messages`.\n- Added unit tests:\n  - A matrix test over provider × raw/typed body × chat/responses × streaming. It asserts that Vertex bodies end with `tools, system, messages` and that non-Vertex ordering is unchanged.\n  - Table tests for `moveCachePrefixKeysLast` covering reordering, already-ordered input, subsets, no prefix keys, whitespace and escapes, non-objects, empty objects, and duplicate keys.\n  - A benchmark for the reorder path on a long multi-turn body and for the already-ordered fast path.\n- Added e2e provider-harness case 325, with a two-turn pair on `vertex/claude-sonnet-4-6` for each of `/anthropic/v1/messages`, `/v1/chat/completions` and `/v1/responses`. Each uses a fresh per-run nonce and cache breakpoints. Each case asserts that:\n  - `extra_fields.raw_request` ends with `tools, system, messages`.\n  - Turn 1 honors the cache breakpoints.\n  - Turn 2 reads at least everything turn 1 cached.\n\nDesign note: this covers the key-order problem only. The separate Vertex tools-bytes cache pathology reported for some other models is out of scope, and the e2e case deliberately uses a model not affected by it.\n\n## Type of change\n\n- [x] Bug fix\n- [ ] Feature\n- [ ] Refactor\n- [ ] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [ ] Transports (HTTP)\n- [x] Providers/Integrations\n- [ ] Plugins\n- [ ] UI (React)\n- [ ] Docs\n\n## How to test\n\nRun the unit tests and the benchmark:\n\n```sh\n# Core/Transports\ngo version\ngo test ./core/providers/anthropic/... -run 'TestMoveCachePrefixKeysLast|TestBuildAnthropicRequestBody_CachePrefixKeyOrder'\ngo test ./core/providers/anthropic/... -bench BenchmarkMoveCachePrefixKeysLast -run '^$'\ngo test ./...\n```\n\nExpected: Vertex bodies end with `tools`, `system`, `messages` on every build path, and other providers' bodies are unchanged.\n\nFor the live check, run the new provider-harness case \"325. Vertex Claude cache prefix keys serialized last\" against a gateway with Vertex credentials. The two turns of each pair must run in the same newman process and in order. Expected: `raw_request` key order ends with `tools, system, messages`, and turn 2 cache reads are at least the tokens cached by turn 1.\n\n## Screenshots/Recordings\n\nN/A\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nOnly the top-level key order of request bodies sent to Vertex changes. The JSON content is semantically identical.\n\n## Related issues\n\nCloses #6406\n\n## Security considerations\n\nNone. Member bytes are copied verbatim and no new inputs, secrets, or network behavior are introduced.\n\n## Checklist\n\n- [ ] I read `docs/contributing/README.md` and followed the guidelines\n- [x] I added/updated tests where appropriate\n- [ ] I updated documentation where needed\n- [ ] I verified builds succeed (Go and UI)\n- [ ] I verified the CI pipeline passes locally if applicable",
+        "tree": {
+          "sha": "cadcbdf4c28ad9cac4dafb0754acd3d4dc3edeae",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/cadcbdf4c28ad9cac4dafb0754acd3d4dc3edeae"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8sacCRC1aQ7uu5UhlAAALeoQAH2ySqtaD8P7y9xu0qLbAIAL\nBJlO9dpad//bKPAZEO2HX09pL+eWfpUmteeZQxz5xfL427zZ5Ehn+S+cjWFwgnUW\n0YpJxSrGodJJiMgH3fnydF2docg2L0bNhrdsHNSXT+rzHlBdwFbWExH++HFutC3K\nt9CjwsJzC9wGIKlZQSxcYDzpA9SI6/hJ/TzWkP2pOKzu5mJiKUBhhfpM+ejXNsK/\nZrH1tf+6EN6gWCMCTtw2mozzLtegY1K/t0s+M6zQLwoBqFy8y5pYt9Qb0lvSz9Nr\nq5tBfl0dthWxm2KpZhqC++lnOjheAh3LYveAOMiSVEdMnks4tySvvlPX4Mv0D4ev\nFsVdLYDU6fXF5+FRlQHQ7fFoOi51+GXlB13K9CH1YgOAE6XHoZPPWvJIPBYOGZ03\nrUDlBfKQxuHYfyebVGMX67+QPV7KYwPMTg2ybqHRZcwagyQtFMqzRjIvoqygmGt9\nGhF+JoqyrEG8EBrphtbijF8SNcBQoAzMo9Mdg4lgO89YNu5Q+PemkeZjnUU/x4Rl\ntgYzQwzla2gC6NDmLElTXExBtcPw+JToJqDYJyvhl6TrkUL77YD03H1g4rG3RnGc\nNKl27fsI+nNYc5lmfhTKMuPB4A2yuuWtjtBgqRa0rh8poqv76Kn36CVWOZCg4/1s\nZpmnPqQSzxmnJms89CsL\n=Yob8\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree cadcbdf4c28ad9cac4dafb0754acd3d4dc3edeae\nparent 937a86e6f13025836deb7996ef5cf2b70c297d24\nauthor Akshay Deo <[redacted-email]> 1794295452 -0800\ncommitter GitHub <[redacted-email]> 1794295452 -0800\n\nfix: message serialization for vertex (#9807)\n\n## Summary\n\nVertex's Anthropic prompt cache is sensitive to the raw top-level key order of the request body. When the growing `messages` array comes before the stable `tools`/`system` prefix, turn-to-turn cache reads miss on a per-request coin flip. They usually read only a short stale prefix, and the rest of the context is re-billed. Before this fix, every Vertex Claude body Bifrost built put `messages` first:\n\n- The typed path follows the field declaration order of `AnthropicMessageRequest`, which declares `Messages` before `System` and `Tools`.\n- The raw-body path keeps the client's order, and clients such as Claude Code send `messages` first.\n\nThis PR makes Vertex Claude request bodies always end with `tools`, `system`, `messages`, in that order.\n\n## Changes\n\n- Added `moveCachePrefixKeysLast` in `core/providers/anthropic/requestbuilder.go`. It re-emits the top-level `tools`, `system` and `messages` members as the last keys of the body, in that order, and leaves all other members where they were.\n  - Member bytes are copied verbatim, so values are never re-encoded or re-serialized.\n  - The body is returned unchanged if it is not a JSON object, if it has a duplicate cache-prefix key, or if it is already ordered.\n  - Otherwise the cost is one top-level parse and one allocation no larger than the body. Parsing uses `gjson` over a zero-copy string view of the body.\n- Added a `CachePrefixKeysLast` flag to `AnthropicProviderRequestDefaults`, enabled only for Vertex. Other providers keep their exact bytes.\n- Applied the reorder at the very end of both `BuildAnthropicChatRequestBody` and `BuildAnthropicResponsesRequestBody`, so later edits (for example, beta headers injected into the body) cannot append a key after `messages`.\n- Added unit tests:\n  - A matrix test over provider × raw/typed body × chat/responses × streaming. It asserts that Vertex bodies end with `tools, system, messages` and that non-Vertex ordering is unchanged.\n  - Table tests for `moveCachePrefixKeysLast` covering reordering, already-ordered input, subsets, no prefix keys, whitespace and escapes, non-objects, empty objects, and duplicate keys.\n  - A benchmark for the reorder path on a long multi-turn body and for the already-ordered fast path.\n- Added e2e provider-harness case 325, with a two-turn pair on `vertex/claude-sonnet-4-6` for each of `/anthropic/v1/messages`, `/v1/chat/completions` and `/v1/responses`. Each uses a fresh per-run nonce and cache breakpoints. Each case asserts that:\n  - `extra_fields.raw_request` ends with `tools, system, messages`.\n  - Turn 1 honors the cache breakpoints.\n  - Turn 2 reads at least everything turn 1 cached.\n\nDesign note: this covers the key-order problem only. The separate Vertex tools-bytes cache pathology reported for some other models is out of scope, and the e2e case deliberately uses a model not affected by it.\n\n## Type of change\n\n- [x] Bug fix\n- [ ] Feature\n- [ ] Refactor\n- [ ] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [ ] Transports (HTTP)\n- [x] Providers/Integrations\n- [ ] Plugins\n- [ ] UI (React)\n- [ ] Docs\n\n## How to test\n\nRun the unit tests and the benchmark:\n\n```sh\n# Core/Transports\ngo version\ngo test ./core/providers/anthropic/... -run 'TestMoveCachePrefixKeysLast|TestBuildAnthropicRequestBody_CachePrefixKeyOrder'\ngo test ./core/providers/anthropic/... -bench BenchmarkMoveCachePrefixKeysLast -run '^$'\ngo test ./...\n```\n\nExpected: Vertex bodies end with `tools`, `system`, `messages` on every build path, and other providers' bodies are unchanged.\n\nFor the live check, run the new provider-harness case \"325. Vertex Claude cache prefix keys serialized last\" against a gateway with Vertex credentials. The two turns of each pair must run in the same newman process and in order. Expected: `raw_request` key order ends with `tools, system, messages`, and turn 2 cache reads are at least the tokens cached by turn 1.\n\n## Screenshots/Recordings\n\nN/A\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nOnly the top-level key order of request bodies sent to Vertex changes. The JSON content is semantically identical.\n\n## Related issues\n\nCloses #6406\n\n## Security considerations\n\nNone. Member bytes are copied verbatim and no new inputs, secrets, or network behavior are introduced.\n\n## Checklist\n\n- [ ] I read `docs/contributing/README.md` and followed the guidelines\n- [x] I added/updated tests where appropriate\n- [ ] I updated documentation where needed\n- [ ] I verified builds succeed (Go and UI)\n- [ ] I verified the CI pipeline passes locally if applicable",
+          "verified_at": "2026-11-10T07:24:13Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e",
+      "html_url": "https://github.com/maximhq/bifrost/commit/fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/fdb3cbad1afd59ed87c7961cc5f66b1e5feab42e/comments",
+      "author": {
+        "login": "akshaydeo",
+        "id": 1050029,
+        "node_id": "MDQ6VXNlcjEwNTAwMjk=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1050029?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/akshaydeo",
+        "html_url": "https://github.com/akshaydeo",
+        "followers_url": "https://api.github.com/users/akshaydeo/followers",
+        "following_url": "https://api.github.com/users/akshaydeo/following{/other_user}",
+        "gists_url": "https://api.github.com/users/akshaydeo/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/akshaydeo/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/akshaydeo/subscriptions",
+        "organizations_url": "https://api.github.com/users/akshaydeo/orgs",
+        "repos_url": "https://api.github.com/users/akshaydeo/repos",
+        "events_url": "https://api.github.com/users/akshaydeo/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/akshaydeo/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "937a86e6f13025836deb7996ef5cf2b70c297d24",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/937a86e6f13025836deb7996ef5cf2b70c297d24",
+          "html_url": "https://github.com/maximhq/bifrost/commit/937a86e6f13025836deb7996ef5cf2b70c297d24"
+        }
+      ]
+    },
+    {
+      "sha": "937a86e6f13025836deb7996ef5cf2b70c297d24",
+      "node_id": "C_kwDOOLDdQNoAKDkzN2E4NmU2ZjEzMDI1ODM2ZGViNzk5NmVmNWNmMmI3MGMyOTdkMjQ",
+      "commit": {
+        "author": {
+          "name": "Constantine3",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:18:59Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:18:59Z"
+        },
+        "message": "[test]: make the SSRF multi-IP failure regression deterministic (#8386)\n\nAffected package: core/providers/utils. Inject DNS lookup and TCP dial callbacks through a private helper, and assert both candidate attempts and the final error without network access.\n\nAdd benchmarks for client setup and SSRF rejection.",
+        "tree": {
+          "sha": "e09e755c498869847d793e938dada3632a8a1811",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/e09e755c498869847d793e938dada3632a8a1811"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/937a86e6f13025836deb7996ef5cf2b70c297d24",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8sVjCRC1aQ7uu5UhlAAAOC4QAG48XBW+VI0c6dlsckvXzFtu\nBCH3gRC1BArwH4MEVYunTpO/i13dP+nCoiRph4UmP5i/v9fknBA8JGubokIV0lgb\n3JLuHBIWv9g+kz59Op5Uu6P4ynZZKrntaSwYqj3FTpHcdahnHfPYnFN5F4a2M4B3\nV6xHlH4m/vCh7Cr1pOe1hs469itL7KxBlsrn07QthptJzhwxL/D2Csss6tcO3Skf\nOuQqcrlwQPyi726LoJ8gq9Lm+APsBZkpIpX3+2ljxSiwmq79OJ9F71pwjAkTazw/\nKsoUOf5hL904JPQ+oLOUS3ppuA09sSzXJAG6Ate70pwbvNLB65PyXlpdyQv0duse\n0vqnIx4sekZ9hf9t7PDiNSgmSU+tTmcyRHubI7OTX62kEQEQDxaIuVRJzkO4ptuV\nkoct6g8ZeSXf2PONpYU/0wqC56yPqbuos30P0Hj9mhMsWpYAegjfTmWKPN+1kOod\nxccyXkfBfNWCa/Wn0F6RHfJSxlnKNOygTc4Q5WYeartSF5i0nssuv7OX8SciJjyq\nJrmtaUuzUOPjsjB75CDV1f5PL7nUYOCm+2yZgJWJad0LHvO/tsQVkz+3CHPKJxB+\nlY/TSXxdyOmJ5rkZrQeoI1VPZOfmVh8KxOmGZeNvSh6e+Z8i/+RPl0jMma6CZpvs\nr/R+ItCyQRW3NRLr7ePh\n=gsCh\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree e09e755c498869847d793e938dada3632a8a1811\nparent 65e418a2e66168d2e7b43bfddc6e02ffefc4954e\nauthor Constantine3 <[redacted-email]> 1794295139 +0800\ncommitter GitHub <[redacted-email]> 1794295139 -0800\n\n[test]: make the SSRF multi-IP failure regression deterministic (#8386)\n\nAffected package: core/providers/utils. Inject DNS lookup and TCP dial callbacks through a private helper, and assert both candidate attempts and the final error without network access.\n\nAdd benchmarks for client setup and SSRF rejection.",
+          "verified_at": "2026-11-10T07:18:59Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/937a86e6f13025836deb7996ef5cf2b70c297d24",
+      "html_url": "https://github.com/maximhq/bifrost/commit/937a86e6f13025836deb7996ef5cf2b70c297d24",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/937a86e6f13025836deb7996ef5cf2b70c297d24/comments",
+      "author": {
+        "login": "Constantine3",
+        "id": 46865030,
+        "node_id": "MDQ6VXNlcjQ2ODY1MDMw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/46865030?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Constantine3",
+        "html_url": "https://github.com/Constantine3",
+        "followers_url": "https://api.github.com/users/Constantine3/followers",
+        "following_url": "https://api.github.com/users/Constantine3/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Constantine3/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Constantine3/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Constantine3/subscriptions",
+        "organizations_url": "https://api.github.com/users/Constantine3/orgs",
+        "repos_url": "https://api.github.com/users/Constantine3/repos",
+        "events_url": "https://api.github.com/users/Constantine3/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Constantine3/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "65e418a2e66168d2e7b43bfddc6e02ffefc4954e",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/65e418a2e66168d2e7b43bfddc6e02ffefc4954e",
+          "html_url": "https://github.com/maximhq/bifrost/commit/65e418a2e66168d2e7b43bfddc6e02ffefc4954e"
+        }
+      ]
+    },
+    {
+      "sha": "65e418a2e66168d2e7b43bfddc6e02ffefc4954e",
+      "node_id": "C_kwDOOLDdQNoAKDY1ZTQxOGEyZTY2MTY4ZDJlN2I0M2JmZGRjNmUwMmZmZWZjNDk1NGU",
+      "commit": {
+        "author": {
+          "name": "Muhammad Abdullah Butt",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:11:24Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T07:11:24Z"
+        },
+        "message": "fix: drop mcp_call items on the Responses-to-Chat fallback (#9733)\n\n* fix: drop mcp_call items on the Responses-to-Chat fallback\n\nAn Anthropic Messages request whose history holds mcp_tool_use or\nmcp_tool_result blocks is converted to mcp_call Responses items. Routed\nto a chat-only (OpenAI-compatible) provider, ToChatMessages emitted each\nof them as a chat message with no role, which every such upstream\nrejects with a 400. Chat Completions has no MCP call item, so drop them\nthe same way configuration_update items are dropped.\n\nFixes #9721\n\nCo-Authored-By: Claude Opus 5.5 <[redacted-email]>\n\n* fix: drop every roleless Responses item with no chat equivalent on the chat fallback\n\nGeneralise the mcp_call skip in ToChatMessages: any typed Responses item\nthat arrives without a role and has no chat rendering (mcp_list_tools,\nmcp approvals, web_search_call, code_interpreter_call, item_reference,\n...) is dropped instead of becoming a roleless chat message that\nOpenAI-compatible upstreams reject with a 400.\n\n- move the anthropic regression test into responses_test.go and assert\n  the exact surviving turns, including a server web_search replay\n- add a schemas test for the sibling item types\n- add harness folder 325 (server-tool history fallback) covering\n  /anthropic/v1/messages and /v1/responses on deepseek\n\n* test: tighten harness 325 wire checks and benchmark ToChatMessages\n\n- role failures print only the offending message instead of a truncated array\n- the leak check inspects each message's type, tool_calls and content part\n  types rather than substring-matching the serialized history\n- add BenchmarkToChatMessages for the Responses->Chat fallback\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <[redacted-email]>\nCo-authored-by: akshaydeo <[redacted-email]>",
+        "tree": {
+          "sha": "fc8a6ac7cd119af029a3a7689dc19431008f8d75",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/fc8a6ac7cd119af029a3a7689dc19431008f8d75"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/65e418a2e66168d2e7b43bfddc6e02ffefc4954e",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8sOcCRC1aQ7uu5UhlAAAB5kQAH3iE3UfU3avIa5xE6izN+TS\nBQyD4oh8b1FmblVzjqI3iptSowXQgSdsWr3S1q3GUgmQcIDAW6WuDHSPUh/GHnaQ\nf8GLT5MJy2ga7EcPVbUESFeTlmy/+Ou5oq+ZTPvA92luCKt3TpLJhnZ/ykkdbM3Y\nL2HXih0/buYwEUz9HxIT0G2f7FnFA3o9Qn3RrRkFjWb5Q7txF/5sb+0Td5qGc6sr\ns4B/1K/9oWH71ERo1wiLQUy/bPMMmtNAOicvAkoae6NZTYxCm7i4BQ8iJhBJlQEb\njzuzMirkO9PcmoeNLxPxJVIUFHMkeU4E0947fuHhKtNZBOEgcShs6NQpTnhgUZDV\nP8RIQXDfIqi748znR1B1VlrFW90dxRnzPupbuhxQul+KHPxljFm52Ye7bJmcvCo1\niK2XGmJWAmXZzMaiP7J61PXAnASYgTxyLleVJrICuP7QN/ueqBclO7o9rXI9pt+A\nobKahytjqSZirp8WZA5V0cH25Ks/QdLgrHyI6bAxmWvMp7Th+upSJebWQGvnECGa\n8khI+AQRNqd8Ul0YadI/Oy4fG6I9SUFbID50Kk3uFLl+9aEuUZLtoaHf85Hl+L4C\nQ1EI92trCEtWhR3W7cjNIR8F7teNT20kRkphIZPveNhok7GrPCrnF6cWQF2oD+0D\nKijGnDgA/RRczIn1j9tz\n=MLcb\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree fc8a6ac7cd119af029a3a7689dc19431008f8d75\nparent 97eb8520fa1a95b46c670245a1b2c63424bf4d18\nauthor Muhammad Abdullah Butt <[redacted-email]> 1794294684 +0500\ncommitter GitHub <[redacted-email]> 1794294684 -0800\n\nfix: drop mcp_call items on the Responses-to-Chat fallback (#9733)\n\n* fix: drop mcp_call items on the Responses-to-Chat fallback\n\nAn Anthropic Messages request whose history holds mcp_tool_use or\nmcp_tool_result blocks is converted to mcp_call Responses items. Routed\nto a chat-only (OpenAI-compatible) provider, ToChatMessages emitted each\nof them as a chat message with no role, which every such upstream\nrejects with a 400. Chat Completions has no MCP call item, so drop them\nthe same way configuration_update items are dropped.\n\nFixes #9721\n\nCo-Authored-By: Claude Opus 5.5 <[redacted-email]>\n\n* fix: drop every roleless Responses item with no chat equivalent on the chat fallback\n\nGeneralise the mcp_call skip in ToChatMessages: any typed Responses item\nthat arrives without a role and has no chat rendering (mcp_list_tools,\nmcp approvals, web_search_call, code_interpreter_call, item_reference,\n...) is dropped instead of becoming a roleless chat message that\nOpenAI-compatible upstreams reject with a 400.\n\n- move the anthropic regression test into responses_test.go and assert\n  the exact surviving turns, including a server web_search replay\n- add a schemas test for the sibling item types\n- add harness folder 325 (server-tool history fallback) covering\n  /anthropic/v1/messages and /v1/responses on deepseek\n\n* test: tighten harness 325 wire checks and benchmark ToChatMessages\n\n- role failures print only the offending message instead of a truncated array\n- the leak check inspects each message's type, tool_calls and content part\n  types rather than substring-matching the serialized history\n- add BenchmarkToChatMessages for the Responses->Chat fallback\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <[redacted-email]>\nCo-authored-by: akshaydeo <[redacted-email]>",
+          "verified_at": "2026-11-10T07:11:24Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/65e418a2e66168d2e7b43bfddc6e02ffefc4954e",
+      "html_url": "https://github.com/maximhq/bifrost/commit/65e418a2e66168d2e7b43bfddc6e02ffefc4954e",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/65e418a2e66168d2e7b43bfddc6e02ffefc4954e/comments",
+      "author": {
+        "login": "1AbdullahButt",
+        "id": 168034895,
+        "node_id": "U_kgDOCgQCTw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/168034895?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/1AbdullahButt",
+        "html_url": "https://github.com/1AbdullahButt",
+        "followers_url": "https://api.github.com/users/1AbdullahButt/followers",
+        "following_url": "https://api.github.com/users/1AbdullahButt/following{/other_user}",
+        "gists_url": "https://api.github.com/users/1AbdullahButt/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/1AbdullahButt/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/1AbdullahButt/subscriptions",
+        "organizations_url": "https://api.github.com/users/1AbdullahButt/orgs",
+        "repos_url": "https://api.github.com/users/1AbdullahButt/repos",
+        "events_url": "https://api.github.com/users/1AbdullahButt/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/1AbdullahButt/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "97eb8520fa1a95b46c670245a1b2c63424bf4d18",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/97eb8520fa1a95b46c670245a1b2c63424bf4d18",
+          "html_url": "https://github.com/maximhq/bifrost/commit/97eb8520fa1a95b46c670245a1b2c63424bf4d18"
+        }
+      ]
+    },
+    {
+      "sha": "97eb8520fa1a95b46c670245a1b2c63424bf4d18",
+      "node_id": "C_kwDOOLDdQNoAKDk3ZWI4NTIwZmExYTk1YjQ2YzY3MDI0NWExYjJjNjM0MjRiZjRkMTg",
+      "commit": {
+        "author": {
+          "name": "Akshay Deo",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T05:42:32Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T05:42:32Z"
+        },
+        "message": "cost compute for estimated tokens (#9657)",
+        "tree": {
+          "sha": "61923045ce587fee90b30bf4bc25330f11c6897c",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/61923045ce587fee90b30bf4bc25330f11c6897c"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/97eb8520fa1a95b46c670245a1b2c63424bf4d18",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8q7ICRC1aQ7uu5UhlAAALswQADHrJVnRT0Xjq1Pe97/658Ai\nSGb+Vs9E4F8OpPgd/8gjJ71/XF6VA+px4jZ7LPLLkeafzMSEoyLhiyubXT8S2ANz\nuiiHA68rUqqmy+pyF0jHg3pnccdpXaIyTRfIKrNgKjbBpYqTZgCGPfcxAFX2tAbJ\ny5jVHdQzP+eOXaLB2qGKXCObKrpa8oelTXe8UlLQVhwZUiHbyKJN0/th8WVJXDnS\nk6X9mWGcTdp/PcyfkwzPKnEaGE3s+wN5m5MGIg8yU4j4yvP5Tdd+plwDAb5ggJG2\nkxX5UUJzaX33Bo+IqX8qQ9mnmtrBkCbVDp4f5gzEHa03VcEfWHXW8fM9AOpJYKMg\nuCv/ihc6ARlHKnoe9/omtNpdxgk8qZLX225mooHRFIvC+j82//dUOSb4HLrLieMd\nu27ze30UlBoPbAptsf9+IROMbUpoV4wPlBCHyDggSrqiAfXMvtCmB7k/lrZYkYKJ\nGUgqX49FzRSPF7Jwt/piAV+YsXrHKNqNpP/LzpyHgBcAshGzPCv9zi26jPa/aPz9\njaWjLyKYVvizQ46eqi03Yu5jzLhYCyoaG7oBKYjNnw8LIdbWCn0pQTM04ZMf0hZf\nmaEbxETWbwwuTQKXC2S4yg64pQmKTcYfyMD35T6vUk9bsvYjCbu5SDoJHzvkYd+Y\nYMD61rvn1EDSAifDawTj\n=1dmG\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree 61923045ce587fee90b30bf4bc25330f11c6897c\nparent aa3b279eac27e33ef069f7e563532dce7f854ff4\nauthor Akshay Deo <[redacted-email]> 1794289352 -0800\ncommitter GitHub <[redacted-email]> 1794289352 -0800\n\ncost compute for estimated tokens (#9657)",
+          "verified_at": "2026-11-10T05:42:33Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/97eb8520fa1a95b46c670245a1b2c63424bf4d18",
+      "html_url": "https://github.com/maximhq/bifrost/commit/97eb8520fa1a95b46c670245a1b2c63424bf4d18",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/97eb8520fa1a95b46c670245a1b2c63424bf4d18/comments",
+      "author": {
+        "login": "akshaydeo",
+        "id": 1050029,
+        "node_id": "MDQ6VXNlcjEwNTAwMjk=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1050029?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/akshaydeo",
+        "html_url": "https://github.com/akshaydeo",
+        "followers_url": "https://api.github.com/users/akshaydeo/followers",
+        "following_url": "https://api.github.com/users/akshaydeo/following{/other_user}",
+        "gists_url": "https://api.github.com/users/akshaydeo/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/akshaydeo/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/akshaydeo/subscriptions",
+        "organizations_url": "https://api.github.com/users/akshaydeo/orgs",
+        "repos_url": "https://api.github.com/users/akshaydeo/repos",
+        "events_url": "https://api.github.com/users/akshaydeo/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/akshaydeo/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "aa3b279eac27e33ef069f7e563532dce7f854ff4",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/aa3b279eac27e33ef069f7e563532dce7f854ff4",
+          "html_url": "https://github.com/maximhq/bifrost/commit/aa3b279eac27e33ef069f7e563532dce7f854ff4"
+        }
+      ]
+    },
+    {
+      "sha": "aa3b279eac27e33ef069f7e563532dce7f854ff4",
+      "node_id": "C_kwDOOLDdQNoAKGFhM2IyNzllYWMyN2UzM2VmMDY5ZjdlNTYzNTMyZGNlN2Y4NTRmZjQ",
+      "commit": {
+        "author": {
+          "name": "Akshay Deo",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T05:35:25Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-10T05:35:25Z"
+        },
+        "message": "adds token approximations using tokenizers for cancelled requests (#9238)\n\n## Overview\n\nStreams that are cancelled or time out now get usage estimated from the output already received. Previously, most providers only report usage in a terminal event, so an early client disconnect left no output tokens and no cost. Anthropic's initial `message_start` output count was also treated as authoritative even though it is only a provisional cursor.\n\nThe estimate is attached to the error's billed usage before logging, governance, and telemetry hooks run, so every consumer sees the same numbers. It covers chat completion, text completion, and Responses streams.\n\n## Changes\n\n- **New `core/streamusage` package**\n  - A `Manager` and per-attempt `Stream` observe chunks, capture output, and settle usage when a cancellation or timeout error arrives. Entries are removed by the existing once-only stream finalizer, and retries get a fresh entry.\n  - Tokenization happens only on interruption, never per successful chunk.\n  - Text, tool-call arguments (serialized in LiteLLM's field order), and received reasoning text are counted. Prompt tokens are estimated from request messages and tool arguments.\n  - A cancellation before any output arrives is not estimated as spend.\n  - Provider-reported usage is preserved. When a provider reports only some fields, only the missing ones are estimated.\n  - Estimated usage carries `usage.estimation` provenance (which fields were estimated, tokenizer name, reference commit) on both `BifrostLLMUsage` and `ResponsesResponseUsage`.\n- **Anthropic handling**\n  - Both the chat and Responses stream handlers count provider usage events through the new `BifrostContextKeyStreamUsageUpdates` key.\n  - If a stream is cancelled with only the provisional `message_start` count and no finish or later usage event, the output count is re-estimated.\n- **Tokenizers**\n  - By default the bundled tiktoken encodings are used, with no downloads: `o200k_base` for recognized newer OpenAI models and `cl100k_base` otherwise, including Cohere and unknown models.\n  - Optional `anthropic`, `deepseek`, `llama2`, and `llama3` tokenizers use `daulet/tokenizers` and require CGO.\n    - Vocabularies come from pinned manifest URLs, are SHA-256 verified, and are cached under the OS user cache dir.\n    - Download or initialization failure falls back to the generic encoding.\n    - Downloads happen only for explicitly selected families when settings are applied.\n  - Counting follows a pinned LiteLLM reference commit: 1024-codepoint segments, bounded sampling above 4M codepoints, and last-positive-count usage semantics. A Python-generated fixture set checks parity.\n  - CGO-free builds always use the tiktoken fallback.\n- **Accumulator reuse**\n  - When a tracer is present, the tracing accumulator is reused (`BeginUsageAccumulation`, `CaptureUsageChunk`, `EndUsageAccumulation`) instead of duplicating buffered content.\n  - A new `HasUsageChunk` check avoids double-accumulating chunks that a plugin already processed.\n  - Without a tracer, a bounded fallback buffer is used and released on `Close`.\n- **Configuration**\n  - New `stream_usage_estimation` client setting (`enabled` defaults to true, plus a `tokenizers` list). If only `tokenizers` is supplied, `enabled` stays true.\n  - `BifrostConfig.StreamUsageEstimation` is applied on `Init` and on `ReloadConfig`. Settings are copied into an immutable policy for newly opened streams.\n  - The setting is persisted through a new `stream_usage_estimation_json` column with an idempotent migration, and is included in the client config hash only when present.\n  - The config handler rejects unknown tokenizer names with a 400.\n  - JSON schema, UI types, and the Zod schema were updated.\n  - Client Settings gets an estimation toggle and a toggle per specialized tokenizer.\n- **Logging plugin**: when billed usage is an estimate, it replaces the entry's token usage and cost, so cancelled-stream cost is recorded even when partial usage was already present.\n- **Build and CI**\n  - `scripts/setup-tokenizers.sh` installs the pinned, checksum-verified static `libtokenizers` for linux (glibc and musl) and darwin.\n  - The Makefile (`dev`, `build`, `test-core`), the core test workflow, `setup-go-workspace.sh`, and the three transport Dockerfiles now run it and set `CGO_LDFLAGS`. The Dockerfiles also gain `g++` and `curl`.\n- **Tests**\n  - Go tests cover reconciliation cases, chunk-boundary independence, reasoning and tool counting, multi-choice handling, Anthropic cancellation for chat and Responses, the disabled and default configs, tracer accumulator reuse, the download-only-when-selected policy, and the config round trip and migration.\n  - The e2e stream-cancellation runner now cancels after 128 generated characters. It requires input, output, and cost usage for every provider (the check can be disabled with `--expect-estimation=false`), rejects stale Anthropic counts, and adds Responses and native Anthropic cases.\n  - Postman successful-stream controls verify that completed streams carry no `estimation` field.\n\n**Trade-offs**\n- Generic tokenization can differ from a provider's real tokenizer, so estimated counts and costs can be higher or lower than actual usage.\n- Hidden reasoning and unreceived output cannot be estimated. Missing prompt usage for image or audio inputs is left unknown rather than given a text-only estimate.\n- Disabling a tokenizer stops its selection for new streams, but already loaded vocabularies stay until restart. A failed initialization uses the generic fallback until restart.\n\n## Type of change\n\n- [ ] Bug fix\n- [x] Feature\n- [ ] Refactor\n- [ ] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [x] Transports (HTTP)\n- [x] Providers/Integrations\n- [x] Plugins\n- [x] UI (React)\n- [x] Docs\n\n## How to test\n\n```sh\n# Install the native tokenizer library and run core tests\nmake setup-tokenizers\nmake test-core\n\n# Stream usage package and tracer tests\nCGO_LDFLAGS=\"-L$(pwd)/tmp/tokenizers\" go test ./core/streamusage/... ./core/... -run 'Cancel|Usage|Tokenizer'\ngo test ./framework/configstore/... ./framework/tracing/...\n\n# CGO-free fallback\nCGO_ENABLED=0 go test ./core/streamusage/...\n\n# e2e cancellation runner unit tests\nnode --test tests/e2e/api/runners/lib/cancel-stream-usage.test.mjs\n\n# UI\ncd ui\npnpm i || npm i\npnpm test || npm test\npnpm build || npm run build\n```\n\nExpected outcomes:\n- A cancelled stream with the default config logs non-zero prompt, completion, and total tokens plus cost, and `usage.estimation` is set.\n- With `stream_usage_estimation.enabled: false`, no estimation is attached.\n- A completed stream returns provider usage unchanged, with no `estimation` field.\n- Anthropic streams cancelled after substantial output report more than the provisional `message_start` output count.\n- Selecting a specialized tokenizer downloads only that vocabulary when settings are applied. A failed download falls back to `cl100k_base`.\n\nNew configuration:\n- Client config: `stream_usage_estimation: { \"enabled\": true, \"tokenizers\": [] }`. Allowed tokenizers are `anthropic`, `deepseek`, `llama2`, and `llama3`.\n- `BIFROST_TOKENIZER_CACHE` overrides the vocabulary cache directory.\n- `BIFROST_TOKENIZER_OFFLINE=1` allows only cached vocabularies.\n- `BIFROST_TOKENIZERS_MUSL=1` forces the musl native library in `setup-tokenizers.sh`.\n- `TOKENIZERS_DIR` overrides the Makefile install location for the native library.\n\n## Screenshots/Recordings\n\nUI change: Client Settings gains an \"Estimate cancelled stream usage\" switch, plus per-tokenizer switches (`anthropic`, `deepseek`, `llama2`, `llama3`) that show when estimation is enabled. Screenshots to be added.\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nBehavior and build notes:\n- Estimation is on by default, so cancelled and timed-out streams will now record estimated usage and cost where previously they could record none.\n- CGO builds need `libtokenizers`, which `make setup-tokenizers` installs. Otherwise, build with `CGO_ENABLED=0` to use the tiktoken fallback.\n\n## Related issues\n\nN/A\n\n## Security considerations\n\n- Tokenizer downloads use only fixed URLs and revisions from the embedded manifest. Model names and request data never become fetch URLs.\n- Each download is SHA-256 verified, size-limited to 64 MiB, written atomically to a user-only cache directory, and re-validated on cache reads.\n- The native library installer verifies a pin",
+        "tree": {
+          "sha": "f7fca5e16f296b0ddf812d6100e4eb4c093e5e80",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/f7fca5e16f296b0ddf812d6100e4eb4c093e5e80"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/aa3b279eac27e33ef069f7e563532dce7f854ff4",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8q0dCRC1aQ7uu5UhlAAAbDcQAF3ocrKysA8xo/0L2og0yPRh\nymigIWDWhLTtIcpEAsYVCRjd51MDcmndzsNQwmK8H74DEcnbfn0Lxvc3elJrji73\n6VBF6sVdFPChHchH6stO3/IQ4CbTW7lRDj57rIUs0GlrBWcsn4+IohCFg6YQwT3s\no9juQM7P5UwFUL0E0md7XyCNzxPEF8bO5cEGqBUZ/GceB0ALXnyz1IMEYMQkaQL4\n4/E83D94s/uKzR4jpCl5ixHmeUvViyZhMv6Y5swivoyvauLWWosyCcJBfySANHpF\nBG1TMkK2VKFdP1unQdDIU53pkWDVLqR6ogKppwU2mJS7TsCY9TC99j0E7Ah5jthL\nlqwmxOKiDcuRuugso4Ki6WiP0VAOT1sCIbkp1Xk2hFrvRSyKhyKhy+NqnzqNFhNl\nqulSUDX9WlakmXUG2LZ7NqRrpd93bsW3vTYw6Ij181bhTMBZVanri1kcjnUTaWle\nY1WnUl7CNIrjwbkc40sQ7edUrJyhuwHMsCGdejvJIoWxEbFtNql8SHMdU6uKRHYM\noVWTJKdcoShAllBzwJLhjR+ULD4SXqM+Sv5vx5MakNzQ/MdCy0UD2+kDsn+QGSpU\nwTS5WxhsufpbD2sQfgFM2M+EfO40l1BSZiA+fgAssYkLJjnRSyL2GH2FwP8/E3D/\nzSmj/+hHGg3U1qn9sO4i\n=RqMo\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree f7fca5e16f296b0ddf812d6100e4eb4c093e5e80\nparent 6e3620a91ec25919690c1eb211d68755a5ccdac7\nauthor Akshay Deo <[redacted-email]> 1794288925 -0800\ncommitter GitHub <[redacted-email]> 1794288925 -0800\n\nadds token approximations using tokenizers for cancelled requests (#9238)\n\n## Overview\n\nStreams that are cancelled or time out now get usage estimated from the output already received. Previously, most providers only report usage in a terminal event, so an early client disconnect left no output tokens and no cost. Anthropic's initial `message_start` output count was also treated as authoritative even though it is only a provisional cursor.\n\nThe estimate is attached to the error's billed usage before logging, governance, and telemetry hooks run, so every consumer sees the same numbers. It covers chat completion, text completion, and Responses streams.\n\n## Changes\n\n- **New `core/streamusage` package**\n  - A `Manager` and per-attempt `Stream` observe chunks, capture output, and settle usage when a cancellation or timeout error arrives. Entries are removed by the existing once-only stream finalizer, and retries get a fresh entry.\n  - Tokenization happens only on interruption, never per successful chunk.\n  - Text, tool-call arguments (serialized in LiteLLM's field order), and received reasoning text are counted. Prompt tokens are estimated from request messages and tool arguments.\n  - A cancellation before any output arrives is not estimated as spend.\n  - Provider-reported usage is preserved. When a provider reports only some fields, only the missing ones are estimated.\n  - Estimated usage carries `usage.estimation` provenance (which fields were estimated, tokenizer name, reference commit) on both `BifrostLLMUsage` and `ResponsesResponseUsage`.\n- **Anthropic handling**\n  - Both the chat and Responses stream handlers count provider usage events through the new `BifrostContextKeyStreamUsageUpdates` key.\n  - If a stream is cancelled with only the provisional `message_start` count and no finish or later usage event, the output count is re-estimated.\n- **Tokenizers**\n  - By default the bundled tiktoken encodings are used, with no downloads: `o200k_base` for recognized newer OpenAI models and `cl100k_base` otherwise, including Cohere and unknown models.\n  - Optional `anthropic`, `deepseek`, `llama2`, and `llama3` tokenizers use `daulet/tokenizers` and require CGO.\n    - Vocabularies come from pinned manifest URLs, are SHA-256 verified, and are cached under the OS user cache dir.\n    - Download or initialization failure falls back to the generic encoding.\n    - Downloads happen only for explicitly selected families when settings are applied.\n  - Counting follows a pinned LiteLLM reference commit: 1024-codepoint segments, bounded sampling above 4M codepoints, and last-positive-count usage semantics. A Python-generated fixture set checks parity.\n  - CGO-free builds always use the tiktoken fallback.\n- **Accumulator reuse**\n  - When a tracer is present, the tracing accumulator is reused (`BeginUsageAccumulation`, `CaptureUsageChunk`, `EndUsageAccumulation`) instead of duplicating buffered content.\n  - A new `HasUsageChunk` check avoids double-accumulating chunks that a plugin already processed.\n  - Without a tracer, a bounded fallback buffer is used and released on `Close`.\n- **Configuration**\n  - New `stream_usage_estimation` client setting (`enabled` defaults to true, plus a `tokenizers` list). If only `tokenizers` is supplied, `enabled` stays true.\n  - `BifrostConfig.StreamUsageEstimation` is applied on `Init` and on `ReloadConfig`. Settings are copied into an immutable policy for newly opened streams.\n  - The setting is persisted through a new `stream_usage_estimation_json` column with an idempotent migration, and is included in the client config hash only when present.\n  - The config handler rejects unknown tokenizer names with a 400.\n  - JSON schema, UI types, and the Zod schema were updated.\n  - Client Settings gets an estimation toggle and a toggle per specialized tokenizer.\n- **Logging plugin**: when billed usage is an estimate, it replaces the entry's token usage and cost, so cancelled-stream cost is recorded even when partial usage was already present.\n- **Build and CI**\n  - `scripts/setup-tokenizers.sh` installs the pinned, checksum-verified static `libtokenizers` for linux (glibc and musl) and darwin.\n  - The Makefile (`dev`, `build`, `test-core`), the core test workflow, `setup-go-workspace.sh`, and the three transport Dockerfiles now run it and set `CGO_LDFLAGS`. The Dockerfiles also gain `g++` and `curl`.\n- **Tests**\n  - Go tests cover reconciliation cases, chunk-boundary independence, reasoning and tool counting, multi-choice handling, Anthropic cancellation for chat and Responses, the disabled and default configs, tracer accumulator reuse, the download-only-when-selected policy, and the config round trip and migration.\n  - The e2e stream-cancellation runner now cancels after 128 generated characters. It requires input, output, and cost usage for every provider (the check can be disabled with `--expect-estimation=false`), rejects stale Anthropic counts, and adds Responses and native Anthropic cases.\n  - Postman successful-stream controls verify that completed streams carry no `estimation` field.\n\n**Trade-offs**\n- Generic tokenization can differ from a provider's real tokenizer, so estimated counts and costs can be higher or lower than actual usage.\n- Hidden reasoning and unreceived output cannot be estimated. Missing prompt usage for image or audio inputs is left unknown rather than given a text-only estimate.\n- Disabling a tokenizer stops its selection for new streams, but already loaded vocabularies stay until restart. A failed initialization uses the generic fallback until restart.\n\n## Type of change\n\n- [ ] Bug fix\n- [x] Feature\n- [ ] Refactor\n- [ ] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [x] Transports (HTTP)\n- [x] Providers/Integrations\n- [x] Plugins\n- [x] UI (React)\n- [x] Docs\n\n## How to test\n\n```sh\n# Install the native tokenizer library and run core tests\nmake setup-tokenizers\nmake test-core\n\n# Stream usage package and tracer tests\nCGO_LDFLAGS=\"-L$(pwd)/tmp/tokenizers\" go test ./core/streamusage/... ./core/... -run 'Cancel|Usage|Tokenizer'\ngo test ./framework/configstore/... ./framework/tracing/...\n\n# CGO-free fallback\nCGO_ENABLED=0 go test ./core/streamusage/...\n\n# e2e cancellation runner unit tests\nnode --test tests/e2e/api/runners/lib/cancel-stream-usage.test.mjs\n\n# UI\ncd ui\npnpm i || npm i\npnpm test || npm test\npnpm build || npm run build\n```\n\nExpected outcomes:\n- A cancelled stream with the default config logs non-zero prompt, completion, and total tokens plus cost, and `usage.estimation` is set.\n- With `stream_usage_estimation.enabled: false`, no estimation is attached.\n- A completed stream returns provider usage unchanged, with no `estimation` field.\n- Anthropic streams cancelled after substantial output report more than the provisional `message_start` output count.\n- Selecting a specialized tokenizer downloads only that vocabulary when settings are applied. A failed download falls back to `cl100k_base`.\n\nNew configuration:\n- Client config: `stream_usage_estimation: { \"enabled\": true, \"tokenizers\": [] }`. Allowed tokenizers are `anthropic`, `deepseek`, `llama2`, and `llama3`.\n- `BIFROST_TOKENIZER_CACHE` overrides the vocabulary cache directory.\n- `BIFROST_TOKENIZER_OFFLINE=1` allows only cached vocabularies.\n- `BIFROST_TOKENIZERS_MUSL=1` forces the musl native library in `setup-tokenizers.sh`.\n- `TOKENIZERS_DIR` overrides the Makefile install location for the native library.\n\n## Screenshots/Recordings\n\nUI change: Client Settings gains an \"Estimate cancelled stream usage\" switch, plus per-tokenizer switches (`anthropic`, `deepseek`, `llama2`, `llama3`) that show when estimation is enabled. Screenshots to be added.\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nBehavior and build notes:\n- Estimation is on by default, so cancelled and timed-out streams will now record estimated usage and cost where previously they could record none.\n- CGO builds need `libtokenizers`, which `make setup-tokenizers` installs. Otherwise, build with `CGO_ENABLED=0` to use the tiktoken fallback.\n\n## Related issues\n\nN/A\n\n## Security considerations\n\n- Tokenizer downloads use only fixed URLs and revisions from the embedded manifest. Model names and request data never become fetch URLs.\n- Each download is SHA-256 verified, size-limited to 64 MiB, written atomically to a user-only cache directory, and re-validated on cache reads.\n- The native library installer verifies a pin",
+          "verified_at": "2026-11-10T05:35:25Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/aa3b279eac27e33ef069f7e563532dce7f854ff4",
+      "html_url": "https://github.com/maximhq/bifrost/commit/aa3b279eac27e33ef069f7e563532dce7f854ff4",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/aa3b279eac27e33ef069f7e563532dce7f854ff4/comments",
+      "author": {
+        "login": "akshaydeo",
+        "id": 1050029,
+        "node_id": "MDQ6VXNlcjEwNTAwMjk=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1050029?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/akshaydeo",
+        "html_url": "https://github.com/akshaydeo",
+        "followers_url": "https://api.github.com/users/akshaydeo/followers",
+        "following_url": "https://api.github.com/users/akshaydeo/following{/other_user}",
+        "gists_url": "https://api.github.com/users/akshaydeo/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/akshaydeo/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/akshaydeo/subscriptions",
+        "organizations_url": "https://api.github.com/users/akshaydeo/orgs",
+        "repos_url": "https://api.github.com/users/akshaydeo/repos",
+        "events_url": "https://api.github.com/users/akshaydeo/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/akshaydeo/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "6e3620a91ec25919690c1eb211d68755a5ccdac7",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/6e3620a91ec25919690c1eb211d68755a5ccdac7",
+          "html_url": "https://github.com/maximhq/bifrost/commit/6e3620a91ec25919690c1eb211d68755a5ccdac7"
+        }
+      ]
+    },
+    {
+      "sha": "6e3620a91ec25919690c1eb211d68755a5ccdac7",
+      "node_id": "C_kwDOOLDdQNoAKDZlMzYyMGE5MWVjMjU5MTk2OTBjMWViMjExZDY4NzU1YTVjY2RhYzc",
+      "commit": {
+        "author": {
+          "name": "Rojin Ebrahimi",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T21:42:06Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T21:42:06Z"
+        },
+        "message": "fix(configstore): make config hashes deterministic for map fields (#8095)\n\n* fix(configstore): sort request_path_overrides in the provider config hash\n\nCustomProviderConfig was hashed with sonic.Marshal, which writes\nRequestPathOverrides in map iteration order, so a custom provider with\ntwo or more overrides hashed differently between restarts and was\nreconciled as edited, dropping its API-added keys in mergeProviderKeys.\n\nHash it with providerUtils.MarshalSorted instead. The first boot after\nupgrade still sees the stored unsorted hash, so mergeProviderWithHash\nchecks ConfigHashMatchesLegacyOverrideOrder before treating a mismatch\nas a file edit, mirroring KeyHashMatchesLegacyAliasOrder; the\npermutation search and legacy map encoding are now shared by both.\n\n* fix(configstore): keep API-added keys when the legacy override hash is unverifiable\n\nA stored provider hash written before request_path_overrides was sorted\ndepends on a random map order, so it can only be recognised by trying\nevery order, which is bounded at seven overrides. Above that bound a\nmismatch used to fall into mergeProviderKeys and drop keys added through\nthe API on the first boot after upgrade.\n\nFor a provider past the bound, mergeProviderWithHash now takes the\nfile's provider settings, as every pre-sorting boot already did, but\nmerges keys with reconcileProviderKeys so keys that exist only in the\ndatabase survive. The new hash is stored, so later edits are detected\nnormally.\n\n* fix(configstore): limit unverifiable override-hash fallback to the upgrade boot\n\nThe fallback for custom providers with more than 7 request_path_overrides\nfired on every hash mismatch, not just the first boot after upgrading, so\nlater config.json edits kept keys deleted from the file and recorded no\nconfig.file_applied audit event.\n\n- GenerateConfigHash suffixes the hash of a custom provider with two or\n  more overrides with SortedOverridesConfigHashMarker. A stored hash that\n  carries it is sorted-era: the legacy search is skipped and the\n  unverifiable fallback does not apply, so a mismatch is a real edit.\n  Providers with fewer than two overrides keep their stored hash.\n- The unverifiable branch records the file sync via noteConfigFileApplied.\n- Fix TestConfigHashMatchesLegacyOverrideOrder checking another provider's\n  hash under that provider's own name (it always matched, so it failed).\n- Avoid appending onto the field literal in legacyCustomProviderConfigBytes.\n- Tests: marker presence per override count, sorted-marker hashes never\n  match the legacy search, the upgrade boot is audited, and a later edit\n  after the upgrade removes a deleted key.\n\n* test(lib): fail the edited-file-key subtest when the key is missing\n\nThe weight assertion only ran if the file key was present, so a merge\nthat dropped it passed silently.\n\n---------\n\nCo-authored-by: akshaydeo <[redacted-email]>",
+        "tree": {
+          "sha": "c49f9b722cef20702a085f3e8e93c0a986767ac3",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/c49f9b722cef20702a085f3e8e93c0a986767ac3"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/6e3620a91ec25919690c1eb211d68755a5ccdac7",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8j4uCRC1aQ7uu5UhlAAANHoQAACfzYDeFL5fKNBdm5aFUWOW\nchgFh9Q9qOTzHUoa18LJNnJWV41zLjGKJBTOnbNlyaOUUio21QPfWxLVN8+Fm3Az\nYNSbyejCRLsbbxmOQqboTqN8KhZ1k30hDtVWq1kz3BIDa1wWrmch32bYTJrRyXlA\nRpO83tbOdybUur3xyrCxljbUfk1io9Xm+FSLbWxnkCCI8oi4pnayY5pDDjXiopeB\nj5PfyrG0Abq8R8xEmaDtZVw7wkTrrIU3FmYPH61zPda1RA7aBfAfzKH/R7Bmg2BY\nJX3oXEPOS5iJ5ecnSCQfPkBiB713wyEkBWDSqdM9immoK9byz12XesBGvyn2fdB2\nS7alp5j3ByeIQrJK7EMzpMcqvsP5b7R6A9MwrjOAwHaoa6JbcQnIj9hw1fg7V7Q5\n79UtRo0wtkYXGZ1zDWE5UqYfgCI6dX3giNjC5y5nvXa3l+YTFZQP83asQ0Izz3CZ\nOz+i8xy1ADTAQ16Qs/QKEpiklaiLOXim6BPyLsxt49N+QiIJBQxAP1tia52lSWFF\nAyQd/2Wxv0+msHEpVsXWm0MQ5ytwJaXlzZlzU8fP9kWxnCx/ZZzKVobfNew+4Axi\nJuadbuiMXmOcN60cIyZL6MZiUgNPq29n7mmlRALCBlQQ8gnKo0W54XuQOf+7Ue3r\nxBkRkcukwaaF5DyZ7t99\n=ZrBz\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree c49f9b722cef20702a085f3e8e93c0a986767ac3\nparent 0c2e4df78b2daf331a50204acf18cbb137f3bbfa\nauthor Rojin Ebrahimi <[redacted-email]> 1794260526 +0330\ncommitter GitHub <[redacted-email]> 1794260526 -0800\n\nfix(configstore): make config hashes deterministic for map fields (#8095)\n\n* fix(configstore): sort request_path_overrides in the provider config hash\n\nCustomProviderConfig was hashed with sonic.Marshal, which writes\nRequestPathOverrides in map iteration order, so a custom provider with\ntwo or more overrides hashed differently between restarts and was\nreconciled as edited, dropping its API-added keys in mergeProviderKeys.\n\nHash it with providerUtils.MarshalSorted instead. The first boot after\nupgrade still sees the stored unsorted hash, so mergeProviderWithHash\nchecks ConfigHashMatchesLegacyOverrideOrder before treating a mismatch\nas a file edit, mirroring KeyHashMatchesLegacyAliasOrder; the\npermutation search and legacy map encoding are now shared by both.\n\n* fix(configstore): keep API-added keys when the legacy override hash is unverifiable\n\nA stored provider hash written before request_path_overrides was sorted\ndepends on a random map order, so it can only be recognised by trying\nevery order, which is bounded at seven overrides. Above that bound a\nmismatch used to fall into mergeProviderKeys and drop keys added through\nthe API on the first boot after upgrade.\n\nFor a provider past the bound, mergeProviderWithHash now takes the\nfile's provider settings, as every pre-sorting boot already did, but\nmerges keys with reconcileProviderKeys so keys that exist only in the\ndatabase survive. The new hash is stored, so later edits are detected\nnormally.\n\n* fix(configstore): limit unverifiable override-hash fallback to the upgrade boot\n\nThe fallback for custom providers with more than 7 request_path_overrides\nfired on every hash mismatch, not just the first boot after upgrading, so\nlater config.json edits kept keys deleted from the file and recorded no\nconfig.file_applied audit event.\n\n- GenerateConfigHash suffixes the hash of a custom provider with two or\n  more overrides with SortedOverridesConfigHashMarker. A stored hash that\n  carries it is sorted-era: the legacy search is skipped and the\n  unverifiable fallback does not apply, so a mismatch is a real edit.\n  Providers with fewer than two overrides keep their stored hash.\n- The unverifiable branch records the file sync via noteConfigFileApplied.\n- Fix TestConfigHashMatchesLegacyOverrideOrder checking another provider's\n  hash under that provider's own name (it always matched, so it failed).\n- Avoid appending onto the field literal in legacyCustomProviderConfigBytes.\n- Tests: marker presence per override count, sorted-marker hashes never\n  match the legacy search, the upgrade boot is audited, and a later edit\n  after the upgrade removes a deleted key.\n\n* test(lib): fail the edited-file-key subtest when the key is missing\n\nThe weight assertion only ran if the file key was present, so a merge\nthat dropped it passed silently.\n\n---------\n\nCo-authored-by: akshaydeo <[redacted-email]>",
+          "verified_at": "2026-11-09T21:42:06Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/6e3620a91ec25919690c1eb211d68755a5ccdac7",
+      "html_url": "https://github.com/maximhq/bifrost/commit/6e3620a91ec25919690c1eb211d68755a5ccdac7",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/6e3620a91ec25919690c1eb211d68755a5ccdac7/comments",
+      "author": {
+        "login": "rojinebrahimi",
+        "id": 44529498,
+        "node_id": "MDQ6VXNlcjQ0NTI5NDk4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/44529498?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/rojinebrahimi",
+        "html_url": "https://github.com/rojinebrahimi",
+        "followers_url": "https://api.github.com/users/rojinebrahimi/followers",
+        "following_url": "https://api.github.com/users/rojinebrahimi/following{/other_user}",
+        "gists_url": "https://api.github.com/users/rojinebrahimi/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/rojinebrahimi/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/rojinebrahimi/subscriptions",
+        "organizations_url": "https://api.github.com/users/rojinebrahimi/orgs",
+        "repos_url": "https://api.github.com/users/rojinebrahimi/repos",
+        "events_url": "https://api.github.com/users/rojinebrahimi/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/rojinebrahimi/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "0c2e4df78b2daf331a50204acf18cbb137f3bbfa",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/0c2e4df78b2daf331a50204acf18cbb137f3bbfa",
+          "html_url": "https://github.com/maximhq/bifrost/commit/0c2e4df78b2daf331a50204acf18cbb137f3bbfa"
+        }
+      ]
+    },
+    {
+      "sha": "0c2e4df78b2daf331a50204acf18cbb137f3bbfa",
+      "node_id": "C_kwDOOLDdQNoAKDBjMmU0ZGY3OGIyZGFmMzMxYTUwMjA0YWNmMThjYmIxMzdmM2JiZmE",
+      "commit": {
+        "author": {
+          "name": "Constantine3",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T10:36:16Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T10:36:16Z"
+        },
+        "message": "fix(modelcatalog): preserve stored model parameters during URL sync (#8136)\n\nMerge usable URL rows with the existing database snapshot before publishing model-parameter indexes, so provider-qualified DB-only rows remain discoverable.\n\nReject malformed and empty feed rows, and serialize parameter sync across gateways with a renewable shared lock to prevent stale snapshot publication.\n\nAdd focused SQLite, lock-lifecycle, and shared-database regression coverage.\n\nFixes #8073",
+        "tree": {
+          "sha": "ea56af30511e24f61cd0602d2d93daa708409276",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/ea56af30511e24f61cd0602d2d93daa708409276"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/0c2e4df78b2daf331a50204acf18cbb137f3bbfa",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8aIgCRC1aQ7uu5UhlAAAwS0QABYXI0FDT2IOo9iIkpklm53O\nTaM/DJqByXJvpr/fCxb1Mi8D+XPpS/Km+tHTLP2cxR5UDvo3tqBW905lL1W0lCiu\nnCOtspgTDcqw5OBPvnTzD9OzshgPDmW0WI0bCHNmrH+md22vvGa0kgZThY90pS6s\n7/15Wv/AYhHN6GcRRxan6wuZ+2yePLD6WQgE8qjuRnT83uEIB3pKMv+D4aBBUHp7\nrdBBWAPs6XFkzSakeiI4bYsQhxE5ZpJEeMCdteRl7PBWM7IrzK2hdlz93GeVnnCH\nK+mAWm4dTzimNaSaKhFGW5+b5ZLyQ9hGShYkG82y4qTzV/iIVSZrGdcDhGND0gMG\nZ4FPORkfmnYCOanD0z2r2UWLeVKtPCwPFxibSBLUb3oJIB5nH+5XuxnSqr1bXziA\nr3hr1oPlmntR7Hk4sFBMhmT+44R8ytFUGQ7gUXI6+wHZUvJWgarAjv0xBhke+SRG\nvhbH43QvWKPfXPx91Vws8ymR+4F62H3s9QQzEibb14hjvdut29mczco/BBycLRyD\nzeUmOv5i1vSZV7PvfROmtCS7awngOwe1Sr/I82i2HuxY5JA9LCYclVH79KIW9T6F\nxGGHLj2ciCT2Y3LeLTBOd9+r2RBAjff0CxpVKleUa+CgcggGsEUeoyWrZNRhM0tX\nxMH9Ctn2wjUzQ2YXsaSm\n=0EmU\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree ea56af30511e24f61cd0602d2d93daa708409276\nparent 1da9d94ea6d7a89028e36234df7388314eb7091c\nauthor Constantine3 <[redacted-email]> 1794220576 +0800\ncommitter GitHub <[redacted-email]> 1794220576 -0800\n\nfix(modelcatalog): preserve stored model parameters during URL sync (#8136)\n\nMerge usable URL rows with the existing database snapshot before publishing model-parameter indexes, so provider-qualified DB-only rows remain discoverable.\n\nReject malformed and empty feed rows, and serialize parameter sync across gateways with a renewable shared lock to prevent stale snapshot publication.\n\nAdd focused SQLite, lock-lifecycle, and shared-database regression coverage.\n\nFixes #8073",
+          "verified_at": "2026-11-09T10:36:16Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/0c2e4df78b2daf331a50204acf18cbb137f3bbfa",
+      "html_url": "https://github.com/maximhq/bifrost/commit/0c2e4df78b2daf331a50204acf18cbb137f3bbfa",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/0c2e4df78b2daf331a50204acf18cbb137f3bbfa/comments",
+      "author": {
+        "login": "Constantine3",
+        "id": 46865030,
+        "node_id": "MDQ6VXNlcjQ2ODY1MDMw",
+        "avatar_url": "https://avatars.githubusercontent.com/u/46865030?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Constantine3",
+        "html_url": "https://github.com/Constantine3",
+        "followers_url": "https://api.github.com/users/Constantine3/followers",
+        "following_url": "https://api.github.com/users/Constantine3/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Constantine3/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Constantine3/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Constantine3/subscriptions",
+        "organizations_url": "https://api.github.com/users/Constantine3/orgs",
+        "repos_url": "https://api.github.com/users/Constantine3/repos",
+        "events_url": "https://api.github.com/users/Constantine3/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Constantine3/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "1da9d94ea6d7a89028e36234df7388314eb7091c",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/1da9d94ea6d7a89028e36234df7388314eb7091c",
+          "html_url": "https://github.com/maximhq/bifrost/commit/1da9d94ea6d7a89028e36234df7388314eb7091c"
+        }
+      ]
+    },
+    {
+      "sha": "1da9d94ea6d7a89028e36234df7388314eb7091c",
+      "node_id": "C_kwDOOLDdQNoAKDFkYTlkOTRlYTZkN2E4OTAyOGUzNjIzNGRmNzM4ODMxNGViNzA5MWM",
+      "commit": {
+        "author": {
+          "name": "Ryan Madhuwala",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T06:06:21Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T06:06:21Z"
+        },
+        "message": "fix(elevenlabs): allow Scribe transcription with wildcard virtual keys (#8746)\n\n* fix(modelcatalog): preserve ElevenLabs Scribe wildcard access\n\nTreat ElevenLabs discovery as a partial catalog, reusing the existing allow/block reconciliation for datasheet-backed Scribe models. Keep generic virtual-key matching unchanged.\n\nAdd regression tests for wildcard, exact, regex, deny-all, blacklist and unrelated-provider behavior, plus the authorization benchmark. Independently validated the commit with a read-only source overlay.\n\nRelated to #8467.\n\n* fix(elevenlabs): reconcile Scribe model discovery\n\nSupplement partial discovery from the pricing-backed inventory before per-key filtering. Do not copy cached aliases between keys, and preserve aliases overriding canonical Scribe names. Keep the model-info interface and generic authorization unchanged.\n\nAdd native/OpenAI route regressions, key/model denial tests, source-inventory isolation, standalone SDK/error coverage, discovery benchmarks, and structurally validated provider-harness cases with virtual-key cleanup.\n\nValidated full catalog, governance, handler and provider suites, focused compatibility tests, race regressions and go vet. No live provider calls. The unrelated pre-existing schemas/mux_test.go:1104 failure remains unchanged.\n\nBenchmark medians: cached Scribe authorization 1222 to 36.54 ns/op (12 to 1 allocs/op); mocked discovery 68899 to 79555 ns/op (245 to 330 allocs/op), including additional models. No new retained cache or stream-sized context data.\n\nFixes #8467.\n\n* [fix]: Keep provider listing separate from the model catalog\n\nRemove catalog synthesis from ElevenLabs ListModels and the unused datasheet getter. Keep wildcard reconciliation in the existing model-catalog compositor without changing generic authorization.\n\nUpdate catalog and HTTP regressions to preserve upstream inventory, enforce permissions, and verify key-config invalidation. Align the provider harness with the separate management-catalog discovery endpoint.\n\nAffected packages:\n- core/providers/elevenlabs/\n- framework/modelcatalog/\n- transports/bifrost-http/handlers/\n- tests/e2e/api/collections/\n\nRelated to #8467.\n\n* [test]: Preserve upstream Scribe entries in ElevenLabs listing\n\nExtend the SDK listing regression without a model catalog to cover both TTS and Scribe upstream responses, while retaining upstream authentication-error coverage.\n\nThese mocked responses verify passthrough behavior without asserting that ElevenLabs always includes or omits Scribe in its live model inventory.\n\nAffected packages:\n- core/providers/elevenlabs/\n\nRelated to #8467.",
+        "tree": {
+          "sha": "b9fd659589cd493a489bf623c7fa428e29e096f3",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/b9fd659589cd493a489bf623c7fa428e29e096f3"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/1da9d94ea6d7a89028e36234df7388314eb7091c",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8WLdCRC1aQ7uu5UhlAAAlgMQAFJeQnJVq1JzskZPUGzBsAc8\nya/6zEGsHFBpC+csAmUHeXUnnxc2BMdd+r3B2XhjZhy0UTcwjf0G84MilA/MXsuP\nhyr4XqibgxyVtns49lnfWp6l9tTYekeH1oVdiRJmuz81+jaSDm9rzELOqUU5f2yl\nzp5VV+aAyKSKS1O3RyAYvqLVfLHtZBbd9aArL1Xv65EYOSxZRaiSy8KDwmGpA2Hx\nOm5mLhTpb6YaWBTEHY5DwP6YVa4KC07Aw2p2KQusF1vrsFgWP7cnw/XlvS7+699j\nW5upixJl04aYc1iO60GYJWLu8/5xsv1iZrpE5/FUb5/+7+ZWkRCz2tbZPehP3rKR\nRlEFnojLq/koB7GpvOs1+feW+G9r2XDyjvpRnw2sXRHk0UaCbNZTcpXSKZW0NpRb\nO17JJx1p6bxukccm0CXc6D5YargevAdIuTAmc6EQowdTYEaWb5PKQWAb8+V3IfQ4\nbku0fZq8cSNiexZAYWgZfdGilbVg18oPviaeBBNozsqLdvuLWmt9ms7wCiIq9htc\nQVyodj1KR9j3toL7ZeJJkfLBmuHHgRmNfFThjF5kJs4XEA2c69DopfqYXIY38KX6\nZ3wV8aumfPnaDch4NvXYfXXEkgcMm+VDc/8qQ58olkfvIUjF/Ky6gtEqVebCIRzz\nkvCczOzxe5D0kgnF1OUw\n=nU3L\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree b9fd659589cd493a489bf623c7fa428e29e096f3\nparent 614005c28eb44a3a75f52d1d9a32dcbf543c7d7a\nauthor Ryan Madhuwala <[redacted-email]> 1794204381 +0530\ncommitter GitHub <[redacted-email]> 1794204381 -0800\n\nfix(elevenlabs): allow Scribe transcription with wildcard virtual keys (#8746)\n\n* fix(modelcatalog): preserve ElevenLabs Scribe wildcard access\n\nTreat ElevenLabs discovery as a partial catalog, reusing the existing allow/block reconciliation for datasheet-backed Scribe models. Keep generic virtual-key matching unchanged.\n\nAdd regression tests for wildcard, exact, regex, deny-all, blacklist and unrelated-provider behavior, plus the authorization benchmark. Independently validated the commit with a read-only source overlay.\n\nRelated to #8467.\n\n* fix(elevenlabs): reconcile Scribe model discovery\n\nSupplement partial discovery from the pricing-backed inventory before per-key filtering. Do not copy cached aliases between keys, and preserve aliases overriding canonical Scribe names. Keep the model-info interface and generic authorization unchanged.\n\nAdd native/OpenAI route regressions, key/model denial tests, source-inventory isolation, standalone SDK/error coverage, discovery benchmarks, and structurally validated provider-harness cases with virtual-key cleanup.\n\nValidated full catalog, governance, handler and provider suites, focused compatibility tests, race regressions and go vet. No live provider calls. The unrelated pre-existing schemas/mux_test.go:1104 failure remains unchanged.\n\nBenchmark medians: cached Scribe authorization 1222 to 36.54 ns/op (12 to 1 allocs/op); mocked discovery 68899 to 79555 ns/op (245 to 330 allocs/op), including additional models. No new retained cache or stream-sized context data.\n\nFixes #8467.\n\n* [fix]: Keep provider listing separate from the model catalog\n\nRemove catalog synthesis from ElevenLabs ListModels and the unused datasheet getter. Keep wildcard reconciliation in the existing model-catalog compositor without changing generic authorization.\n\nUpdate catalog and HTTP regressions to preserve upstream inventory, enforce permissions, and verify key-config invalidation. Align the provider harness with the separate management-catalog discovery endpoint.\n\nAffected packages:\n- core/providers/elevenlabs/\n- framework/modelcatalog/\n- transports/bifrost-http/handlers/\n- tests/e2e/api/collections/\n\nRelated to #8467.\n\n* [test]: Preserve upstream Scribe entries in ElevenLabs listing\n\nExtend the SDK listing regression without a model catalog to cover both TTS and Scribe upstream responses, while retaining upstream authentication-error coverage.\n\nThese mocked responses verify passthrough behavior without asserting that ElevenLabs always includes or omits Scribe in its live model inventory.\n\nAffected packages:\n- core/providers/elevenlabs/\n\nRelated to #8467.",
+          "verified_at": "2026-11-09T06:06:21Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/1da9d94ea6d7a89028e36234df7388314eb7091c",
+      "html_url": "https://github.com/maximhq/bifrost/commit/1da9d94ea6d7a89028e36234df7388314eb7091c",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/1da9d94ea6d7a89028e36234df7388314eb7091c/comments",
+      "author": {
+        "login": "RAWx18",
+        "id": 192572355,
+        "node_id": "U_kgDOC3prww",
+        "avatar_url": "https://avatars.githubusercontent.com/u/192572355?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/RAWx18",
+        "html_url": "https://github.com/RAWx18",
+        "followers_url": "https://api.github.com/users/RAWx18/followers",
+        "following_url": "https://api.github.com/users/RAWx18/following{/other_user}",
+        "gists_url": "https://api.github.com/users/RAWx18/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/RAWx18/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/RAWx18/subscriptions",
+        "organizations_url": "https://api.github.com/users/RAWx18/orgs",
+        "repos_url": "https://api.github.com/users/RAWx18/repos",
+        "events_url": "https://api.github.com/users/RAWx18/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/RAWx18/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "614005c28eb44a3a75f52d1d9a32dcbf543c7d7a",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/614005c28eb44a3a75f52d1d9a32dcbf543c7d7a",
+          "html_url": "https://github.com/maximhq/bifrost/commit/614005c28eb44a3a75f52d1d9a32dcbf543c7d7a"
+        }
+      ]
+    },
+    {
+      "sha": "614005c28eb44a3a75f52d1d9a32dcbf543c7d7a",
+      "node_id": "C_kwDOOLDdQNoAKDYxNDAwNWMyOGViNDRhM2E3NWY1MmQxZDlhMzJkY2JmNTQzYzdkN2E",
+      "commit": {
+        "author": {
+          "name": "Tejas Ghatte",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T03:58:41Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T03:58:41Z"
+        },
+        "message": "feat: goggle text to speech models (#9694)\n\n## Overview\n\nVertex AI previously returned `UnsupportedOperationError` for speech. This PR adds text-to-speech to the Vertex provider, with two backends chosen by model:\n\n- **Cloud Text-to-Speech** (`texttospeech.googleapis.com/v1/text:synthesize`) for Chirp 3 HD and other Google voices. It uses the key's Google credentials (service account, ADC, workload identity) and does not accept API keys.\n- **Gemini TTS models** (`gemini-*-tts`) through Vertex `generateContent` and `streamGenerateContent`. These return the token usage that billing reads.\n\n## Changes\n\n- **Cloud Text-to-Speech (Chirp):**\n  - New `vertex/speech.go` and `VertexSpeech*` types convert a Bifrost speech request into a `text:synthesize` body.\n  - The language code comes from `language_code` if set, otherwise from the locale prefix of the voice name (e.g. `hi-IN-Chirp3-HD-Erinome` gives `hi-IN`). If neither is available, the request is rejected with a 400.\n  - `response_format` maps `mp3` (default) to `MP3`, `wav` to `LINEAR16` and `opus` to `OGG_OPUS`. Any other format is rejected with a 400.\n  - `speed` maps to `speakingRate`. The extra params `pitch`, `volume_gain_db`, `sample_rate_hertz` and `effects_profile_id` map into `audioConfig`, with type validation. The caller's `ExtraParams` map is cloned, so it stays intact for fallback providers.\n  - Input starting with `<speak` is sent as SSML. Multi-speaker voices are rejected.\n  - A 401 or 403 evicts the cached token source so credentials are re-read on the next request.\n  - `SpeechStream` returns an unsupported error for non-Gemini models, because Cloud Text-to-Speech only streams over gRPC.\n- **Gemini TTS on Vertex:**\n  - `geminiSpeech` and `SpeechStream` build the Gemini TTS body and set `role: user` on every content entry, since Vertex rejects contents without a role.\n  - Auth uses the API key (`?key=`) when the key has one, otherwise a Bearer token from the Google credentials.\n- **Gemini streaming refactor:** the body of `GeminiProvider.SpeechStream` is extracted into an exported `HandleGeminiSpeechStream`, which Vertex reuses. It takes the URL, headers, extra headers, client, raw-request/response flags and logger as arguments. The Gemini provider now builds its own `x-goog-api-key` header. If an API key arrives via extra headers, `Authorization` is dropped.\n- **GenAI route:** `speechConfig.languageCode` is now carried into `Params.LanguageCode` in `ToBifrostSpeechRequest`, so Chirp requests sent through `/genai` keep their locale.\n- **Docs:** the Vertex provider page has a new Speech section (parameter mapping, Gemini TTS, limits), and the supported-providers overview matrix marks Vertex speech as supported.\n- **Tests:**\n  - Unit tests for request conversion, error surfacing, token-source eviction, API-key auth, the streaming done chunk with token usage, and the unsupported-stream and missing-credentials paths.\n  - A Gemini streaming test that checks the `x-goog-api-key` header.\n  - Route tests for the GenAI and OpenAI-compatible routes (`/openai`, `/litellm`, `/langchain`, `/pydanticai`).\n  - Seven new e2e collection cases covering Chirp and Gemini TTS on the native, OpenAI and GenAI routes, SSE streaming, and the 400 for a voice with no locale.\n\nNotable limits: Chirp 3 HD voices reject `pitch` (Google returns the error), input is capped at 5000 bytes by Google, and `instructions` is ignored for Cloud Text-to-Speech.\n\n## Type of change\n\n- [ ] Bug fix\n- [x] Feature\n- [x] Refactor\n- [x] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [x] Transports (HTTP)\n- [x] Providers/Integrations\n- [ ] Plugins\n- [ ] UI (React)\n- [x] Docs\n\n## How to test\n\nRun the unit and route tests:\n\n```sh\n# Core/Transports\ngo version\ngo test ./core/providers/vertex/... ./core/providers/gemini/... ./transports/bifrost-http/integrations/...\ngo test ./...\n\n# UI\ncd ui\npnpm i || npm i\npnpm test || npm test\npnpm build || npm run build\n```\n\nFor manual or e2e testing, use a Vertex key configured with Google service account credentials, then:\n\n```sh\n# Chirp 3 HD via Cloud Text-to-Speech (expects MP3 audio)\ncurl -X POST http://localhost:8080/v1/audio/speech \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"model\":\"vertex/chirp-3-hd\",\"input\":\"नमस्ते, आप कैसे हैं?\",\"voice\":\"hi-IN-Chirp3-HD-Erinome\",\"response_format\":\"mp3\"}' --output speech.mp3\n\n# Gemini TTS via generateContent (expects a WAV starting with RIFF)\ncurl -X POST http://localhost:8080/v1/audio/speech \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"model\":\"vertex/gemini-2.5-flash-tts\",\"input\":\"Hello there.\",\"voice\":\"Kore\",\"response_format\":\"wav\"}' --output speech.wav\n```\n\nExpected results:\n- Both calls return audio.\n- Adding `\"stream_format\":\"sse\"` to the Gemini TTS call streams `speech.audio.delta` events followed by a `speech.audio.done` event with non-zero `output_tokens`.\n- A Chirp request with `\"voice\":\"alloy\"` and no `language_code` returns a 400.\n\nNo new configuration or environment variables are needed. Chirp requests require Google credentials in the key's `vertex_key_config`.\n\n## Screenshots/Recordings\n\nN/A\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nVertex speech and speech-stream calls previously returned an unsupported-operation error, so no working behavior changes.\n\n## Related issues\n\nN/A\n\n## Security considerations\n\n- Cloud Text-to-Speech requests use an OAuth Bearer token from the key's Google credentials. API keys are refused for non-Gemini models with a configuration error, so they are never sent to `texttospeech.googleapis.com`.\n- The project ID is sent in `X-Goog-User-Project`.\n- For Gemini TTS with an API key, the key is URL-escaped into the `key` query parameter, as in the existing Vertex Gemini calls.\n\n## Checklist\n\n- [ ] I read `docs/contributing/README.md` and followed the guidelines\n- [x] I added/updated tests where appropriate\n- [x] I updated documentation where needed\n- [ ] I verified builds succeed (Go and UI)\n- [ ] I verified the CI pipeline passes locally if applicable",
+        "tree": {
+          "sha": "015588240bca46e7482362e5b0347d394073f5d5",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/015588240bca46e7482362e5b0347d394073f5d5"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/614005c28eb44a3a75f52d1d9a32dcbf543c7d7a",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8UTxCRC1aQ7uu5UhlAAAY/gQADBUu4NmRLgCZpP+ii53AGVC\nUaUG+bW0CbGhvPNevd0bWWo4nf33iLCGExyE58OHFcmoO6j86dJBtCQMPVQbxB+j\nVL3M8MEAPkHfh8n8QqttNWjoJu+G02eexcgAw1B2wmUkaAwTaqW/zBQy8Tg+GHEf\nwogzu3Hfpynj2/pFNGNB5LnonBb+ClrYjKUTNa1/RR0y51r9TwyrQANwRdu9SpSD\n3O7sHyW2Ok+YIGyF39G73vEanvPS8Y9GYc4voSjyZZk60YtqWJA8q6XU0eF/ih92\nREugXzqY9LxbLU1Pcmnpadrt0eqDf5fx74daKQWHECNiGnePdn2G9FLEKF7NPU0v\nQKyUDCiWe6BOoKnJI0VqGl3cg22lPC1nl/1KCB2+Lpza5E6XZadT1sG3AGWVA097\nSd3QNMzMJo0Mao2dZfsRnD0FGECGU1giC8gozsJQHXteQtbWfuJBoxY1TRqNrpl6\n6eFh6MwH4s6ZY9jFU84nl+NZv4I9EZ2nf7qsvwbbR8Kvqy600H6zZeqLB6VEVTVy\nqLo+tTVwVq7IVfo8eRD5M+CxC1xTsyvKVIUTZBw6BRDOM9QGdZKSy34/kXXcAGoD\n6YtNjDTnPWB4iOrPhUGCL+nC9h/DWOOIsHEflhIBesD3vbVI7JxT3n8shbMSIZj+\ne7M/TRmxT71g+3wcEUD/\n=JJTD\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree 015588240bca46e7482362e5b0347d394073f5d5\nparent e92617a53d9583a749503e8938ca2c08c1cddba7\nauthor Tejas Ghatte <[redacted-email]> 1794196721 +0530\ncommitter GitHub <[redacted-email]> 1794196721 -0800\n\nfeat: goggle text to speech models (#9694)\n\n## Overview\n\nVertex AI previously returned `UnsupportedOperationError` for speech. This PR adds text-to-speech to the Vertex provider, with two backends chosen by model:\n\n- **Cloud Text-to-Speech** (`texttospeech.googleapis.com/v1/text:synthesize`) for Chirp 3 HD and other Google voices. It uses the key's Google credentials (service account, ADC, workload identity) and does not accept API keys.\n- **Gemini TTS models** (`gemini-*-tts`) through Vertex `generateContent` and `streamGenerateContent`. These return the token usage that billing reads.\n\n## Changes\n\n- **Cloud Text-to-Speech (Chirp):**\n  - New `vertex/speech.go` and `VertexSpeech*` types convert a Bifrost speech request into a `text:synthesize` body.\n  - The language code comes from `language_code` if set, otherwise from the locale prefix of the voice name (e.g. `hi-IN-Chirp3-HD-Erinome` gives `hi-IN`). If neither is available, the request is rejected with a 400.\n  - `response_format` maps `mp3` (default) to `MP3`, `wav` to `LINEAR16` and `opus` to `OGG_OPUS`. Any other format is rejected with a 400.\n  - `speed` maps to `speakingRate`. The extra params `pitch`, `volume_gain_db`, `sample_rate_hertz` and `effects_profile_id` map into `audioConfig`, with type validation. The caller's `ExtraParams` map is cloned, so it stays intact for fallback providers.\n  - Input starting with `<speak` is sent as SSML. Multi-speaker voices are rejected.\n  - A 401 or 403 evicts the cached token source so credentials are re-read on the next request.\n  - `SpeechStream` returns an unsupported error for non-Gemini models, because Cloud Text-to-Speech only streams over gRPC.\n- **Gemini TTS on Vertex:**\n  - `geminiSpeech` and `SpeechStream` build the Gemini TTS body and set `role: user` on every content entry, since Vertex rejects contents without a role.\n  - Auth uses the API key (`?key=`) when the key has one, otherwise a Bearer token from the Google credentials.\n- **Gemini streaming refactor:** the body of `GeminiProvider.SpeechStream` is extracted into an exported `HandleGeminiSpeechStream`, which Vertex reuses. It takes the URL, headers, extra headers, client, raw-request/response flags and logger as arguments. The Gemini provider now builds its own `x-goog-api-key` header. If an API key arrives via extra headers, `Authorization` is dropped.\n- **GenAI route:** `speechConfig.languageCode` is now carried into `Params.LanguageCode` in `ToBifrostSpeechRequest`, so Chirp requests sent through `/genai` keep their locale.\n- **Docs:** the Vertex provider page has a new Speech section (parameter mapping, Gemini TTS, limits), and the supported-providers overview matrix marks Vertex speech as supported.\n- **Tests:**\n  - Unit tests for request conversion, error surfacing, token-source eviction, API-key auth, the streaming done chunk with token usage, and the unsupported-stream and missing-credentials paths.\n  - A Gemini streaming test that checks the `x-goog-api-key` header.\n  - Route tests for the GenAI and OpenAI-compatible routes (`/openai`, `/litellm`, `/langchain`, `/pydanticai`).\n  - Seven new e2e collection cases covering Chirp and Gemini TTS on the native, OpenAI and GenAI routes, SSE streaming, and the 400 for a voice with no locale.\n\nNotable limits: Chirp 3 HD voices reject `pitch` (Google returns the error), input is capped at 5000 bytes by Google, and `instructions` is ignored for Cloud Text-to-Speech.\n\n## Type of change\n\n- [ ] Bug fix\n- [x] Feature\n- [x] Refactor\n- [x] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [x] Transports (HTTP)\n- [x] Providers/Integrations\n- [ ] Plugins\n- [ ] UI (React)\n- [x] Docs\n\n## How to test\n\nRun the unit and route tests:\n\n```sh\n# Core/Transports\ngo version\ngo test ./core/providers/vertex/... ./core/providers/gemini/... ./transports/bifrost-http/integrations/...\ngo test ./...\n\n# UI\ncd ui\npnpm i || npm i\npnpm test || npm test\npnpm build || npm run build\n```\n\nFor manual or e2e testing, use a Vertex key configured with Google service account credentials, then:\n\n```sh\n# Chirp 3 HD via Cloud Text-to-Speech (expects MP3 audio)\ncurl -X POST http://localhost:8080/v1/audio/speech \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"model\":\"vertex/chirp-3-hd\",\"input\":\"नमस्ते, आप कैसे हैं?\",\"voice\":\"hi-IN-Chirp3-HD-Erinome\",\"response_format\":\"mp3\"}' --output speech.mp3\n\n# Gemini TTS via generateContent (expects a WAV starting with RIFF)\ncurl -X POST http://localhost:8080/v1/audio/speech \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"model\":\"vertex/gemini-2.5-flash-tts\",\"input\":\"Hello there.\",\"voice\":\"Kore\",\"response_format\":\"wav\"}' --output speech.wav\n```\n\nExpected results:\n- Both calls return audio.\n- Adding `\"stream_format\":\"sse\"` to the Gemini TTS call streams `speech.audio.delta` events followed by a `speech.audio.done` event with non-zero `output_tokens`.\n- A Chirp request with `\"voice\":\"alloy\"` and no `language_code` returns a 400.\n\nNo new configuration or environment variables are needed. Chirp requests require Google credentials in the key's `vertex_key_config`.\n\n## Screenshots/Recordings\n\nN/A\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nVertex speech and speech-stream calls previously returned an unsupported-operation error, so no working behavior changes.\n\n## Related issues\n\nN/A\n\n## Security considerations\n\n- Cloud Text-to-Speech requests use an OAuth Bearer token from the key's Google credentials. API keys are refused for non-Gemini models with a configuration error, so they are never sent to `texttospeech.googleapis.com`.\n- The project ID is sent in `X-Goog-User-Project`.\n- For Gemini TTS with an API key, the key is URL-escaped into the `key` query parameter, as in the existing Vertex Gemini calls.\n\n## Checklist\n\n- [ ] I read `docs/contributing/README.md` and followed the guidelines\n- [x] I added/updated tests where appropriate\n- [x] I updated documentation where needed\n- [ ] I verified builds succeed (Go and UI)\n- [ ] I verified the CI pipeline passes locally if applicable",
+          "verified_at": "2026-11-09T03:58:42Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/614005c28eb44a3a75f52d1d9a32dcbf543c7d7a",
+      "html_url": "https://github.com/maximhq/bifrost/commit/614005c28eb44a3a75f52d1d9a32dcbf543c7d7a",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/614005c28eb44a3a75f52d1d9a32dcbf543c7d7a/comments",
+      "author": {
+        "login": "TejasGhatte",
+        "id": 64637256,
+        "node_id": "MDQ6VXNlcjY0NjM3MjU2",
+        "avatar_url": "https://avatars.githubusercontent.com/u/64637256?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/TejasGhatte",
+        "html_url": "https://github.com/TejasGhatte",
+        "followers_url": "https://api.github.com/users/TejasGhatte/followers",
+        "following_url": "https://api.github.com/users/TejasGhatte/following{/other_user}",
+        "gists_url": "https://api.github.com/users/TejasGhatte/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/TejasGhatte/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/TejasGhatte/subscriptions",
+        "organizations_url": "https://api.github.com/users/TejasGhatte/orgs",
+        "repos_url": "https://api.github.com/users/TejasGhatte/repos",
+        "events_url": "https://api.github.com/users/TejasGhatte/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/TejasGhatte/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "e92617a53d9583a749503e8938ca2c08c1cddba7",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/e92617a53d9583a749503e8938ca2c08c1cddba7",
+          "html_url": "https://github.com/maximhq/bifrost/commit/e92617a53d9583a749503e8938ca2c08c1cddba7"
+        }
+      ]
+    },
+    {
+      "sha": "e92617a53d9583a749503e8938ca2c08c1cddba7",
+      "node_id": "C_kwDOOLDdQNoAKGU5MjYxN2E1M2Q5NTgzYTc0OTUwM2U4OTM4Y2EyYzA4YzFjZGRiYTc",
+      "commit": {
+        "author": {
+          "name": "Tejas Ghatte",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T03:50:28Z"
+        },
+        "committer": {
+          "name": "GitHub",
+          "email": "[redacted-email]",
+          "date": "2026-11-09T03:50:28Z"
+        },
+        "message": "feat: add support for scribe realtime events (#9709)\n\n## Summary\n\nAdds Realtime API support for ElevenLabs Scribe transcription sessions. Previously, opening a realtime session with `intent=transcription` against ElevenLabs was rejected as unsupported. Now a Scribe model (`scribe_v2_realtime`, `scribe_v3_live`) with the transcription intent is connected to Scribe's speech-to-text endpoint, and its frames are translated to and from the OpenAI Realtime protocol. Agent sessions are unchanged and keep relaying ElevenLabs Conversational AI frames as they are.\n\n## Changes\n\n- **Routing by model and intent**\n  - A model is treated as Scribe when it starts with `scribe_` and ends in `_realtime` or `_live`. Any other model is an agent id.\n  - With `intent=transcription`, a Scribe model goes to `/v1/speech-to-text/realtime`.\n  - A Scribe model without that intent is refused with a 400 telling the client to use `intent=transcription`, rather than being dialed as an agent id.\n  - An agent id with the transcription intent is still unsupported.\n- **Optional provider interfaces**\n  - `RealtimeTranslationSelector` lets a translator provider translate only some sessions, chosen by model and intent. Without it, every session is translated as before.\n  - `RealtimeBootstrapDialer` lets a provider build its upstream URL from the text frames the client sent before the session was admitted. The WebSocket handler passes these frames when the provider implements it.\n  - `realtimeClientProtocol` and `newRealtimeTranslator` now take the model and intent.\n- **Connect settings from `session.update`**\n  - Scribe fixes all of its settings in the connect URL, so the URL is built from the client's first `session.update` messages. These are merged the way OpenAI applies them, up to the one that names the model.\n  - Mapped settings:\n    - **Audio format:** PCM at 8000, 16000, 22050, 24000 (default), 44100 or 48000 Hz, or mu-law (`audio/pcmu`).\n    - **Turn detection:** `server_vad` becomes `vad`, `semantic_vad` becomes `turn_prediction`, and a null value becomes `manual` commits.\n    - **Silence duration:** `silence_duration_ms` becomes `vad_silence_threshold_secs`.\n    - **Language:** `language` becomes `language_code`.\n    - **Scribe options:** keyterms, secondary languages, entity detection and redaction, timestamps, and VAD tuning.\n  - A-law, unknown formats, unsupported sample rates and unknown turn detection types return a 400.\n  - Later `session.update` events that would change the connect settings are rejected. Repeating the same settings is acknowledged.\n- **Scribe translator**\n  - Sends `session.created` on open and acknowledges `session.updated`.\n  - Converts `input_audio_buffer.append` into Scribe audio chunks at the session's sample rate.\n  - Handles client commits, and commits Scribe makes itself via VAD, with the usual `committed`, `item.added`, `transcription.completed` and `item.done` events.\n  - Scribe partials are the whole segment so far and may be revised, while OpenAI deltas only append. Deltas therefore carry only finished words that extend what was already sent. The whole partial goes in an extra `transcript` field.\n  - Pending text is flushed before completion, so deltas add up to the final transcript.\n  - Keepalive repeats of the latest or already committed text are ignored.\n  - Scribe reports no usage, so the translator counts the audio sent and reports it as `usage.seconds` (type `duration`) on each completed segment.\n  - Scribe error frames map to OpenAI error types. A close that follows an error already reported is not reported twice.\n  - Unsupported client events such as `response.create` and `conversation.item.create` are refused with a clear message. `input_audio_buffer.clear` is accepted only when nothing has been sent yet.\n- **Opt-in Bifrost extension events**\n  - Sessions that set `session.bifrost.extensions` receive provider-neutral events for data OpenAI has no event for:\n    - `bifrost.transcription.words`\n    - `bifrost.transcription.entities`\n    - `bifrost.transcription.redacted`\n    - `bifrost.transcription.edited`\n    - `bifrost.provider_event` (any other frame, passed through whole)\n  - Word confidence is derived from Scribe's logprob. Spacing entries and per-character timings are dropped.\n  - Sessions that don't opt in only ever see OpenAI event types. The option can be turned on or off after connecting, because it isn't a connect parameter.\n- **Tests and docs**\n  - Unit tests cover URL building, settings parsing, session merging, the translator, usage extraction and benchmarks. They also pin that the agent path is unchanged.\n  - Handler tests cover the selector and the bootstrap dialer.\n  - New e2e tests (`tests/realtime/elevenlabs_test.go`) cover Scribe translation and logging, extension opt-in, agent relay, the intent requirement, and settings immutability.\n  - The e2e config, the virtual-key helper and the README now include ElevenLabs and `ELEVENLABS_API_KEY`.\n  - The e2e virtual key lists the Scribe models by name, because the model catalog has no Scribe realtime model yet and a wildcard would not match.\n\n## Type of change\n\n- [ ] Bug fix\n- [x] Feature\n- [ ] Refactor\n- [ ] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [x] Transports (HTTP)\n- [x] Providers/Integrations\n- [ ] Plugins\n- [ ] UI (React)\n- [ ] Docs\n\n## How to test\n\nRun the unit tests for the provider and the handlers:\n\n```sh\n# Core/Transports\ngo version\ngo test ./core/providers/elevenlabs/...\ngo test ./transports/bifrost-http/handlers/...\ngo test ./...\n```\n\nRun the e2e suite against a gateway started with `tests/realtime/config.json`. This needs `ELEVENLABS_API_KEY` in the gateway's environment and spends a small amount of real tokens:\n\n```sh\nmake test-realtime BIFROST_BASE_URL=http://localhost:8187 PATTERN=Elevenlabs\n```\n\nExpected outcomes:\n\n- A session opened with `intent=transcription` and `elevenlabs/scribe_v2_realtime` or `scribe_v3_live` streams audio and receives translated OpenAI transcription events, with `usage.type=duration` on completion and a logged turn row for provider `elevenlabs`.\n- `bifrost.*` events appear only when `session.bifrost.extensions` is true.\n- A Scribe model without the transcription intent returns an `invalid_request_error`.\n- An agent id session is relayed as before, including ElevenLabs' own close codes.\n- A `session.update` that changes Scribe's connect settings after connecting returns an error, and the connection stays open.\n\nNew environment variable: `ELEVENLABS_API_KEY`, read by `tests/realtime/config.json` for the `elevenlabs` provider key.\n\n## Screenshots/Recordings\n\nN/A, no UI changes.\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nAgent sessions behave as before. Internal helper signatures (`realtimeClientProtocol`, `newRealtimeTranslator`, `openRealtimeUpstream`) gained parameters, but all callers are updated.\n\n## Related issues\n\nN/A\n\n## Security considerations\n\nNo new auth paths. The ElevenLabs API key is still sent upstream via the existing `xi-api-key` header, and the e2e config reads it from the environment. Client-supplied settings are validated and URL-encoded before being placed in the upstream connect URL.\n\n## Checklist\n\n- [ ] I read `docs/contributing/README.md` and followed the guidelines\n- [x] I added/updated tests where appropriate\n- [x] I updated documentation where needed\n- [ ] I verified builds succeed (Go and UI)\n- [ ] I verified the CI pipeline passes locally if applicable",
+        "tree": {
+          "sha": "77d1f6a9951b1106aa1bceae7beef17fb6aecd86",
+          "url": "https://api.github.com/repos/maximhq/bifrost/git/trees/77d1f6a9951b1106aa1bceae7beef17fb6aecd86"
+        },
+        "url": "https://api.github.com/repos/maximhq/bifrost/git/commits/e92617a53d9583a749503e8938ca2c08c1cddba7",
+        "comment_count": 0,
+        "verification": {
+          "verified": true,
+          "reason": "valid",
+          "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJq8UMECRC1aQ7uu5UhlAAAHQgQAJQlXh6CQeC9o5aAV6Emo0Zs\nUg60fh61bIkDmo4tRbOc4EV+Vj68AD9+OJopFSH0ZAaRZs0Q7H4icZEeysbiRo0m\nNSQbgs6efrxOdRT5mfB3A9WsSLeUB1+z4AVaSY2wjbC/XYsiSrN4hIx5EvXXYugL\nAzwtAZfEMp02D7rg7wOb15PRRSa6CN9RMIIICjgCfs0yb2NqaUivHO0g4a9CMBi7\nVfcDwiVA5wtV8GcN1XOtm5OAgaGlcL+tB91pIDWdnyfDv2T+MhPaPfPz4AcuX7wg\n/yaqlg757hC4DDPUbqDphEX58ApSPJVdMyfZXrI3vQxBEmS7FFr6rgdm834IzDna\nZJLHZC64ZgSs6VeyGBd6V65mnV/V0JoH0tYmdNODyVMKYK+cXJfK6AjgJFBFXiyo\nHvLaBJVo547GivQd554iSz2UoZxogwT113N/NAfqCYx9M/AkH4nLFonAoEXyHQYR\nx83joJVYNd2Sv0vjenvNEQybgI3rsPAGT/Dhiy2AGK5cigoPyP0CfxwhLi5RunQT\n/S/rzFWU2/rq8HaOoRG1ujLzJpOiD13XttCE13lvfB+BV1O5MsP9AMr5f9NVaPS7\n/Yq6ic9v5cTJRaBjC5uVOel29vepWkX6I5wPYDCvMOVkBf7IhZ49T5NzuyKectLx\ngA9Fr8526wcZfkKKyonp\n=clge\n-----END PGP SIGNATURE-----\n",
+          "payload": "tree 77d1f6a9951b1106aa1bceae7beef17fb6aecd86\nparent d7bc70c83976abd306260e3bc65035cc4572a1b9\nauthor Tejas Ghatte <[redacted-email]> 1794196228 +0530\ncommitter GitHub <[redacted-email]> 1794196228 -0800\n\nfeat: add support for scribe realtime events (#9709)\n\n## Summary\n\nAdds Realtime API support for ElevenLabs Scribe transcription sessions. Previously, opening a realtime session with `intent=transcription` against ElevenLabs was rejected as unsupported. Now a Scribe model (`scribe_v2_realtime`, `scribe_v3_live`) with the transcription intent is connected to Scribe's speech-to-text endpoint, and its frames are translated to and from the OpenAI Realtime protocol. Agent sessions are unchanged and keep relaying ElevenLabs Conversational AI frames as they are.\n\n## Changes\n\n- **Routing by model and intent**\n  - A model is treated as Scribe when it starts with `scribe_` and ends in `_realtime` or `_live`. Any other model is an agent id.\n  - With `intent=transcription`, a Scribe model goes to `/v1/speech-to-text/realtime`.\n  - A Scribe model without that intent is refused with a 400 telling the client to use `intent=transcription`, rather than being dialed as an agent id.\n  - An agent id with the transcription intent is still unsupported.\n- **Optional provider interfaces**\n  - `RealtimeTranslationSelector` lets a translator provider translate only some sessions, chosen by model and intent. Without it, every session is translated as before.\n  - `RealtimeBootstrapDialer` lets a provider build its upstream URL from the text frames the client sent before the session was admitted. The WebSocket handler passes these frames when the provider implements it.\n  - `realtimeClientProtocol` and `newRealtimeTranslator` now take the model and intent.\n- **Connect settings from `session.update`**\n  - Scribe fixes all of its settings in the connect URL, so the URL is built from the client's first `session.update` messages. These are merged the way OpenAI applies them, up to the one that names the model.\n  - Mapped settings:\n    - **Audio format:** PCM at 8000, 16000, 22050, 24000 (default), 44100 or 48000 Hz, or mu-law (`audio/pcmu`).\n    - **Turn detection:** `server_vad` becomes `vad`, `semantic_vad` becomes `turn_prediction`, and a null value becomes `manual` commits.\n    - **Silence duration:** `silence_duration_ms` becomes `vad_silence_threshold_secs`.\n    - **Language:** `language` becomes `language_code`.\n    - **Scribe options:** keyterms, secondary languages, entity detection and redaction, timestamps, and VAD tuning.\n  - A-law, unknown formats, unsupported sample rates and unknown turn detection types return a 400.\n  - Later `session.update` events that would change the connect settings are rejected. Repeating the same settings is acknowledged.\n- **Scribe translator**\n  - Sends `session.created` on open and acknowledges `session.updated`.\n  - Converts `input_audio_buffer.append` into Scribe audio chunks at the session's sample rate.\n  - Handles client commits, and commits Scribe makes itself via VAD, with the usual `committed`, `item.added`, `transcription.completed` and `item.done` events.\n  - Scribe partials are the whole segment so far and may be revised, while OpenAI deltas only append. Deltas therefore carry only finished words that extend what was already sent. The whole partial goes in an extra `transcript` field.\n  - Pending text is flushed before completion, so deltas add up to the final transcript.\n  - Keepalive repeats of the latest or already committed text are ignored.\n  - Scribe reports no usage, so the translator counts the audio sent and reports it as `usage.seconds` (type `duration`) on each completed segment.\n  - Scribe error frames map to OpenAI error types. A close that follows an error already reported is not reported twice.\n  - Unsupported client events such as `response.create` and `conversation.item.create` are refused with a clear message. `input_audio_buffer.clear` is accepted only when nothing has been sent yet.\n- **Opt-in Bifrost extension events**\n  - Sessions that set `session.bifrost.extensions` receive provider-neutral events for data OpenAI has no event for:\n    - `bifrost.transcription.words`\n    - `bifrost.transcription.entities`\n    - `bifrost.transcription.redacted`\n    - `bifrost.transcription.edited`\n    - `bifrost.provider_event` (any other frame, passed through whole)\n  - Word confidence is derived from Scribe's logprob. Spacing entries and per-character timings are dropped.\n  - Sessions that don't opt in only ever see OpenAI event types. The option can be turned on or off after connecting, because it isn't a connect parameter.\n- **Tests and docs**\n  - Unit tests cover URL building, settings parsing, session merging, the translator, usage extraction and benchmarks. They also pin that the agent path is unchanged.\n  - Handler tests cover the selector and the bootstrap dialer.\n  - New e2e tests (`tests/realtime/elevenlabs_test.go`) cover Scribe translation and logging, extension opt-in, agent relay, the intent requirement, and settings immutability.\n  - The e2e config, the virtual-key helper and the README now include ElevenLabs and `ELEVENLABS_API_KEY`.\n  - The e2e virtual key lists the Scribe models by name, because the model catalog has no Scribe realtime model yet and a wildcard would not match.\n\n## Type of change\n\n- [ ] Bug fix\n- [x] Feature\n- [ ] Refactor\n- [ ] Documentation\n- [ ] Chore/CI\n\n## Affected areas\n\n- [x] Core (Go)\n- [x] Transports (HTTP)\n- [x] Providers/Integrations\n- [ ] Plugins\n- [ ] UI (React)\n- [ ] Docs\n\n## How to test\n\nRun the unit tests for the provider and the handlers:\n\n```sh\n# Core/Transports\ngo version\ngo test ./core/providers/elevenlabs/...\ngo test ./transports/bifrost-http/handlers/...\ngo test ./...\n```\n\nRun the e2e suite against a gateway started with `tests/realtime/config.json`. This needs `ELEVENLABS_API_KEY` in the gateway's environment and spends a small amount of real tokens:\n\n```sh\nmake test-realtime BIFROST_BASE_URL=http://localhost:8187 PATTERN=Elevenlabs\n```\n\nExpected outcomes:\n\n- A session opened with `intent=transcription` and `elevenlabs/scribe_v2_realtime` or `scribe_v3_live` streams audio and receives translated OpenAI transcription events, with `usage.type=duration` on completion and a logged turn row for provider `elevenlabs`.\n- `bifrost.*` events appear only when `session.bifrost.extensions` is true.\n- A Scribe model without the transcription intent returns an `invalid_request_error`.\n- An agent id session is relayed as before, including ElevenLabs' own close codes.\n- A `session.update` that changes Scribe's connect settings after connecting returns an error, and the connection stays open.\n\nNew environment variable: `ELEVENLABS_API_KEY`, read by `tests/realtime/config.json` for the `elevenlabs` provider key.\n\n## Screenshots/Recordings\n\nN/A, no UI changes.\n\n## Breaking changes\n\n- [ ] Yes\n- [x] No\n\nAgent sessions behave as before. Internal helper signatures (`realtimeClientProtocol`, `newRealtimeTranslator`, `openRealtimeUpstream`) gained parameters, but all callers are updated.\n\n## Related issues\n\nN/A\n\n## Security considerations\n\nNo new auth paths. The ElevenLabs API key is still sent upstream via the existing `xi-api-key` header, and the e2e config reads it from the environment. Client-supplied settings are validated and URL-encoded before being placed in the upstream connect URL.\n\n## Checklist\n\n- [ ] I read `docs/contributing/README.md` and followed the guidelines\n- [x] I added/updated tests where appropriate\n- [x] I updated documentation where needed\n- [ ] I verified builds succeed (Go and UI)\n- [ ] I verified the CI pipeline passes locally if applicable",
+          "verified_at": "2026-11-09T03:50:29Z"
+        }
+      },
+      "url": "https://api.github.com/repos/maximhq/bifrost/commits/e92617a53d9583a749503e8938ca2c08c1cddba7",
+      "html_url": "https://github.com/maximhq/bifrost/commit/e92617a53d9583a749503e8938ca2c08c1cddba7",
+      "comments_url": "https://api.github.com/repos/maximhq/bifrost/commits/e92617a53d9583a749503e8938ca2c08c1cddba7/comments",
+      "author": {
+        "login": "TejasGhatte",
+        "id": 64637256,
+        "node_id": "MDQ6VXNlcjY0NjM3MjU2",
+        "avatar_url": "https://avatars.githubusercontent.com/u/64637256?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/TejasGhatte",
+        "html_url": "https://github.com/TejasGhatte",
+        "followers_url": "https://api.github.com/users/TejasGhatte/followers",
+        "following_url": "https://api.github.com/users/TejasGhatte/following{/other_user}",
+        "gists_url": "https://api.github.com/users/TejasGhatte/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/TejasGhatte/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/TejasGhatte/subscriptions",
+        "organizations_url": "https://api.github.com/users/TejasGhatte/orgs",
+        "repos_url": "https://api.github.com/users/TejasGhatte/repos",
+        "events_url": "https://api.github.com/users/TejasGhatte/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/TejasGhatte/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "web-flow",
+        "id": 19864447,
+        "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+        "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/web-flow",
+        "html_url": "https://github.com/web-flow",
+        "followers_url": "https://api.github.com/users/web-flow/followers",
+        "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+        "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+        "organizations_url": "https://api.github.com/users/web-flow/orgs",
+        "repos_url": "https://api.github.com/users/web-flow/repos",
+        "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/web-flow/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "d7bc70c83976abd306260e3bc65035cc4572a1b9",
+          "url": "https://api.github.com/repos/maximhq/bifrost/commits/d7bc70c83976abd306260e3bc65035cc4572a1b9",
+          "html_url": "https://github.com/maximhq/bifrost/commit/d7bc70c83976abd306260e3bc65035cc4572a1b9"
+        }
+      ]
+    }
+  ]
+}
