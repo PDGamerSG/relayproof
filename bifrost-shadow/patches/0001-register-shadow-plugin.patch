@@ -1,0 +1,158 @@
+diff --git a/transports/bifrost-http/lib/config.go b/transports/bifrost-http/lib/config.go
+index f6a0f28..81ffe77 100644
+--- a/transports/bifrost-http/lib/config.go
++++ b/transports/bifrost-http/lib/config.go
+@@ -59,6 +59,7 @@ import (
+ 	"github.com/maximhq/bifrost/plugins/routing/complexity"
+ 	"github.com/maximhq/bifrost/plugins/routing/rules"
+ 	"github.com/maximhq/bifrost/plugins/semanticcache"
++	"github.com/maximhq/bifrost/plugins/shadow"
+ 	"github.com/maximhq/bifrost/plugins/telemetry"
+ 	"gorm.io/gorm"
+ )
+@@ -151,6 +152,7 @@ var builtinPluginNames = []string{
+ 	compat.PluginName,
+ 	maxim.PluginName,
+ 	routing.PluginName,
++	shadow.PluginName,
+ }
+ 
+ func GetBuiltinPluginNames() []string {
+diff --git a/transports/bifrost-http/server/plugins.go b/transports/bifrost-http/server/plugins.go
+index 408705c..a78cde7 100644
+--- a/transports/bifrost-http/server/plugins.go
++++ b/transports/bifrost-http/server/plugins.go
+@@ -16,6 +16,7 @@ import (
+ 	"github.com/maximhq/bifrost/plugins/prompts"
+ 	"github.com/maximhq/bifrost/plugins/routing"
+ 	"github.com/maximhq/bifrost/plugins/semanticcache"
++	"github.com/maximhq/bifrost/plugins/shadow"
+ 	"github.com/maximhq/bifrost/plugins/telemetry"
+ 	"github.com/maximhq/bifrost/transports/v2/bifrost-http/handlers"
+ 	"github.com/maximhq/bifrost/transports/v2/bifrost-http/lib"
+@@ -203,6 +204,13 @@ func loadBuiltinPlugin(ctx context.Context, name string, pluginConfig any, bifro
+ 	case modelcatalogresolver.PluginName:
+ 		return modelcatalogresolver.Init(bifrostConfig.ModelCatalog, logger)
+ 
++	case shadow.PluginName:
++		shadowConfig, err := MarshalPluginConfig[shadow.Config](pluginConfig)
++		if err != nil {
++			return nil, fmt.Errorf("failed to marshal shadow plugin config: %w", err)
++		}
++		return shadow.Init(ctx, shadowConfig, logger)
++
+ 	default:
+ 		return nil, fmt.Errorf("unknown built-in plugin: %s", name)
+ 	}
+@@ -357,6 +365,16 @@ func (s *BifrostHTTPServer) loadBuiltinPlugins(ctx context.Context) error {
+ 	}
+ 	s.Config.SetPluginOrderInfo(maxim.PluginName, builtinPlacement, schemas.Ptr(9))
+ 
++	// 9b. Shadow traffic (if configured in PluginConfigs). Placed after the semantic
++	// cache so cache hits short-circuit before a request is ever sampled.
++	shadowConfig := s.getPluginConfig(shadow.PluginName)
++	if shadowConfig != nil && shadowConfig.Enabled {
++		s.registerPluginWithStatus(ctx, shadow.PluginName, nil, shadowConfig.Config, false)
++	} else {
++		s.markPluginDisabled(shadow.PluginName)
++	}
++	s.Config.SetPluginOrderInfo(shadow.PluginName, builtinPlacement, schemas.Ptr(10))
++
+ 	// 10. ModelCatalogResolver (last routing layer — fills req.Provider from catalog only when
+ 	// no earlier routing plugin (governance routing rules, governance VK LB, enterprise LB)
+ 	// already set one. CEL rules can still match on provider == "" because this runs last.
+diff --git a/transports/bifrost-http/server/server.go b/transports/bifrost-http/server/server.go
+index 08342ca..e4c0715 100644
+--- a/transports/bifrost-http/server/server.go
++++ b/transports/bifrost-http/server/server.go
+@@ -43,6 +43,7 @@ import (
+ 	"github.com/maximhq/bifrost/plugins/routing"
+ 	"github.com/maximhq/bifrost/plugins/routing/complexity"
+ 	"github.com/maximhq/bifrost/plugins/semanticcache"
++	"github.com/maximhq/bifrost/plugins/shadow"
+ 	"github.com/maximhq/bifrost/plugins/telemetry"
+ 	"github.com/maximhq/bifrost/transports/v2/bifrost-http/handlers"
+ 	"github.com/maximhq/bifrost/transports/v2/bifrost-http/integrations"
+@@ -2616,6 +2617,9 @@ func (s *BifrostHTTPServer) ReloadPlugin(ctx context.Context, name string, path
+ 	if semanticCachePlugin, ok := plugin.(*semanticcache.Plugin); ok {
+ 		semanticCachePlugin.SetEmbeddingRequestExecutor(s.Client.EmbeddingRequest)
+ 	}
++	if shadowPlugin, ok := plugin.(*shadow.Plugin); ok {
++		s.wireShadowPlugin(shadowPlugin)
++	}
+ 	// Both at once: applied separately, the classifier spends the gap between
+ 	// them configured for a store it has not been given, and warms a throwaway
+ 	// generation into the embedded one.
+@@ -3013,6 +3017,15 @@ func (s *BifrostHTTPServer) RegisterAPIRoutes(ctx context.Context, callbacks Ser
+ 		}
+ 		return p
+ 	})
++	// Resolve the shadow plugin per request, like the cache handler, so enabling or
++	// reloading it through /api/plugins is honored without a restart.
++	shadowHandler := handlers.NewShadowHandler(func() handlers.ShadowReader {
++		p, err := lib.FindPluginAs[*shadow.Plugin](s.Config, shadow.PluginName)
++		if err != nil || p == nil {
++			return nil
++		}
++		return p
++	})
+ 	// Websocket handler needs to go below UI handler
+ 	logger.Debug("initializing websocket server")
+ 	if s.WebSocketHandler == nil {
+@@ -3169,6 +3182,7 @@ func (s *BifrostHTTPServer) RegisterAPIRoutes(ctx context.Context, callbacks Ser
+ 	}
+ 	s.skillsServingHandler = skillsServingHandler
+ 	cacheHandler.RegisterRoutes(s.Router, middlewares...)
++	shadowHandler.RegisterRoutes(s.Router, middlewares...)
+ 	if featureFlagsHandler != nil {
+ 		featureFlagsHandler.RegisterRoutes(s.Router, middlewares...)
+ 	}
+@@ -3761,6 +3775,11 @@ func (s *BifrostHTTPServer) Bootstrap(ctx context.Context) error {
+ 	if err == nil && semanticCachePlugin != nil {
+ 		semanticCachePlugin.SetEmbeddingRequestExecutor(s.Client.EmbeddingRequest)
+ 	}
++	// Shadow traffic plugin: candidate, judge and embedding calls run through the
++	// client as internal sub-requests, priced by the model catalog.
++	if shadowPlugin, err := lib.FindPluginAs[*shadow.Plugin](s.Config, shadow.PluginName); err == nil && shadowPlugin != nil {
++		s.wireShadowPlugin(shadowPlugin)
++	}
+ 	// Wire the routing plugin's semantic-classification embedding path. The
+ 	// executor cannot be passed at Init: the plugin is built while the bifrost
+ 	// client is still being assembled.
+@@ -4092,3 +4111,16 @@ func (s *BifrostHTTPServer) cleanupAfterServeError() {
+ 		s.skillsServingHandler.Close()
+ 	}
+ }
++
++// wireShadowPlugin gives the shadow plugin the client calls it issues and a
++// pricing function backed by the model catalog (pricing overrides included).
++func (s *BifrostHTTPServer) wireShadowPlugin(p *shadow.Plugin) {
++	var price shadow.PriceFunc
++	if s.Config.ModelCatalog != nil {
++		catalog := s.Config.ModelCatalog
++		price = func(usage *schemas.BifrostLLMUsage, provider schemas.ModelProvider, model string, requestType schemas.RequestType) float64 {
++			return catalog.CalculateCostForUsage(usage, provider, model, requestType, nil)
++		}
++	}
++	p.SetExecutors(s.Client.ChatCompletionRequest, s.Client.EmbeddingRequest, price)
++}
+diff --git a/transports/go.mod b/transports/go.mod
+index afc0d23..298ee5f 100644
+--- a/transports/go.mod
++++ b/transports/go.mod
+@@ -27,6 +27,7 @@ require (
+ 	github.com/maximhq/bifrost/plugins/prompts v1.1.16
+ 	github.com/maximhq/bifrost/plugins/routing v1.3.1
+ 	github.com/maximhq/bifrost/plugins/semanticcache v1.7.6
++	github.com/maximhq/bifrost/plugins/shadow v0.1.0
+ 	github.com/maximhq/bifrost/plugins/telemetry v1.9.6
+ 	github.com/pion/ice/v4 v4.4.4
+ 	github.com/pion/logging v0.2.4
+@@ -240,4 +241,7 @@ require (
+ 	gorm.io/driver/postgres v1.6.0 // indirect
+ )
+ 
++// Remove once plugins/shadow is tagged; until then builds use the in-repo module.
++replace github.com/maximhq/bifrost/plugins/shadow => ../plugins/shadow
++
+ replace github.com/mark3labs/mcp-go => github.com/maximhq/mcp-go v0.0.0-20261102181017-b7da3bc145a1
