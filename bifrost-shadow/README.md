@@ -128,6 +128,7 @@ upstream files are patches against `ed62e4b`.
 | `docs/features/shadow-traffic.mdx` | Feature documentation |
 | `ui/app/workspace/shadow/` | Dashboard page: counters, scorecard, disagreements sheet, promote dialog |
 | `ui/lib/` | RTK Query client (`shadowApi.ts`), types, formatting helpers and their vitest cases |
+| `tests/e2e/features/shadow-traffic/` | Playwright suite for the dashboard page: page object, data factories, specs |
 | `patches/0001-register-shadow-plugin.patch` | Built-in plugin registration, executor and pricing wiring, routes |
 | `patches/0002-config-schema.patch` | `config.schema.json` entry and schema tests |
 | `patches/0003-docs-nav.patch` | Docs navigation |

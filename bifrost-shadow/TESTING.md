@@ -130,6 +130,40 @@ traffic loaded. Checked by hand at 1440x900, dark theme:
 - **Reset** asks for confirmation, then zeroes the counters, shows the empty scorecard, and
   moves "Collecting since" to the reset time while today's spend stays.
 
+## Dashboard E2E (Playwright)
+
+`tests/e2e/features/shadow-traffic/` follows the repository's E2E conventions: a
+`ShadowTrafficPage` page object on `data-testid` selectors, the shared base fixture, data
+factories, and cleanup of every routing rule a test creates (the delete is asserted, so a leak
+fails the test). Assertions compare the page with the live API: tile values, verdict labels,
+record ids and totals per filter, the judge-order line, and the stored rule's targets.
+
+| Group | Tests |
+|---|---|
+| Scorecard | counter tiles and a verdict per candidate; pause and resume live updates |
+| Disagreements | switch the weak candidate between disagreements and errors; expand a record to both answers and the judge's verdict |
+| Promote to canary | share validation and preview rebuild; caution for a candidate that is not ready; create a rule and find it on **Routing Rules** |
+| Reset | counters cleared, empty scorecard |
+| Without the plugin | the page explains how to enable it |
+
+When the gateway has too little shadow data, `beforeAll` mirrors three rounds of the demo
+prompts and waits until the queue is empty, so the suite also runs from an empty store. The
+data tests skip when `/api/shadow/summary` answers 404, and the not-enabled test skips
+otherwise, so under `make run-e2e` (whose config has no shadow plugin) only the not-enabled
+test runs.
+
+Run against a gateway in Docker (demo config, SQLite config store, setup token), with the
+repository's Playwright config minus its `globalSetup` (which builds MCP demo servers this suite
+does not use), windows/amd64, Playwright 1.57:
+
+```
+Run 1 (data from the demo traffic): 9 passed, 1 skipped (16.1s)
+Run 2 (empty store, re-seeded):     9 passed, 1 skipped (24.6s)
+Gateway without the plugin, twice:  the not-enabled test passed, data tests skipped
+```
+
+After both runs `GET /api/routing/rules` returned no rules.
+
 ## Clean setup from upstream
 
 **Without the dashboard.** `scripts/setup.sh` with `SKIP_UI=1` in a fresh

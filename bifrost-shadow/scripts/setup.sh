@@ -33,8 +33,8 @@ if [ "$(git rev-parse HEAD)" != "$(git rev-parse "$ref^{commit}")" ]; then
   git checkout --quiet -B shadow-traffic "$ref"
 fi
 
-step "Adding the shadow plugin, gateway handler, demo, docs and dashboard page"
-for dir in plugins transports examples docs ui; do
+step "Adding the shadow plugin, gateway handler, demo, docs, dashboard page and E2E suite"
+for dir in plugins transports examples docs ui tests; do
   if [ -d "$here/$dir" ]; then
     cp -R "$here/$dir/." "$target/$dir/"
   fi
