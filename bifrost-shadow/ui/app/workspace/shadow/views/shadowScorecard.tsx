@@ -14,12 +14,20 @@ import {
 	isShadowVerdict,
 	shadowModelRefLabel,
 	shadowPairKey,
+	shadowSavingsTone,
 	shadowTestIdSlug,
 	shadowVerdictBadgeVariant,
+	type ShadowSavingsTone,
 } from "@/lib/utils/shadow";
 import { ArrowRight, FlaskConical, MessageSquareDiff, Rocket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+
+const SAVINGS_TONE_CLASS: Record<ShadowSavingsTone, string> = {
+	positive: "text-green-700 dark:text-green-400",
+	negative: "text-red-600 dark:text-red-400",
+	neutral: "text-muted-foreground",
+};
 
 interface ShadowScorecardProps {
 	pairs: ShadowPairSummary[];
@@ -133,7 +141,7 @@ function PairCard({ pair, minSamples, canPromote, onViewDisagreements, onPromote
 	// A wildcard source covers several concrete primaries; name them so the operator knows what was compared.
 	const primaryModels = pair.primary_models ?? [];
 	const showPrimaryModels = primaryModels.length > 0 && !(primaryModels.length === 1 && primaryModels[0] === sourceLabel);
-	const savingsPositive = pair.savings_pct > 0;
+	const savingsTone = shadowSavingsTone(pair.savings_pct);
 
 	const extraSignals = [
 		{ key: "lexical", label: t("lexical"), value: pair.avg_lexical_similarity },
@@ -181,7 +189,7 @@ function PairCard({ pair, minSamples, canPromote, onViewDisagreements, onPromote
 					value={formatShadowNumber(pair.samples)}
 					detail={
 						pair.verdict === "collecting" && minSamples
-							? t("samplesNeeded", { count: minSamples })
+							? t("samplesNeeded", { count: minSamples, formatted: formatShadowNumber(minSamples) })
 							: t("judgedCount", { count: pair.judged, formatted: formatShadowNumber(pair.judged) })
 					}
 				/>
@@ -230,11 +238,7 @@ function PairCard({ pair, minSamples, canPromote, onViewDisagreements, onPromote
 				/>
 				<Metric
 					label={t("savings")}
-					value={
-						<span className={savingsPositive ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
-							{formatShadowPercentValue(pair.savings_pct)}
-						</span>
-					}
+					value={<span className={SAVINGS_TONE_CLASS[savingsTone]}>{formatShadowPercentValue(pair.savings_pct)}</span>}
 					detail={t("projectedMonthly", { amount: formatShadowUsd(pair.projected_monthly_savings_usd) })}
 				/>
 			</dl>

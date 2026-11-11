@@ -201,6 +201,8 @@ export interface GetShadowCanaryRuleParams {
 	candidate: string;
 	/** Share of traffic for the candidate, 0 < weight <= 1. */
 	weight: number;
+	/** Priority for the rule; the gateway defaults to 10. */
+	priority?: number;
 }
 
 export interface ShadowRoutingTarget {

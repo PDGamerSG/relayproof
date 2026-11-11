@@ -47,10 +47,10 @@ index f82c129..dbc661d 100644
  export type MCPClientUpdateSchema = z.infer<typeof mcpClientUpdateSchema>;
  export type ModelProviderKeySchema = z.infer<typeof modelProviderKeySchema>;
 diff --git a/ui/locales/de/models.json b/ui/locales/de/models.json
-index 2c12454..ba1a5ab 100644
+index 2c12454..69c3b4d 100644
 --- a/ui/locales/de/models.json
 +++ b/ui/locales/de/models.json
-@@ -2239,5 +2239,180 @@
+@@ -2239,5 +2239,188 @@
  		"resetAll": "Auf Datenblatt zurücksetzen",
  		"noPermission": "Sie haben keine Berechtigung, das Datenblatt zu bearbeiten",
  		"saving": "Wird gespeichert..."
@@ -63,8 +63,7 @@ index 2c12454..ba1a5ab 100644
 +		"refresh": "Aktualisieren",
 +		"live": "Live",
 +		"paused": "Pausiert",
-+		"pauseAria": "Live-Aktualisierung pausieren",
-+		"resumeAria": "Live-Aktualisierung fortsetzen",
++		"liveUpdates": "Live-Aktualisierung",
 +		"entity": "Shadow-Traffic",
 +		"reset": {
 +			"button": "Zurücksetzen",
@@ -115,8 +114,8 @@ index 2c12454..ba1a5ab 100644
 +			"viewDisagreements": "Abweichungen anzeigen",
 +			"promote": "Als Canary freischalten",
 +			"samples": "Stichproben",
-+			"samplesNeeded": "Benötigt {{count}} Stichprobe für ein Urteil",
-+			"samplesNeeded_other": "Benötigt {{count}} Stichproben für ein Urteil",
++			"samplesNeeded": "Benötigt {{formatted}} Stichprobe für ein Urteil",
++			"samplesNeeded_other": "Benötigt {{formatted}} Stichproben für ein Urteil",
 +			"judgedCount": "{{formatted}} bewertet",
 +			"judgedCount_other": "{{formatted}} bewertet",
 +			"agreement": "Übereinstimmung",
@@ -210,13 +209,18 @@ index 2c12454..ba1a5ab 100644
 +		},
 +		"promote": {
 +			"title": "Als Canary freischalten",
++			"titleUpdate": "Canary-Anteil ändern",
 +			"description": "Erstellt eine gewichtete Routing-Regel, die einen Anteil des {{source}}-Traffics an {{candidate}} sendet. Der Rest geht weiterhin an das primäre Modell.",
++			"descriptionUpdate": "Ändert den Anteil des {{source}}-Traffics, den die bestehende Canary-Regel an {{candidate}} sendet. Der Rest geht weiterhin an das primäre Modell.",
 +			"cautionTitle": "Das Urteil für diesen Kandidaten lautet: {{verdict}}",
 +			"caution": "Er hat die Bereitschaftsschwellen noch nicht erreicht. Beginnen Sie mit einem kleinen Anteil und beobachten Sie die Logs genau.",
++			"existingTitle": "Für dieses Paar gibt es bereits eine Canary-Regel",
++			"existingDescription": "„{{name}}“ sendet derzeit {{share}} dieses Traffics an den Kandidaten. Beim Bestätigen ändert sich dieser Anteil; Priorität, Geltungsbereich und Aktivierungsstatus der Regel bleiben erhalten.",
 +			"weightLabel": "Anteil des Traffics für den Kandidaten",
 +			"weightHelp": "Eine ganze Zahl von 1 bis 100. Fangen Sie klein an: 10 % ist ein üblicher erster Canary.",
 +			"previewTitle": "Regelvorschau",
 +			"previewFailed": "Regel konnte nicht erstellt werden",
++			"rulesFailed": "Bestehende Routing-Regeln konnten nicht gelesen werden",
 +			"celExpression": "CEL-Ausdruck",
 +			"targets": "Ziele",
 +			"scope": "Geltungsbereich: {{scope}}",
@@ -224,10 +228,14 @@ index 2c12454..ba1a5ab 100644
 +			"enabled": "Aktiviert",
 +			"disabled": "Deaktiviert",
 +			"confirm": "Canary-Regel erstellen",
++			"confirmUpdate": "Canary-Regel aktualisieren",
 +			"success": "Routing-Regel „{{name}}“ erstellt",
 +			"successDescription": "Der Canary ist aktiv. Verfolgen Sie ihn auf der Seite der Routing-Regeln.",
++			"updated": "Routing-Regel „{{name}}“ aktualisiert",
++			"updatedDescription": "Der neue Anteil gilt ab der nächsten Anfrage. Verfolgen Sie ihn auf der Seite der Routing-Regeln.",
 +			"viewRules": "Regeln anzeigen",
-+			"failed": "Routing-Regel konnte nicht erstellt werden"
++			"failed": "Routing-Regel konnte nicht erstellt werden",
++			"updateFailed": "Routing-Regel konnte nicht aktualisiert werden"
 +		}
  	}
  }
@@ -252,10 +260,10 @@ index 90b2c0c..ace13cc 100644
  		"pricingOverrides": "Gültigkeitsbereich-spezifische Preisüberschreibungen",
  		"modelSettings": "Modell- und Routing-Konfiguration",
 diff --git a/ui/locales/en/models.json b/ui/locales/en/models.json
-index 469ebbb..6da0a7f 100644
+index 469ebbb..d30dfa5 100644
 --- a/ui/locales/en/models.json
 +++ b/ui/locales/en/models.json
-@@ -2239,5 +2239,180 @@
+@@ -2239,5 +2239,188 @@
  		"resetAll": "Reset to datasheet",
  		"noPermission": "You don't have permission to edit the datasheet",
  		"saving": "Saving..."
@@ -268,8 +276,7 @@ index 469ebbb..6da0a7f 100644
 +		"refresh": "Refresh",
 +		"live": "Live",
 +		"paused": "Paused",
-+		"pauseAria": "Pause live updates",
-+		"resumeAria": "Resume live updates",
++		"liveUpdates": "Live updates",
 +		"entity": "shadow traffic",
 +		"reset": {
 +			"button": "Reset",
@@ -320,8 +327,8 @@ index 469ebbb..6da0a7f 100644
 +			"viewDisagreements": "View disagreements",
 +			"promote": "Promote to canary",
 +			"samples": "Samples",
-+			"samplesNeeded": "Needs {{count}} sample for a verdict",
-+			"samplesNeeded_other": "Needs {{count}} samples for a verdict",
++			"samplesNeeded": "Needs {{formatted}} sample for a verdict",
++			"samplesNeeded_other": "Needs {{formatted}} samples for a verdict",
 +			"judgedCount": "{{formatted}} judged",
 +			"judgedCount_other": "{{formatted}} judged",
 +			"agreement": "Agreement",
@@ -415,13 +422,18 @@ index 469ebbb..6da0a7f 100644
 +		},
 +		"promote": {
 +			"title": "Promote to canary",
++			"titleUpdate": "Update canary share",
 +			"description": "Create a weighted routing rule that sends a share of {{source}} traffic to {{candidate}}. The rest keeps going to the primary model.",
++			"descriptionUpdate": "Change the share of {{source}} traffic that the existing canary rule sends to {{candidate}}. The rest keeps going to the primary model.",
 +			"cautionTitle": "This candidate's verdict is {{verdict}}",
 +			"caution": "It has not cleared the readiness thresholds yet. Start with a small share and watch the logs closely.",
++			"existingTitle": "This pair already has a canary rule",
++			"existingDescription": "\"{{name}}\" currently sends {{share}} of this traffic to the candidate. Confirming changes that share; the rule keeps its priority, scope and enabled state.",
 +			"weightLabel": "Share of traffic sent to the candidate",
 +			"weightHelp": "A whole number from 1 to 100. Start small: 10% is a common first canary.",
 +			"previewTitle": "Rule preview",
 +			"previewFailed": "Could not build the rule",
++			"rulesFailed": "Could not read the existing routing rules",
 +			"celExpression": "CEL expression",
 +			"targets": "Targets",
 +			"scope": "Scope: {{scope}}",
@@ -429,10 +441,14 @@ index 469ebbb..6da0a7f 100644
 +			"enabled": "Enabled",
 +			"disabled": "Disabled",
 +			"confirm": "Create canary rule",
++			"confirmUpdate": "Update canary rule",
 +			"success": "Created routing rule \"{{name}}\"",
 +			"successDescription": "The canary is live. Track it on the routing rules page.",
++			"updated": "Updated routing rule \"{{name}}\"",
++			"updatedDescription": "The new share applies from the next request. Track it on the routing rules page.",
 +			"viewRules": "View rules",
-+			"failed": "Could not create the routing rule"
++			"failed": "Could not create the routing rule",
++			"updateFailed": "Could not update the routing rule"
 +		}
  	}
  }
@@ -458,10 +474,10 @@ index e7655c7..545ef37 100644
  		"pricingOverrides": "Scoped pricing overrides",
  		"modelSettings": "Model and routing configuration",
 diff --git a/ui/locales/es/models.json b/ui/locales/es/models.json
-index 44866af..08425ab 100644
+index 44866af..cf6745e 100644
 --- a/ui/locales/es/models.json
 +++ b/ui/locales/es/models.json
-@@ -2239,5 +2239,180 @@
+@@ -2239,5 +2239,188 @@
  		"resetAll": "Restablecer a la ficha técnica",
  		"noPermission": "No tienes permiso para editar la ficha técnica",
  		"saving": "Guardando..."
@@ -474,8 +490,7 @@ index 44866af..08425ab 100644
 +		"refresh": "Actualizar",
 +		"live": "En vivo",
 +		"paused": "En pausa",
-+		"pauseAria": "Pausar actualizaciones en vivo",
-+		"resumeAria": "Reanudar actualizaciones en vivo",
++		"liveUpdates": "Actualizaciones en vivo",
 +		"entity": "tráfico sombra",
 +		"reset": {
 +			"button": "Restablecer",
@@ -526,8 +541,8 @@ index 44866af..08425ab 100644
 +			"viewDisagreements": "Ver discrepancias",
 +			"promote": "Promover a canary",
 +			"samples": "Muestras",
-+			"samplesNeeded": "Necesita {{count}} muestra para un veredicto",
-+			"samplesNeeded_other": "Necesita {{count}} muestras para un veredicto",
++			"samplesNeeded": "Necesita {{formatted}} muestra para un veredicto",
++			"samplesNeeded_other": "Necesita {{formatted}} muestras para un veredicto",
 +			"judgedCount": "{{formatted}} evaluada",
 +			"judgedCount_other": "{{formatted}} evaluadas",
 +			"agreement": "Concordancia",
@@ -621,13 +636,18 @@ index 44866af..08425ab 100644
 +		},
 +		"promote": {
 +			"title": "Promover a canary",
++			"titleUpdate": "Cambiar la parte del canary",
 +			"description": "Crea una regla de enrutamiento ponderada que envía una parte del tráfico de {{source}} a {{candidate}}. El resto sigue yendo al modelo principal.",
++			"descriptionUpdate": "Cambia la parte del tráfico de {{source}} que la regla canary existente envía a {{candidate}}. El resto sigue yendo al modelo principal.",
 +			"cautionTitle": "El veredicto de este candidato es: {{verdict}}",
 +			"caution": "Todavía no ha superado los umbrales de preparación. Empieza con una parte pequeña y vigila los registros de cerca.",
++			"existingTitle": "Este par ya tiene una regla canary",
++			"existingDescription": "«{{name}}» envía actualmente al candidato el {{share}} de este tráfico. Al confirmar cambia esa parte; la regla conserva su prioridad, su ámbito y su estado de activación.",
 +			"weightLabel": "Parte del tráfico enviada al candidato",
 +			"weightHelp": "Un número entero del 1 al 100. Empieza con poco: el 10 % es un primer canary habitual.",
 +			"previewTitle": "Vista previa de la regla",
 +			"previewFailed": "No se pudo generar la regla",
++			"rulesFailed": "No se pudieron leer las reglas de enrutamiento existentes",
 +			"celExpression": "Expresión CEL",
 +			"targets": "Destinos",
 +			"scope": "Ámbito: {{scope}}",
@@ -635,10 +655,14 @@ index 44866af..08425ab 100644
 +			"enabled": "Habilitada",
 +			"disabled": "Deshabilitada",
 +			"confirm": "Crear regla canary",
++			"confirmUpdate": "Actualizar regla canary",
 +			"success": "Regla de enrutamiento «{{name}}» creada",
 +			"successDescription": "El canary está activo. Síguelo en la página de reglas de enrutamiento.",
++			"updated": "Regla de enrutamiento «{{name}}» actualizada",
++			"updatedDescription": "La nueva parte se aplica desde la siguiente solicitud. Síguela en la página de reglas de enrutamiento.",
 +			"viewRules": "Ver reglas",
-+			"failed": "No se pudo crear la regla de enrutamiento"
++			"failed": "No se pudo crear la regla de enrutamiento",
++			"updateFailed": "No se pudo actualizar la regla de enrutamiento"
 +		}
  	}
  }
@@ -663,10 +687,10 @@ index 3f10e56..ae404b3 100644
  		"pricingOverrides": "Anulaciones de precios con alcance",
  		"modelSettings": "Configuración de modelos y enrutamiento",
 diff --git a/ui/locales/fr/models.json b/ui/locales/fr/models.json
-index f20239a..1b9427e 100644
+index f20239a..48eecab 100644
 --- a/ui/locales/fr/models.json
 +++ b/ui/locales/fr/models.json
-@@ -2239,5 +2239,180 @@
+@@ -2239,5 +2239,188 @@
  		"resetAll": "Rétablir la fiche technique",
  		"noPermission": "Vous n'avez pas l'autorisation de modifier la fiche technique",
  		"saving": "Enregistrement..."
@@ -679,8 +703,7 @@ index f20239a..1b9427e 100644
 +		"refresh": "Actualiser",
 +		"live": "En direct",
 +		"paused": "En pause",
-+		"pauseAria": "Mettre en pause les mises à jour en direct",
-+		"resumeAria": "Reprendre les mises à jour en direct",
++		"liveUpdates": "Mises à jour en direct",
 +		"entity": "trafic fantôme",
 +		"reset": {
 +			"button": "Réinitialiser",
@@ -731,8 +754,8 @@ index f20239a..1b9427e 100644
 +			"viewDisagreements": "Voir les désaccords",
 +			"promote": "Promouvoir en canary",
 +			"samples": "Échantillons",
-+			"samplesNeeded": "{{count}} échantillon requis pour un verdict",
-+			"samplesNeeded_other": "{{count}} échantillons requis pour un verdict",
++			"samplesNeeded": "{{formatted}} échantillon requis pour un verdict",
++			"samplesNeeded_other": "{{formatted}} échantillons requis pour un verdict",
 +			"judgedCount": "{{formatted}} évaluée",
 +			"judgedCount_other": "{{formatted}} évaluées",
 +			"agreement": "Accord",
@@ -826,13 +849,18 @@ index f20239a..1b9427e 100644
 +		},
 +		"promote": {
 +			"title": "Promouvoir en canary",
++			"titleUpdate": "Modifier la part du canary",
 +			"description": "Crée une règle de routage pondérée qui envoie une part du trafic de {{source}} vers {{candidate}}. Le reste continue d'aller au modèle principal.",
++			"descriptionUpdate": "Modifie la part du trafic de {{source}} que la règle canary existante envoie vers {{candidate}}. Le reste continue d'aller au modèle principal.",
 +			"cautionTitle": "Le verdict de ce candidat est : {{verdict}}",
 +			"caution": "Il n'a pas encore franchi les seuils de préparation. Commencez par une petite part et surveillez attentivement les logs.",
++			"existingTitle": "Cette paire a déjà une règle canary",
++			"existingDescription": "« {{name}} » envoie actuellement {{share}} de ce trafic au candidat. La confirmation modifie cette part ; la règle conserve sa priorité, sa portée et son état d'activation.",
 +			"weightLabel": "Part du trafic envoyée au candidat",
 +			"weightHelp": "Un nombre entier de 1 à 100. Commencez petit : 10 % est un premier canary courant.",
 +			"previewTitle": "Aperçu de la règle",
 +			"previewFailed": "Impossible de construire la règle",
++			"rulesFailed": "Impossible de lire les règles de routage existantes",
 +			"celExpression": "Expression CEL",
 +			"targets": "Cibles",
 +			"scope": "Portée : {{scope}}",
@@ -840,10 +868,14 @@ index f20239a..1b9427e 100644
 +			"enabled": "Activée",
 +			"disabled": "Désactivée",
 +			"confirm": "Créer la règle canary",
++			"confirmUpdate": "Mettre à jour la règle canary",
 +			"success": "Règle de routage « {{name}} » créée",
 +			"successDescription": "Le canary est actif. Suivez-le sur la page des règles de routage.",
++			"updated": "Règle de routage « {{name}} » mise à jour",
++			"updatedDescription": "La nouvelle part s'applique dès la prochaine requête. Suivez-la sur la page des règles de routage.",
 +			"viewRules": "Voir les règles",
-+			"failed": "Impossible de créer la règle de routage"
++			"failed": "Impossible de créer la règle de routage",
++			"updateFailed": "Impossible de mettre à jour la règle de routage"
 +		}
  	}
  }
@@ -868,10 +900,10 @@ index be405cf..37a86e2 100644
  		"pricingOverrides": "Remplacements de tarification ciblés",
  		"modelSettings": "Configuration des modèles et du routage",
 diff --git a/ui/locales/it/models.json b/ui/locales/it/models.json
-index 9d9d3a0..0a10fd3 100644
+index 9d9d3a0..51839c9 100644
 --- a/ui/locales/it/models.json
 +++ b/ui/locales/it/models.json
-@@ -2239,5 +2239,180 @@
+@@ -2239,5 +2239,188 @@
  		"resetAll": "Ripristina la scheda tecnica",
  		"noPermission": "Non hai l'autorizzazione per modificare la scheda tecnica",
  		"saving": "Salvataggio..."
@@ -884,8 +916,7 @@ index 9d9d3a0..0a10fd3 100644
 +		"refresh": "Aggiorna",
 +		"live": "Live",
 +		"paused": "In pausa",
-+		"pauseAria": "Metti in pausa gli aggiornamenti live",
-+		"resumeAria": "Riprendi gli aggiornamenti live",
++		"liveUpdates": "Aggiornamenti live",
 +		"entity": "traffico ombra",
 +		"reset": {
 +			"button": "Reimposta",
@@ -936,8 +967,8 @@ index 9d9d3a0..0a10fd3 100644
 +			"viewDisagreements": "Vedi discordanze",
 +			"promote": "Promuovi a canary",
 +			"samples": "Campioni",
-+			"samplesNeeded": "Serve {{count}} campione per un verdetto",
-+			"samplesNeeded_other": "Servono {{count}} campioni per un verdetto",
++			"samplesNeeded": "Serve {{formatted}} campione per un verdetto",
++			"samplesNeeded_other": "Servono {{formatted}} campioni per un verdetto",
 +			"judgedCount": "{{formatted}} valutato",
 +			"judgedCount_other": "{{formatted}} valutati",
 +			"agreement": "Concordanza",
@@ -1031,13 +1062,18 @@ index 9d9d3a0..0a10fd3 100644
 +		},
 +		"promote": {
 +			"title": "Promuovi a canary",
++			"titleUpdate": "Modifica la quota del canary",
 +			"description": "Crea una regola di routing ponderata che invia una quota del traffico di {{source}} a {{candidate}}. Il resto continua ad andare al modello principale.",
++			"descriptionUpdate": "Modifica la quota del traffico di {{source}} che la regola canary esistente invia a {{candidate}}. Il resto continua ad andare al modello principale.",
 +			"cautionTitle": "Il verdetto di questo candidato è: {{verdict}}",
 +			"caution": "Non ha ancora superato le soglie di prontezza. Inizia con una quota piccola e tieni d'occhio i log.",
++			"existingTitle": "Questa coppia ha già una regola canary",
++			"existingDescription": "Quota attuale inviata al candidato da \"{{name}}\": {{share}} di questo traffico. Confermando cambia questa quota; la regola mantiene priorità, ambito e stato di attivazione.",
 +			"weightLabel": "Quota di traffico inviata al candidato",
 +			"weightHelp": "Un numero intero da 1 a 100. Inizia in piccolo: il 10% è un primo canary comune.",
 +			"previewTitle": "Anteprima della regola",
 +			"previewFailed": "Impossibile costruire la regola",
++			"rulesFailed": "Impossibile leggere le regole di routing esistenti",
 +			"celExpression": "Espressione CEL",
 +			"targets": "Destinazioni",
 +			"scope": "Ambito: {{scope}}",
@@ -1045,10 +1081,14 @@ index 9d9d3a0..0a10fd3 100644
 +			"enabled": "Abilitata",
 +			"disabled": "Disabilitata",
 +			"confirm": "Crea regola canary",
++			"confirmUpdate": "Aggiorna regola canary",
 +			"success": "Regola di routing \"{{name}}\" creata",
 +			"successDescription": "Il canary è attivo. Seguilo nella pagina delle regole di routing.",
++			"updated": "Regola di routing \"{{name}}\" aggiornata",
++			"updatedDescription": "La nuova quota si applica dalla prossima richiesta. Seguila nella pagina delle regole di routing.",
 +			"viewRules": "Vedi regole",
-+			"failed": "Impossibile creare la regola di routing"
++			"failed": "Impossibile creare la regola di routing",
++			"updateFailed": "Impossibile aggiornare la regola di routing"
 +		}
  	}
  }
@@ -1073,10 +1113,10 @@ index 9be59a2..c08d2b7 100644
  		"pricingOverrides": "Override dei prezzi con ambito",
  		"modelSettings": "Configurazione modelli e routing",
 diff --git a/ui/locales/ja/models.json b/ui/locales/ja/models.json
-index cd12ffc..2be12a9 100644
+index cd12ffc..8e092d6 100644
 --- a/ui/locales/ja/models.json
 +++ b/ui/locales/ja/models.json
-@@ -2237,5 +2237,180 @@
+@@ -2237,5 +2237,188 @@
  		"resetAll": "データシートに戻す",
  		"noPermission": "データシートを編集する権限がありません",
  		"saving": "保存中..."
@@ -1089,8 +1129,7 @@ index cd12ffc..2be12a9 100644
 +		"refresh": "更新",
 +		"live": "ライブ",
 +		"paused": "一時停止中",
-+		"pauseAria": "ライブ更新を一時停止",
-+		"resumeAria": "ライブ更新を再開",
++		"liveUpdates": "ライブ更新",
 +		"entity": "シャドートラフィック",
 +		"reset": {
 +			"button": "リセット",
@@ -1141,8 +1180,8 @@ index cd12ffc..2be12a9 100644
 +			"viewDisagreements": "不一致を表示",
 +			"promote": "カナリアに昇格",
 +			"samples": "サンプル",
-+			"samplesNeeded": "判定には {{count}} 件のサンプルが必要",
-+			"samplesNeeded_other": "判定には {{count}} 件のサンプルが必要",
++			"samplesNeeded": "判定には {{formatted}} 件のサンプルが必要",
++			"samplesNeeded_other": "判定には {{formatted}} 件のサンプルが必要",
 +			"judgedCount": "{{formatted}} 件判定済み",
 +			"judgedCount_other": "{{formatted}} 件判定済み",
 +			"agreement": "一致率",
@@ -1236,13 +1275,18 @@ index cd12ffc..2be12a9 100644
 +		},
 +		"promote": {
 +			"title": "カナリアに昇格",
++			"titleUpdate": "カナリアの割合を更新",
 +			"description": "{{source}} のトラフィックの一部を {{candidate}} に送る重み付きルーティングルールを作成します。残りは引き続きプライマリモデルに送られます。",
++			"descriptionUpdate": "既存のカナリアルールが {{candidate}} に送る {{source}} のトラフィックの割合を変更します。残りは引き続きプライマリモデルに送られます。",
 +			"cautionTitle": "この候補の判定は「{{verdict}}」です",
 +			"caution": "まだ準備完了のしきい値を満たしていません。小さな割合から始め、ログを注意深く監視してください。",
++			"existingTitle": "このペアにはすでにカナリアルールがあります",
++			"existingDescription": "「{{name}}」は現在、このトラフィックの {{share}} を候補に送っています。確定するとこの割合が変わります。ルールの優先度、スコープ、有効状態はそのまま維持されます。",
 +			"weightLabel": "候補に送るトラフィックの割合",
 +			"weightHelp": "1 から 100 までの整数です。小さく始めましょう。最初のカナリアには 10% がよく使われます。",
 +			"previewTitle": "ルールのプレビュー",
 +			"previewFailed": "ルールを作成できませんでした",
++			"rulesFailed": "既存のルーティングルールを読み込めませんでした",
 +			"celExpression": "CEL 式",
 +			"targets": "ターゲット",
 +			"scope": "スコープ: {{scope}}",
@@ -1250,10 +1294,14 @@ index cd12ffc..2be12a9 100644
 +			"enabled": "有効",
 +			"disabled": "無効",
 +			"confirm": "カナリアルールを作成",
++			"confirmUpdate": "カナリアルールを更新",
 +			"success": "ルーティングルール「{{name}}」を作成しました",
 +			"successDescription": "カナリアが有効になりました。ルーティングルールのページで確認できます。",
++			"updated": "ルーティングルール「{{name}}」を更新しました",
++			"updatedDescription": "新しい割合は次のリクエストから適用されます。ルーティングルールのページで確認できます。",
 +			"viewRules": "ルールを表示",
-+			"failed": "ルーティングルールを作成できませんでした"
++			"failed": "ルーティングルールを作成できませんでした",
++			"updateFailed": "ルーティングルールを更新できませんでした"
 +		}
  	}
  }
@@ -1278,10 +1326,10 @@ index ed7af79..a9b2801 100644
  		"pricingOverrides": "スコープ付き料金オーバーライド",
  		"modelSettings": "モデルとルーティングの構成",
 diff --git a/ui/locales/ko/models.json b/ui/locales/ko/models.json
-index e14f4d3..4a1d27d 100644
+index e14f4d3..3708eeb 100644
 --- a/ui/locales/ko/models.json
 +++ b/ui/locales/ko/models.json
-@@ -2237,5 +2237,180 @@
+@@ -2237,5 +2237,188 @@
  		"resetAll": "데이터시트로 재설정",
  		"noPermission": "데이터시트를 편집할 권한이 없습니다",
  		"saving": "저장 중..."
@@ -1294,8 +1342,7 @@ index e14f4d3..4a1d27d 100644
 +		"refresh": "새로 고침",
 +		"live": "실시간",
 +		"paused": "일시 중지됨",
-+		"pauseAria": "실시간 업데이트 일시 중지",
-+		"resumeAria": "실시간 업데이트 재개",
++		"liveUpdates": "실시간 업데이트",
 +		"entity": "섀도 트래픽",
 +		"reset": {
 +			"button": "초기화",
@@ -1346,8 +1393,8 @@ index e14f4d3..4a1d27d 100644
 +			"viewDisagreements": "불일치 보기",
 +			"promote": "카나리로 승격",
 +			"samples": "샘플",
-+			"samplesNeeded": "판정하려면 샘플 {{count}}개가 필요합니다",
-+			"samplesNeeded_other": "판정하려면 샘플 {{count}}개가 필요합니다",
++			"samplesNeeded": "판정하려면 샘플 {{formatted}}개가 필요합니다",
++			"samplesNeeded_other": "판정하려면 샘플 {{formatted}}개가 필요합니다",
 +			"judgedCount": "{{formatted}}개 심사됨",
 +			"judgedCount_other": "{{formatted}}개 심사됨",
 +			"agreement": "일치율",
@@ -1441,13 +1488,18 @@ index e14f4d3..4a1d27d 100644
 +		},
 +		"promote": {
 +			"title": "카나리로 승격",
++			"titleUpdate": "카나리 비율 변경",
 +			"description": "{{source}} 트래픽의 일부를 {{candidate}}(으)로 보내는 가중치 기반 라우팅 규칙을 만듭니다. 나머지는 계속 기본 모델로 전달됩니다.",
++			"descriptionUpdate": "기존 카나리 규칙이 {{candidate}}(으)로 보내는 {{source}} 트래픽 비율을 변경합니다. 나머지는 계속 기본 모델로 전달됩니다.",
 +			"cautionTitle": "이 후보의 판정은 '{{verdict}}'입니다",
 +			"caution": "아직 준비 기준을 통과하지 못했습니다. 작은 비율로 시작하고 로그를 면밀히 확인하세요.",
++			"existingTitle": "이 쌍에는 이미 카나리 규칙이 있습니다",
++			"existingDescription": "'{{name}}'은(는) 현재 이 트래픽의 {{share}}을(를) 후보로 보내고 있습니다. 확인하면 이 비율이 변경되며, 규칙의 우선순위, 범위, 활성화 상태는 그대로 유지됩니다.",
 +			"weightLabel": "후보로 보낼 트래픽 비율",
 +			"weightHelp": "1~100 사이의 정수입니다. 작게 시작하세요. 첫 카나리에는 보통 10%를 사용합니다.",
 +			"previewTitle": "규칙 미리 보기",
 +			"previewFailed": "규칙을 만들 수 없습니다",
++			"rulesFailed": "기존 라우팅 규칙을 읽지 못했습니다",
 +			"celExpression": "CEL 표현식",
 +			"targets": "대상",
 +			"scope": "범위: {{scope}}",
@@ -1455,10 +1507,14 @@ index e14f4d3..4a1d27d 100644
 +			"enabled": "활성화됨",
 +			"disabled": "비활성화됨",
 +			"confirm": "카나리 규칙 만들기",
++			"confirmUpdate": "카나리 규칙 업데이트",
 +			"success": "라우팅 규칙 '{{name}}'을(를) 만들었습니다",
 +			"successDescription": "카나리가 활성화되었습니다. 라우팅 규칙 페이지에서 확인하세요.",
++			"updated": "라우팅 규칙 '{{name}}'을(를) 업데이트했습니다",
++			"updatedDescription": "새 비율은 다음 요청부터 적용됩니다. 라우팅 규칙 페이지에서 확인하세요.",
 +			"viewRules": "규칙 보기",
-+			"failed": "라우팅 규칙을 만들지 못했습니다"
++			"failed": "라우팅 규칙을 만들지 못했습니다",
++			"updateFailed": "라우팅 규칙을 업데이트하지 못했습니다"
 +		}
  	}
  }
@@ -1483,10 +1539,10 @@ index 0d5739b..18ee397 100644
  		"pricingOverrides": "범위별 가격 재정의",
  		"modelSettings": "모델 및 라우팅 구성",
 diff --git a/ui/locales/pt/models.json b/ui/locales/pt/models.json
-index d0f6660..311d53c 100644
+index d0f6660..8f55190 100644
 --- a/ui/locales/pt/models.json
 +++ b/ui/locales/pt/models.json
-@@ -2239,5 +2239,180 @@
+@@ -2239,5 +2239,188 @@
  		"resetAll": "Redefinir para a ficha técnica",
  		"noPermission": "Você não tem permissão para editar a ficha técnica",
  		"saving": "Salvando..."
@@ -1499,8 +1555,7 @@ index d0f6660..311d53c 100644
 +		"refresh": "Atualizar",
 +		"live": "Ao vivo",
 +		"paused": "Pausado",
-+		"pauseAria": "Pausar atualizações ao vivo",
-+		"resumeAria": "Retomar atualizações ao vivo",
++		"liveUpdates": "Atualizações ao vivo",
 +		"entity": "tráfego sombra",
 +		"reset": {
 +			"button": "Redefinir",
@@ -1551,8 +1606,8 @@ index d0f6660..311d53c 100644
 +			"viewDisagreements": "Ver divergências",
 +			"promote": "Promover a canary",
 +			"samples": "Amostras",
-+			"samplesNeeded": "Precisa de {{count}} amostra para um veredito",
-+			"samplesNeeded_other": "Precisa de {{count}} amostras para um veredito",
++			"samplesNeeded": "Precisa de {{formatted}} amostra para um veredito",
++			"samplesNeeded_other": "Precisa de {{formatted}} amostras para um veredito",
 +			"judgedCount": "{{formatted}} avaliada",
 +			"judgedCount_other": "{{formatted}} avaliadas",
 +			"agreement": "Concordância",
@@ -1646,13 +1701,18 @@ index d0f6660..311d53c 100644
 +		},
 +		"promote": {
 +			"title": "Promover a canary",
++			"titleUpdate": "Alterar a parte do canary",
 +			"description": "Cria uma regra de encaminhamento ponderada que envia uma parte do tráfego de {{source}} para {{candidate}}. O restante continua indo para o modelo principal.",
++			"descriptionUpdate": "Altera a parte do tráfego de {{source}} que a regra canary existente envia para {{candidate}}. O restante continua indo para o modelo principal.",
 +			"cautionTitle": "O veredito deste candidato é: {{verdict}}",
 +			"caution": "Ele ainda não atingiu os limites de prontidão. Comece com uma parte pequena e acompanhe os logs de perto.",
++			"existingTitle": "Este par já tem uma regra canary",
++			"existingDescription": "\"{{name}}\" envia atualmente {{share}} deste tráfego ao candidato. Ao confirmar, essa parte muda; a regra mantém a prioridade, o escopo e o estado de ativação.",
 +			"weightLabel": "Parte do tráfego enviada ao candidato",
 +			"weightHelp": "Um número inteiro de 1 a 100. Comece pequeno: 10% é um primeiro canary comum.",
 +			"previewTitle": "Prévia da regra",
 +			"previewFailed": "Não foi possível montar a regra",
++			"rulesFailed": "Não foi possível ler as regras de encaminhamento existentes",
 +			"celExpression": "Expressão CEL",
 +			"targets": "Destinos",
 +			"scope": "Escopo: {{scope}}",
@@ -1660,10 +1720,14 @@ index d0f6660..311d53c 100644
 +			"enabled": "Ativada",
 +			"disabled": "Desativada",
 +			"confirm": "Criar regra canary",
++			"confirmUpdate": "Atualizar regra canary",
 +			"success": "Regra de encaminhamento \"{{name}}\" criada",
 +			"successDescription": "O canary está ativo. Acompanhe-o na página de regras de encaminhamento.",
++			"updated": "Regra de encaminhamento \"{{name}}\" atualizada",
++			"updatedDescription": "A nova parte vale a partir da próxima solicitação. Acompanhe-a na página de regras de encaminhamento.",
 +			"viewRules": "Ver regras",
-+			"failed": "Não foi possível criar a regra de encaminhamento"
++			"failed": "Não foi possível criar a regra de encaminhamento",
++			"updateFailed": "Não foi possível atualizar a regra de encaminhamento"
 +		}
  	}
  }
@@ -1688,10 +1752,10 @@ index 7d31def..b567692 100644
  		"pricingOverrides": "Substituições de preços com âmbito",
  		"modelSettings": "Configuração de modelos e encaminhamento",
 diff --git a/ui/locales/ru/models.json b/ui/locales/ru/models.json
-index d133c2f..254a051 100644
+index d133c2f..32accf2 100644
 --- a/ui/locales/ru/models.json
 +++ b/ui/locales/ru/models.json
-@@ -2283,5 +2283,188 @@
+@@ -2283,5 +2283,196 @@
  		"resetAll": "Сбросить к спецификации",
  		"noPermission": "У вас нет прав на изменение спецификации",
  		"saving": "Сохранение..."
@@ -1704,8 +1768,7 @@ index d133c2f..254a051 100644
 +		"refresh": "Обновить",
 +		"live": "Онлайн",
 +		"paused": "Пауза",
-+		"pauseAria": "Приостановить обновления в реальном времени",
-+		"resumeAria": "Возобновить обновления в реальном времени",
++		"liveUpdates": "Онлайн-обновления",
 +		"entity": "теневой трафик",
 +		"reset": {
 +			"button": "Сбросить",
@@ -1756,10 +1819,10 @@ index d133c2f..254a051 100644
 +			"viewDisagreements": "Показать расхождения",
 +			"promote": "Перевести в canary",
 +			"samples": "Выборки",
-+			"samplesNeeded": "Для вердикта нужна {{count}} выборка",
-+			"samplesNeeded_few": "Для вердикта нужны {{count}} выборки",
-+			"samplesNeeded_many": "Для вердикта нужно {{count}} выборок",
-+			"samplesNeeded_other": "Для вердикта нужно {{count}} выборки",
++			"samplesNeeded": "Для вердикта нужна {{formatted}} выборка",
++			"samplesNeeded_few": "Для вердикта нужны {{formatted}} выборки",
++			"samplesNeeded_many": "Для вердикта нужно {{formatted}} выборок",
++			"samplesNeeded_other": "Для вердикта нужно {{formatted}} выборки",
 +			"judgedCount": "Оценено: {{formatted}}",
 +			"judgedCount_few": "Оценено: {{formatted}}",
 +			"judgedCount_many": "Оценено: {{formatted}}",
@@ -1859,13 +1922,18 @@ index d133c2f..254a051 100644
 +		},
 +		"promote": {
 +			"title": "Перевести в canary",
++			"titleUpdate": "Изменить долю canary",
 +			"description": "Создаёт взвешенное правило маршрутизации, которое отправляет часть трафика {{source}} на {{candidate}}. Остальной трафик по-прежнему идёт на основную модель.",
++			"descriptionUpdate": "Меняет долю трафика {{source}}, которую существующее canary-правило отправляет на {{candidate}}. Остальной трафик по-прежнему идёт на основную модель.",
 +			"cautionTitle": "Вердикт для этого кандидата: {{verdict}}",
 +			"caution": "Он ещё не прошёл пороги готовности. Начните с небольшой доли и внимательно следите за логами.",
++			"existingTitle": "Для этой пары уже есть canary-правило",
++			"existingDescription": "«{{name}}» сейчас отправляет кандидату {{share}} этого трафика. Подтверждение меняет эту долю; приоритет, область и состояние правила сохраняются.",
 +			"weightLabel": "Доля трафика для кандидата",
 +			"weightHelp": "Целое число от 1 до 100. Начните с малого: 10% — обычная доля для первого canary.",
 +			"previewTitle": "Предпросмотр правила",
 +			"previewFailed": "Не удалось построить правило",
++			"rulesFailed": "Не удалось прочитать существующие правила маршрутизации",
 +			"celExpression": "Выражение CEL",
 +			"targets": "Цели",
 +			"scope": "Область: {{scope}}",
@@ -1873,10 +1941,14 @@ index d133c2f..254a051 100644
 +			"enabled": "Включено",
 +			"disabled": "Выключено",
 +			"confirm": "Создать canary-правило",
++			"confirmUpdate": "Обновить canary-правило",
 +			"success": "Правило маршрутизации «{{name}}» создано",
 +			"successDescription": "Canary запущен. Следите за ним на странице правил маршрутизации.",
++			"updated": "Правило маршрутизации «{{name}}» обновлено",
++			"updatedDescription": "Новая доля действует со следующего запроса. Следите за ней на странице правил маршрутизации.",
 +			"viewRules": "Открыть правила",
-+			"failed": "Не удалось создать правило маршрутизации"
++			"failed": "Не удалось создать правило маршрутизации",
++			"updateFailed": "Не удалось обновить правило маршрутизации"
 +		}
  	}
  }
@@ -1901,10 +1973,10 @@ index e3a97c1..094cb64 100644
  		"pricingOverrides": "Переопределения цен по области",
  		"modelSettings": "Конфигурация моделей и маршрутизации",
 diff --git a/ui/locales/zh-CN/models.json b/ui/locales/zh-CN/models.json
-index 27687f6..06b0606 100644
+index 27687f6..d441dea 100644
 --- a/ui/locales/zh-CN/models.json
 +++ b/ui/locales/zh-CN/models.json
-@@ -2237,5 +2237,180 @@
+@@ -2237,5 +2237,188 @@
  		"resetAll": "重置为数据表",
  		"noPermission": "你没有编辑数据表的权限",
  		"saving": "正在保存..."
@@ -1917,8 +1989,7 @@ index 27687f6..06b0606 100644
 +		"refresh": "刷新",
 +		"live": "实时",
 +		"paused": "已暂停",
-+		"pauseAria": "暂停实时更新",
-+		"resumeAria": "恢复实时更新",
++		"liveUpdates": "实时更新",
 +		"entity": "影子流量",
 +		"reset": {
 +			"button": "重置",
@@ -1969,8 +2040,8 @@ index 27687f6..06b0606 100644
 +			"viewDisagreements": "查看分歧",
 +			"promote": "提升为金丝雀",
 +			"samples": "样本",
-+			"samplesNeeded": "需要 {{count}} 个样本才能判定",
-+			"samplesNeeded_other": "需要 {{count}} 个样本才能判定",
++			"samplesNeeded": "需要 {{formatted}} 个样本才能判定",
++			"samplesNeeded_other": "需要 {{formatted}} 个样本才能判定",
 +			"judgedCount": "已评审 {{formatted}} 个",
 +			"judgedCount_other": "已评审 {{formatted}} 个",
 +			"agreement": "一致率",
@@ -2064,13 +2135,18 @@ index 27687f6..06b0606 100644
 +		},
 +		"promote": {
 +			"title": "提升为金丝雀",
++			"titleUpdate": "调整金丝雀比例",
 +			"description": "创建一条加权路由规则，将 {{source}} 的一部分流量发送到 {{candidate}}，其余流量仍发送到主模型。",
++			"descriptionUpdate": "调整现有金丝雀规则将 {{source}} 流量发送到 {{candidate}} 的比例，其余流量仍发送到主模型。",
 +			"cautionTitle": "该候选的判定为“{{verdict}}”",
 +			"caution": "它尚未达到就绪阈值。请从较小的比例开始，并密切关注日志。",
++			"existingTitle": "此组合已有金丝雀规则",
++			"existingDescription": "“{{name}}”目前将此流量的 {{share}} 发送到候选。确认后将修改这一比例；规则的优先级、范围和启用状态保持不变。",
 +			"weightLabel": "发送到候选的流量比例",
 +			"weightHelp": "1 到 100 之间的整数。建议从小比例开始：10% 是常见的首次金丝雀比例。",
 +			"previewTitle": "规则预览",
 +			"previewFailed": "无法生成规则",
++			"rulesFailed": "无法读取现有路由规则",
 +			"celExpression": "CEL 表达式",
 +			"targets": "目标",
 +			"scope": "范围：{{scope}}",
@@ -2078,10 +2154,14 @@ index 27687f6..06b0606 100644
 +			"enabled": "已启用",
 +			"disabled": "已禁用",
 +			"confirm": "创建金丝雀规则",
++			"confirmUpdate": "更新金丝雀规则",
 +			"success": "已创建路由规则“{{name}}”",
 +			"successDescription": "金丝雀已生效。可在路由规则页面查看。",
++			"updated": "已更新路由规则“{{name}}”",
++			"updatedDescription": "新比例从下一个请求开始生效。可在路由规则页面查看。",
 +			"viewRules": "查看规则",
-+			"failed": "无法创建路由规则"
++			"failed": "无法创建路由规则",
++			"updateFailed": "无法更新路由规则"
 +		}
  	}
  }
@@ -2106,10 +2186,10 @@ index 9a1640a..f3601c9 100644
  		"pricingOverrides": "作用域定价覆盖",
  		"modelSettings": "模型与路由配置",
 diff --git a/ui/locales/zh-TW/models.json b/ui/locales/zh-TW/models.json
-index 5cd46e9..c378e8a 100644
+index 5cd46e9..2c77749 100644
 --- a/ui/locales/zh-TW/models.json
 +++ b/ui/locales/zh-TW/models.json
-@@ -2237,5 +2237,180 @@
+@@ -2237,5 +2237,188 @@
  		"resetAll": "重設為資料表",
  		"noPermission": "你沒有編輯資料表的權限",
  		"saving": "儲存中..."
@@ -2122,8 +2202,7 @@ index 5cd46e9..c378e8a 100644
 +		"refresh": "重新整理",
 +		"live": "即時",
 +		"paused": "已暫停",
-+		"pauseAria": "暫停即時更新",
-+		"resumeAria": "繼續即時更新",
++		"liveUpdates": "即時更新",
 +		"entity": "影子流量",
 +		"reset": {
 +			"button": "重設",
@@ -2174,8 +2253,8 @@ index 5cd46e9..c378e8a 100644
 +			"viewDisagreements": "檢視分歧",
 +			"promote": "升級為金絲雀",
 +			"samples": "樣本",
-+			"samplesNeeded": "需要 {{count}} 個樣本才能判定",
-+			"samplesNeeded_other": "需要 {{count}} 個樣本才能判定",
++			"samplesNeeded": "需要 {{formatted}} 個樣本才能判定",
++			"samplesNeeded_other": "需要 {{formatted}} 個樣本才能判定",
 +			"judgedCount": "已評審 {{formatted}} 個",
 +			"judgedCount_other": "已評審 {{formatted}} 個",
 +			"agreement": "一致率",
@@ -2269,13 +2348,18 @@ index 5cd46e9..c378e8a 100644
 +		},
 +		"promote": {
 +			"title": "升級為金絲雀",
++			"titleUpdate": "調整金絲雀比例",
 +			"description": "建立一條加權路由規則，將 {{source}} 的部分流量傳送到 {{candidate}}，其餘流量仍傳送到主要模型。",
++			"descriptionUpdate": "調整現有金絲雀規則將 {{source}} 流量傳送到 {{candidate}} 的比例，其餘流量仍傳送到主要模型。",
 +			"cautionTitle": "此候選的判定為「{{verdict}}」",
 +			"caution": "它尚未達到就緒門檻。請從較小的比例開始，並密切留意日誌。",
++			"existingTitle": "此組合已有金絲雀規則",
++			"existingDescription": "「{{name}}」目前將此流量的 {{share}} 傳送到候選。確認後將修改這個比例；規則的優先順序、範圍和啟用狀態維持不變。",
 +			"weightLabel": "傳送到候選的流量比例",
 +			"weightHelp": "1 到 100 之間的整數。建議從小比例開始：10% 是常見的首次金絲雀比例。",
 +			"previewTitle": "規則預覽",
 +			"previewFailed": "無法產生規則",
++			"rulesFailed": "無法讀取現有路由規則",
 +			"celExpression": "CEL 表示式",
 +			"targets": "目標",
 +			"scope": "範圍：{{scope}}",
@@ -2283,10 +2367,14 @@ index 5cd46e9..c378e8a 100644
 +			"enabled": "已啟用",
 +			"disabled": "已停用",
 +			"confirm": "建立金絲雀規則",
++			"confirmUpdate": "更新金絲雀規則",
 +			"success": "已建立路由規則「{{name}}」",
 +			"successDescription": "金絲雀已生效。可在路由規則頁面查看。",
++			"updated": "已更新路由規則「{{name}}」",
++			"updatedDescription": "新比例從下一個請求開始生效。可在路由規則頁面查看。",
 +			"viewRules": "檢視規則",
-+			"failed": "無法建立路由規則"
++			"failed": "無法建立路由規則",
++			"updateFailed": "無法更新路由規則"
 +		}
  	}
  }

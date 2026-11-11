@@ -1,9 +1,11 @@
+import type { RoutingRule } from "@/lib/types/routingRules";
 import type { ShadowCanaryRule } from "@/lib/types/shadow";
 import { describe, expect, it } from "vitest";
 import {
 	buildShadowCanaryRuleQueryParams,
 	buildShadowRecordsQueryParams,
 	canaryWeightFromPercent,
+	findShadowCanaryRule,
 	formatShadowMs,
 	formatShadowNumber,
 	formatShadowPercent,
@@ -14,10 +16,15 @@ import {
 	isShadowVerdict,
 	isValidCanaryWeightPercent,
 	shadowBudgetFraction,
+	shadowCandidateShare,
+	shadowCanaryPriority,
+	shadowCanaryRampRule,
 	shadowCanaryRuleToCreateRequest,
+	shadowCanaryRuleToUpdateRequest,
 	shadowJudgeScoreDelta,
 	shadowModelRefLabel,
 	shadowPairKey,
+	shadowSavingsTone,
 	shadowTestIdSlug,
 	shadowVerdictBadgeVariant,
 } from "./shadow";
@@ -76,6 +83,13 @@ describe("formatting", () => {
 		expect(formatShadowPercentValue(-12.5, "en")).toBe("-12.5%");
 	});
 
+	it("never shows a negative zero", () => {
+		// A candidate a rounding error pricier than the primary is not a loss worth a minus sign.
+		expect(formatShadowPercentValue(-0.0004, "en")).toBe("0%");
+		expect(formatShadowPercent(-0.00001, "en")).toBe("0%");
+		expect(formatShadowPercentValue(-0.06, "en")).toBe("-0.1%");
+	});
+
 	it("follows the locale", () => {
 		expect(formatShadowPercent(0.5, "de")).toMatch(/^50\s?%$/);
 		expect(formatShadowUsd(1234.5, "de")).toMatch(/1\.234,50\s?\$/);
@@ -103,6 +117,21 @@ describe("formatting", () => {
 		expect(formatShadowScore(9, "en")).toBe("9");
 		expect(formatShadowNumber(12345, "en")).toBe("12,345");
 		expect(formatShadowNumber(0.123, "en", 2)).toBe("0.12");
+	});
+});
+
+describe("shadowSavingsTone", () => {
+	it("colours savings by their sign", () => {
+		expect(shadowSavingsTone(12.5)).toBe("positive");
+		expect(shadowSavingsTone(-3)).toBe("negative");
+	});
+
+	it("keeps a figure that shows as 0% neutral", () => {
+		// 0 is what the plugin reports when the primary model has no pricing.
+		expect(shadowSavingsTone(0)).toBe("neutral");
+		expect(shadowSavingsTone(-0.0004)).toBe("neutral");
+		expect(shadowSavingsTone(0.04)).toBe("neutral");
+		expect(shadowSavingsTone(Number.NaN)).toBe("neutral");
 	});
 });
 
@@ -160,6 +189,83 @@ describe("canary weight", () => {
 			candidate: "openai/gpt-4o-mini",
 			weight: 0.1,
 		});
+		expect(buildShadowCanaryRuleQueryParams({ experiment: "exp", candidate: "openai/gpt-4o-mini", weight: 0.1, priority: 12 })).toEqual({
+			experiment: "exp",
+			candidate: "openai/gpt-4o-mini",
+			weight: 0.1,
+			priority: 12,
+		});
+	});
+});
+
+describe("canary rule placement", () => {
+	const rule = (name: string, priority: number, scope: RoutingRule["scope"] = "global", scope_id?: string) => ({
+		name,
+		priority,
+		scope,
+		scope_id,
+	});
+
+	it("takes the lowest priority from 10 up that no global rule holds", () => {
+		expect(shadowCanaryPriority([])).toBe(10);
+		expect(shadowCanaryPriority([rule("a", 10), rule("b", 11), rule("c", 13)])).toBe(12);
+		expect(shadowCanaryPriority([rule("a", 1), rule("b", 2)])).toBe(10);
+	});
+
+	it("ignores priorities held in other scopes", () => {
+		expect(shadowCanaryPriority([rule("team rule", 10, "team", "team-1"), rule("vk rule", 11, "virtual_key", "vk-1")])).toBe(10);
+	});
+
+	it("finds an earlier canary for the pair by its name, in the global scope only", () => {
+		const name = "Shadow canary: openai/gpt-4o -> openai/gpt-4o-mini";
+		const rules = [rule("other", 10), rule(name, 14, "team", "team-1"), rule(name, 12)];
+		expect(findShadowCanaryRule(rules, { name, scope: "global" })).toBe(rules[2]);
+		expect(findShadowCanaryRule(rules, { name: "Shadow canary: openai/gpt-4o -> openai/o3-mini", scope: "global" })).toBeUndefined();
+	});
+
+	it("reads the share a rule sends to the candidate", () => {
+		const targets = [
+			{ provider: "openai", model: "gpt-4o", weight: 0.9 },
+			{ provider: "openai", model: "gpt-4o-mini", weight: 0.1 },
+		];
+		expect(shadowCandidateShare(targets, { provider: "openai", model: "gpt-4o-mini" })).toBe(0.1);
+		expect(shadowCandidateShare(targets, { provider: "anthropic", model: "gpt-4o-mini" })).toBe(0);
+		expect(shadowCandidateShare([{ model: "llama-3", weight: 0.2 }], { provider: "", model: "llama-3" })).toBe(0.2);
+	});
+});
+
+describe("ramping an existing canary", () => {
+	const preview: ShadowCanaryRule = {
+		name: "Shadow canary: openai/gpt-4o -> openai/gpt-4o-mini",
+		description: "Created from shadow experiment. Sends 20% of openai/gpt-4o traffic to openai/gpt-4o-mini.",
+		enabled: true,
+		cel_expression: 'provider == "openai" && model == "gpt-4o"',
+		targets: [
+			{ provider: "openai", model: "gpt-4o", weight: 0.8 },
+			{ provider: "openai", model: "gpt-4o-mini", weight: 0.2 },
+		],
+		scope: "global",
+		priority: 11,
+	};
+	const existing = {
+		name: preview.name,
+		cel_expression: 'model == "gpt-4o"',
+		scope: "global" as const,
+		priority: 10,
+		enabled: false,
+	};
+
+	it("shows the new split on the existing rule's condition, priority and state", () => {
+		expect(shadowCanaryRampRule(existing, preview)).toEqual({
+			...preview,
+			cel_expression: existing.cel_expression,
+			priority: 10,
+			enabled: false,
+		});
+	});
+
+	it("updates only the split and its description", () => {
+		expect(shadowCanaryRuleToUpdateRequest(preview)).toEqual({ description: preview.description, targets: preview.targets });
 	});
 });
 

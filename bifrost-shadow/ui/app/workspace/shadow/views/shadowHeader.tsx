@@ -70,17 +70,19 @@ export function ShadowHeader({ live, onLiveChange, onRefresh, isFetching, canRes
 							<span className="hidden sm:inline">{t("refresh")}</span>
 						</Button>
 					)}
+					{/* A toggle keeps one name, which starts with its visible "Live" label; aria-pressed carries
+					    the state, so the "Paused" tag is for sighted users only. */}
 					<Button
 						variant={live ? "default" : "outline"}
 						size="sm"
 						onClick={() => onLiveChange(!live)}
 						aria-pressed={live}
-						aria-label={live ? t("pauseAria") : t("resumeAria")}
-						title={live ? t("pauseAria") : t("resumeAria")}
+						aria-label={t("liveUpdates")}
 						data-testid="shadow-live-toggle"
 					>
 						<Radio className={live ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />
-						{live ? t("live") : t("paused")}
+						{t("live")}
+						{!live && <span className="text-muted-foreground border-l pl-2 font-normal">{t("paused")}</span>}
 					</Button>
 					{canReset && (
 						<Button

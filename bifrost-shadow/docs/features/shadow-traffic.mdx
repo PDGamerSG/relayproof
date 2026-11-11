@@ -71,7 +71,7 @@ The lower bound keeps a lucky streak from promoting a model: 20 out of 20 passes
 1. Enable the plugin with `config.json` or the API (the tabs alongside this one).
 2. Open **Models → Shadow Traffic** in the sidebar. The page polls the scorecard every 5 seconds.
 3. Use **View disagreements** on a candidate to read failing pairs side by side with the judge's reason. The judge saw each pair in a random order, so its reason refers to "response A" or "response B"; the record states which one was the candidate.
-4. Use **Promote to canary**, pick the share of traffic (10% by default), check the rule preview, and confirm. The rule appears under **Routing Rules**, where you can raise its weight or disable it.
+4. Use **Promote to canary**, pick the share of traffic (10% by default), check the rule preview, and confirm. The rule appears under **Routing Rules**, where you can raise its weight or disable it. The dialog picks a priority no other global rule uses. Promoting the same candidate again changes the share on its existing canary rule instead of creating a second one; the rule keeps its priority, scope and enabled state.
 
 </Tab>
 

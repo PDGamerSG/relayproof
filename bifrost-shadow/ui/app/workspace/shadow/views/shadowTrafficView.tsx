@@ -13,7 +13,7 @@ import { showLoadError } from "@/lib/utils/loadError";
 import { isShadowNotEnabledError, shadowPairKey } from "@/lib/utils/shadow";
 import { RbacOperation, RbacResource, useRbac } from "@enterprise/lib";
 import { TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ShadowCounterTiles } from "./shadowCounterTiles";
 import { ShadowDisagreementsSheet } from "./shadowDisagreementsSheet";
@@ -54,6 +54,20 @@ export function ShadowTrafficView() {
 	const pairs = summary?.pairs ?? [];
 	// The dialog reads the latest poll, so a verdict that changes while it is open is reflected.
 	const promotePair = promoteKey ? (pairs.find((pair) => shadowPairKey(pair) === promoteKey) ?? null) : null;
+	const hasPromotePair = promotePair !== null;
+	const notEnabled = isShadowNotEnabledError(error);
+
+	// Radix reports only the closes it causes. When the dialog's pair drops out of the summary, or
+	// the not-enabled view replaces the page, the open flags are cleared here; otherwise the dialog
+	// and the sheet would pop back open on their own once the pair or the plugin returns.
+	useEffect(() => {
+		if (!hasPromotePair) setPromoteOpen(false);
+	}, [hasPromotePair]);
+	useEffect(() => {
+		if (!notEnabled) return;
+		setPromoteOpen(false);
+		setDisagreementsOpen(false);
+	}, [notEnabled]);
 
 	// Every branch names the page, or the topbar falls back to the "Shadow" slug.
 	if (isLoading) {
@@ -65,7 +79,7 @@ export function ShadowTrafficView() {
 		);
 	}
 
-	if (isShadowNotEnabledError(error)) {
+	if (notEnabled) {
 		return <ShadowNotEnabledView onRetry={() => void refetch()} isRetrying={isFetching} canViewPlugins={canViewPlugins} />;
 	}
 

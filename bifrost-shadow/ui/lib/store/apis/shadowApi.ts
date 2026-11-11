@@ -37,7 +37,7 @@ export const shadowApi = baseApi.injectEndpoints({
 			providesTags: (result, error, id) => [{ type: "ShadowRecords", id }],
 		}),
 
-		// Routing rule body that sends `weight` of the source model's traffic to the candidate.
+		// Routing rule body that sends `weight` of the source model's traffic to the candidate, at `priority`.
 		// A preview: never cached past the dialog, since it depends on live traffic for wildcard sources.
 		getShadowCanaryRule: builder.query<ShadowCanaryRule, GetShadowCanaryRuleParams>({
 			query: (params) => ({
@@ -60,6 +60,5 @@ export const {
 	useGetShadowRecordsQuery,
 	useGetShadowRecordQuery,
 	useGetShadowCanaryRuleQuery,
-	useLazyGetShadowCanaryRuleQuery,
 	useResetShadowRecordsMutation,
 } = shadowApi;

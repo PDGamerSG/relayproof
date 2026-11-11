@@ -4,7 +4,7 @@
  */
 
 import { getLocale } from "@/lib/i18n";
-import type { CreateRoutingRuleRequest } from "@/lib/types/routingRules";
+import type { CreateRoutingRuleRequest, RoutingRule, RoutingTarget, UpdateRoutingRuleRequest } from "@/lib/types/routingRules";
 import type {
 	GetShadowCanaryRuleParams,
 	GetShadowRecordsParams,
@@ -57,16 +57,34 @@ export function shadowVerdictBadgeVariant(verdict: string): ShadowBadgeVariant {
 	}
 }
 
+/** Whether a value shows as zero once rounded to `fractionDigits` decimals, as Intl rounds it. */
+function roundsToZero(value: number, fractionDigits: number): boolean {
+	return Math.round(Math.abs(value) * 10 ** fractionDigits) === 0;
+}
+
 /** Formats a fraction (0.961) as a percentage ("96.1%"). */
 export function formatShadowPercent(fraction: number, locale: string = getLocale(), maximumFractionDigits = 1): string {
 	if (!Number.isFinite(fraction)) return "–";
-	return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits }).format(fraction);
+	// Intl keeps the sign of a value that rounds to zero, and "-0%" reads as a loss.
+	const value = roundsToZero(fraction, maximumFractionDigits + 2) ? 0 : fraction;
+	return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits }).format(value);
 }
 
 /** Formats a value already expressed in percent (savings_pct = 97.3) as a percentage ("97.3%"). */
 export function formatShadowPercentValue(percent: number, locale: string = getLocale(), maximumFractionDigits = 1): string {
 	if (!Number.isFinite(percent)) return "–";
 	return formatShadowPercent(percent / 100, locale, maximumFractionDigits);
+}
+
+export type ShadowSavingsTone = "positive" | "negative" | "neutral";
+
+/**
+ * Colour of a savings figure (savings_pct), judged on the value as shown: a figure that reads "0%"
+ * stays neutral, which covers the 0 the plugin reports when the primary model has no pricing.
+ */
+export function shadowSavingsTone(savingsPct: number, maximumFractionDigits = 1): ShadowSavingsTone {
+	if (!Number.isFinite(savingsPct) || roundsToZero(savingsPct, maximumFractionDigits)) return "neutral";
+	return savingsPct > 0 ? "positive" : "negative";
 }
 
 /**
@@ -132,9 +150,60 @@ export function isValidCanaryWeightPercent(percent: number): boolean {
 	return Number.isInteger(percent) && percent >= 1 && percent <= 100;
 }
 
-/** Query string for GET /api/shadow/canary-rule. */
+/** Query string for GET /api/shadow/canary-rule. Without a priority the gateway uses its default. */
 export function buildShadowCanaryRuleQueryParams(params: GetShadowCanaryRuleParams): Record<string, string | number> {
-	return { experiment: params.experiment, candidate: params.candidate, weight: params.weight };
+	const query: Record<string, string | number> = { experiment: params.experiment, candidate: params.candidate, weight: params.weight };
+	if (params.priority !== undefined) query.priority = params.priority;
+	return query;
+}
+
+/** Priority the gateway gives a canary rule when none is asked for. */
+export const SHADOW_CANARY_BASE_PRIORITY = 10;
+
+/** Lowest priority from the canary default up that no global routing rule holds; the store rejects two rules sharing one in a scope. */
+export function shadowCanaryPriority(rules: Pick<RoutingRule, "scope" | "priority">[], base = SHADOW_CANARY_BASE_PRIORITY): number {
+	const taken = new Set(rules.filter((rule) => rule.scope === "global").map((rule) => rule.priority));
+	let priority = base;
+	while (taken.has(priority)) priority++;
+	return priority;
+}
+
+/** The rule an earlier promotion of the same pair created: the gateway names canaries per pair, and names are unique per scope. */
+export function findShadowCanaryRule<T extends Pick<RoutingRule, "name" | "scope" | "scope_id">>(
+	rules: T[],
+	canary: Pick<ShadowCanaryRule, "name" | "scope">,
+): T | undefined {
+	return rules.find((rule) => rule.name === canary.name && rule.scope === canary.scope && !rule.scope_id);
+}
+
+/** Share of a rule's traffic that goes to the model (0 to 1). */
+export function shadowCandidateShare(targets: Pick<RoutingTarget, "provider" | "model" | "weight">[], model: ShadowModelRef): number {
+	return targets
+		.filter((target) => (target.provider ?? "") === (model.provider ?? "") && target.model === model.model)
+		.reduce((share, target) => share + target.weight, 0);
+}
+
+/** The existing canary as a ramp leaves it: the preview's split and description, on the rule's own condition, priority and state. */
+export function shadowCanaryRampRule(
+	existing: Pick<RoutingRule, "name" | "cel_expression" | "scope" | "priority" | "enabled">,
+	preview: ShadowCanaryRule,
+): ShadowCanaryRule {
+	return {
+		...preview,
+		name: existing.name,
+		cel_expression: existing.cel_expression,
+		scope: existing.scope,
+		priority: existing.priority,
+		enabled: existing.enabled,
+	};
+}
+
+/** Update body for ramping an existing canary: only the split and the description that states it change. */
+export function shadowCanaryRuleToUpdateRequest(rule: ShadowCanaryRule): UpdateRoutingRuleRequest {
+	return {
+		description: rule.description,
+		targets: rule.targets.map((target) => ({ provider: target.provider, model: target.model, weight: target.weight })),
+	};
 }
 
 /** Maps the server-built canary rule onto the routing rules create body. */

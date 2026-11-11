@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetShadowRecordsQuery } from "@/lib/store/apis/shadowApi";
 import type { ShadowOutcomeFilter, ShadowPairSummary } from "@/lib/types/shadow";
 import { showLoadError } from "@/lib/utils/loadError";
-import { formatShadowNumber, shadowModelRefLabel } from "@/lib/utils/shadow";
+import { formatShadowNumber, shadowModelRefLabel, shadowPairKey } from "@/lib/utils/shadow";
 import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,39 +23,6 @@ interface ShadowDisagreementsSheetProps {
 
 export function ShadowDisagreementsSheet({ pair, open, onOpenChange }: ShadowDisagreementsSheetProps) {
 	const { t } = useTranslation("models", { keyPrefix: "shadow.records" });
-	const { t: tc } = useTranslation("common");
-	const [outcome, setOutcome] = useState<ShadowOutcomeFilter>("fail");
-	const [offset, setOffset] = useState(0);
-
-	const candidate = pair ? shadowModelRefLabel(pair.candidate) : "";
-	const experiment = pair?.experiment ?? "";
-
-	// Each pair opens on its disagreements, first page.
-	useEffect(() => {
-		setOutcome("fail");
-		setOffset(0);
-	}, [experiment, candidate]);
-
-	const { data, error, isLoading, isFetching, refetch } = useGetShadowRecordsQuery(
-		{ experiment, candidate, outcome, limit: PAGE_SIZE, offset },
-		{ skip: !open || !pair, refetchOnMountOrArgChange: true },
-	);
-
-	const records = data?.records ?? [];
-	const total = data?.total ?? 0;
-	const from = total === 0 ? 0 : offset + 1;
-	const to = Math.min(offset + records.length, total);
-
-	// A reset or a shrinking filter can leave the offset past the end; step back to the last page.
-	useEffect(() => {
-		if (!data || offset === 0 || offset < total) return;
-		setOffset(total === 0 ? 0 : Math.floor((total - 1) / PAGE_SIZE) * PAGE_SIZE);
-	}, [data, offset, total]);
-
-	const handleOutcomeChange = (value: string) => {
-		setOutcome(value as ShadowOutcomeFilter);
-		setOffset(0);
-	};
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
@@ -65,90 +32,134 @@ export function ShadowDisagreementsSheet({ pair, open, onOpenChange }: ShadowDis
 						<SheetTitle className="text-base">{t("title")}</SheetTitle>
 						{pair && (
 							<SheetDescription className="truncate font-mono text-xs">
-								{t("pairLine", { experiment: pair.experiment, source: shadowModelRefLabel(pair.source), candidate })}
+								{t("pairLine", {
+									experiment: pair.experiment,
+									source: shadowModelRefLabel(pair.source),
+									candidate: shadowModelRefLabel(pair.candidate),
+								})}
 							</SheetDescription>
 						)}
 					</div>
 				</SheetHeader>
+				{/* Radix mounts the content on each opening and the key covers a pair switched while it
+				    animates out, so every view starts on the disagreements, first page, and its first
+				    request already carries that filter. */}
+				{pair && <DisagreementsList key={shadowPairKey(pair)} pair={pair} />}
+			</SheetContent>
+		</Sheet>
+	);
+}
 
-				<div className="flex flex-wrap items-center justify-between gap-2">
-					<div className="flex items-center gap-2">
-						<Select value={outcome} onValueChange={handleOutcomeChange}>
-							<SelectTrigger size="sm" className="w-44" aria-label={t("outcomeFilter")} data-testid="shadow-outcome-filter">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{OUTCOME_FILTERS.map((value) => (
-									<SelectItem key={value} value={value} data-testid={`shadow-outcome-option-${value}`}>
-										{t(`filter.${value}`)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => void refetch()}
-							disabled={isFetching || !pair}
-							aria-label={t("refresh")}
-							data-testid="shadow-records-refresh-button"
-						>
-							<RefreshCw className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-						</Button>
-					</div>
+function DisagreementsList({ pair }: { pair: ShadowPairSummary }) {
+	const { t } = useTranslation("models", { keyPrefix: "shadow.records" });
+	const { t: tc } = useTranslation("common");
+	const [outcome, setOutcome] = useState<ShadowOutcomeFilter>("fail");
+	const [offset, setOffset] = useState(0);
+
+	const { currentData, error, isFetching, refetch } = useGetShadowRecordsQuery(
+		{ experiment: pair.experiment, candidate: shadowModelRefLabel(pair.candidate), outcome, limit: PAGE_SIZE, offset },
+		{ refetchOnMountOrArgChange: true },
+	);
+
+	// currentData, not data: data keeps the previous filter's or page's records until the new ones
+	// arrive, which would list them under the new filter and hide a failed load behind them.
+	const records = currentData?.records ?? [];
+	const total = currentData?.total ?? 0;
+	const from = total === 0 ? 0 : offset + 1;
+	const to = Math.min(offset + records.length, total);
+
+	// A reset or a shrinking filter can leave the offset past the end; step back to the last page.
+	useEffect(() => {
+		if (!currentData || offset === 0 || offset < total) return;
+		setOffset(total === 0 ? 0 : Math.floor((total - 1) / PAGE_SIZE) * PAGE_SIZE);
+	}, [currentData, offset, total]);
+
+	const handleOutcomeChange = (value: string) => {
+		setOutcome(value as ShadowOutcomeFilter);
+		setOffset(0);
+	};
+
+	return (
+		<>
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<div className="flex items-center gap-2">
+					<Select value={outcome} onValueChange={handleOutcomeChange}>
+						<SelectTrigger size="sm" className="w-44" aria-label={t("outcomeFilter")} data-testid="shadow-outcome-filter">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{OUTCOME_FILTERS.map((value) => (
+								<SelectItem key={value} value={value} data-testid={`shadow-outcome-option-${value}`}>
+									{t(`filter.${value}`)}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => void refetch()}
+						disabled={isFetching}
+						aria-label={t("refresh")}
+						data-testid="shadow-records-refresh-button"
+					>
+						<RefreshCw className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+					</Button>
+				</div>
+				{currentData && (
 					<span className="text-muted-foreground text-xs" data-testid="shadow-records-total">
 						{t("total", { count: total, formatted: formatShadowNumber(total) })}
 					</span>
-				</div>
-
-				<div className="-mx-4 mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto px-4 md:-mx-6 md:px-6">
-					{showLoadError(error, data) ? (
-						<LoadErrorView entity={t("entity")} error={error} onRetry={() => void refetch()} testId="shadow-records-load-error" />
-					) : isLoading ? (
-						<div className="space-y-2">
-							<Skeleton className="h-16 w-full" />
-							<Skeleton className="h-16 w-full" />
-							<Skeleton className="h-16 w-full" />
-						</div>
-					) : records.length === 0 ? (
-						<p className="text-muted-foreground py-12 text-center text-sm" data-testid="shadow-records-empty">
-							{outcome === "fail" ? t("emptyFail") : t("empty")}
-						</p>
-					) : (
-						records.map((record) => <ShadowRecordItem key={record.id} record={record} />)
-					)}
-				</div>
-
-				{total > PAGE_SIZE && (
-					<div className="flex items-center justify-between gap-2 border-t pt-3">
-						<span className="text-muted-foreground text-xs">
-							{t("range", { from: formatShadowNumber(from), to: formatShadowNumber(to), total: formatShadowNumber(total) })}
-						</span>
-						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-								disabled={offset === 0 || isFetching}
-								data-testid="shadow-records-prev-button"
-							>
-								<ChevronLeft className="h-4 w-4" />
-								{tc("prev")}
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setOffset(offset + PAGE_SIZE)}
-								disabled={offset + PAGE_SIZE >= total || isFetching}
-								data-testid="shadow-records-next-button"
-							>
-								{tc("next")}
-								<ChevronRight className="h-4 w-4" />
-							</Button>
-						</div>
-					</div>
 				)}
-			</SheetContent>
-		</Sheet>
+			</div>
+
+			<div className="-mx-4 mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto px-4 md:-mx-6 md:px-6">
+				{showLoadError(error, currentData) ? (
+					<LoadErrorView entity={t("entity")} error={error} onRetry={() => void refetch()} testId="shadow-records-load-error" />
+				) : isFetching && !currentData ? (
+					<div className="space-y-2">
+						<Skeleton className="h-16 w-full" />
+						<Skeleton className="h-16 w-full" />
+						<Skeleton className="h-16 w-full" />
+					</div>
+				) : records.length === 0 ? (
+					<p className="text-muted-foreground py-12 text-center text-sm" data-testid="shadow-records-empty">
+						{outcome === "fail" ? t("emptyFail") : t("empty")}
+					</p>
+				) : (
+					records.map((record) => <ShadowRecordItem key={record.id} record={record} />)
+				)}
+			</div>
+
+			{total > PAGE_SIZE && (
+				<div className="flex items-center justify-between gap-2 border-t pt-3">
+					<span className="text-muted-foreground text-xs">
+						{t("range", { from: formatShadowNumber(from), to: formatShadowNumber(to), total: formatShadowNumber(total) })}
+					</span>
+					<div className="flex items-center gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+							disabled={offset === 0 || isFetching}
+							data-testid="shadow-records-prev-button"
+						>
+							<ChevronLeft className="h-4 w-4" />
+							{tc("prev")}
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setOffset(offset + PAGE_SIZE)}
+							disabled={offset + PAGE_SIZE >= total || isFetching}
+							data-testid="shadow-records-next-button"
+						>
+							{tc("next")}
+							<ChevronRight className="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
+			)}
+		</>
 	);
 }
