@@ -9,8 +9,8 @@
 # BIFROST_REF  upstream commit to build on (default: the pinned one below)
 #
 # Needs git, Go 1.27+, a C compiler (the SQLite config store uses cgo), and
-# Node 20+ with npm unless SKIP_UI=1. Re-running is safe: patches that are
-# already applied are skipped.
+# unless SKIP_UI=1, Node with npm at the version in ui/.nvmrc (26 at the pinned
+# commit). Re-running is safe: patches that are already applied are skipped.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

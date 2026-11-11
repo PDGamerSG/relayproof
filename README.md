@@ -1,5 +1,9 @@
 # RelayProof — hackathon research and Claude handoff
 
+> **Implemented project: [Bifrost Shadow](bifrost-shadow/README.md).** After further research the
+> team built shadow traffic evaluation for Bifrost (PS04 contributor track) instead of the
+> RelayProof plan below. The research and plan in this file are kept for reference.
+
 **Recommendation: build a Bifrost upgrade and compatibility lab that turns a broken agent workflow into a small, replayable regression test.** Pair it with a narrowly focused stale-answer verifier for AI-generated API migration advice.
 
 Research date: **10 November 2026**. This directory contains a specification and implementation plan, **not an implemented application**. Proposed features, budgets, scores, and milestones below are design decisions, not measured product results.
