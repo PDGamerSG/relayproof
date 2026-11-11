@@ -1,0 +1,418 @@
+diff --git a/transports/bifrost-http/lib/validator_test.go b/transports/bifrost-http/lib/validator_test.go
+index dd064d3..fbc99cc 100644
+--- a/transports/bifrost-http/lib/validator_test.go
++++ b/transports/bifrost-http/lib/validator_test.go
+@@ -17,6 +17,7 @@ import (
+ 	"github.com/maximhq/bifrost/core/schemas"
+ 	"github.com/maximhq/bifrost/framework/vectorstore"
+ 	"github.com/maximhq/bifrost/framework/warp"
++	"github.com/maximhq/bifrost/plugins/shadow"
+ 	"github.com/santhosh-tekuri/jsonschema/v6"
+ )
+ 
+@@ -279,6 +280,128 @@ func TestValidateConfigSchema_WarpSectionCoversEverySetting(t *testing.T) {
+ 	}
+ }
+ 
++// shadowPluginConfig wraps a shadow plugin config object in a full config document.
++func shadowPluginConfig(config string) []byte {
++	return []byte(`{"plugins": [{"enabled": true, "name": "shadow", "config": ` + config + `}]}`)
++}
++
++func TestValidateConfigSchema_ShadowPlugin(t *testing.T) {
++	schemaData := loadLocalSchema(t)
++	valid := `{
++		"sample_rate": 0.25,
++		"experiments": [{
++			"name": "cost-down",
++			"source": {"provider": "openai", "model": "gpt-4o"},
++			"candidates": [{"provider": "openai", "model": "gpt-4o-mini"}],
++			"sample_rate": 0.5
++		}],
++		"judge": {"provider": "openai", "model": "gpt-4o", "sample_rate": 0.5},
++		"embedding": {"provider": "openai", "model": "text-embedding-3-small"},
++		"max_concurrency": 4, "queue_size": 256, "timeout_seconds": 30,
++		"daily_budget_usd": 10, "virtual_keys": ["vk-prod"], "max_records": 1000,
++		"store_payloads": false, "max_payload_chars": 4000, "persist_path": "shadow.jsonl",
++		"pricing": {"openai/gpt-4o-mini": {"input_per_million": 0.15, "output_per_million": 0.6}},
++		"thresholds": {"min_samples": 50, "min_agreement": 0.95, "max_error_rate": 0.02,
++			"quality_tolerance": 0.5, "lexical_threshold": 0.5, "semantic_threshold": 0.9}
++	}`
++	if err := ValidateConfigSchema(shadowPluginConfig(valid), schemaData); err != nil {
++		t.Fatalf("expected valid shadow config to pass, got: %v", err)
++	}
++	wildcard := `{"experiments": [{"source": {"model": "*"}, "candidates": [{"provider": "anthropic", "model": "claude-haiku"}]}]}`
++	if err := ValidateConfigSchema(shadowPluginConfig(wildcard), schemaData); err != nil {
++		t.Fatalf("expected wildcard source to pass, got: %v", err)
++	}
++
++	invalid := map[string]string{
++		"missing config":        `null`,
++		"missing experiments":   `{"sample_rate": 0.1}`,
++		"empty experiments":     `{"experiments": []}`,
++		"no candidates":         `{"experiments": [{"source": {"model": "gpt-4o"}, "candidates": []}]}`,
++		"candidate needs model": `{"experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai"}]}]}`,
++		"sample rate above 1":   `{"sample_rate": 1.5, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"zero sample rate":      `{"sample_rate": 0, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"unknown field":         `{"sampel_rate": 0.1, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"judge needs model":     `{"judge": {"provider": "openai"}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"negative price":        `{"pricing": {"m": {"input_per_million": -1}}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"agreement above 1":     `{"thresholds": {"min_agreement": 2}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++	}
++	for name, config := range invalid {
++		if err := ValidateConfigSchema(shadowPluginConfig(config), schemaData); err == nil {
++			t.Errorf("%s: expected schema validation to fail", name)
++		}
++	}
++}
++
++// TestValidateConfigSchema_ShadowCoversEverySetting keeps the schema and shadow.Config in step.
++func TestValidateConfigSchema_ShadowCoversEverySetting(t *testing.T) {
++	var schema struct {
++		Properties struct {
++			Plugins struct {
++				Items struct {
++					AllOf []struct {
++						If struct {
++							Properties struct {
++								Name struct {
++									Const string `json:"const"`
++								} `json:"name"`
++							} `json:"properties"`
++						} `json:"if"`
++						Then struct {
++							Properties struct {
++								Config struct {
++									Properties map[string]struct {
++										Properties map[string]json.RawMessage `json:"properties"`
++									} `json:"properties"`
++								} `json:"config"`
++							} `json:"properties"`
++						} `json:"then"`
++					} `json:"allOf"`
++				} `json:"items"`
++			} `json:"plugins"`
++		} `json:"properties"`
++	}
++	if err := json.Unmarshal(loadLocalSchema(t), &schema); err != nil {
++		t.Fatalf("failed to parse config.schema.json: %v", err)
++	}
++	var declared map[string]struct {
++		Properties map[string]json.RawMessage `json:"properties"`
++	}
++	for _, entry := range schema.Properties.Plugins.Items.AllOf {
++		if entry.If.Properties.Name.Const == shadow.PluginName {
++			declared = entry.Then.Properties.Config.Properties
++		}
++	}
++	if declared == nil {
++		t.Fatal("config.schema.json has no plugins entry for shadow")
++	}
++	checkFields := func(scope string, goType reflect.Type, schemaProps map[string]json.RawMessage) {
++		fields := map[string]bool{}
++		for i := range goType.NumField() {
++			name, _, _ := strings.Cut(goType.Field(i).Tag.Get("json"), ",")
++			if name == "" || name == "-" {
++				continue
++			}
++			fields[name] = true
++			if _, ok := schemaProps[name]; !ok {
++				t.Errorf("%s field %q is missing from config.schema.json", scope, name)
++			}
++		}
++		for name := range schemaProps {
++			if !fields[name] {
++				t.Errorf("config.schema.json declares %s.%s, which the plugin does not take", scope, name)
++			}
++		}
++	}
++	top := map[string]json.RawMessage{}
++	for name := range declared {
++		top[name] = nil
++	}
++	checkFields("shadow.Config", reflect.TypeOf(shadow.Config{}), top)
++	checkFields("shadow.Thresholds", reflect.TypeOf(shadow.Thresholds{}), declared["thresholds"].Properties)
++	checkFields("shadow.JudgeConfig", reflect.TypeOf(shadow.JudgeConfig{}), declared["judge"].Properties)
++	checkFields("shadow.EmbeddingConfig", reflect.TypeOf(shadow.EmbeddingConfig{}), declared["embedding"].Properties)
++}
++
+ func TestValidateConfigSchema_EmptyObject(t *testing.T) {
+ 	// Empty object should be valid (all properties are optional)
+ 	emptyConfig := `{}`
+diff --git a/transports/config.schema.json b/transports/config.schema.json
+index 69fd51a..670730b 100644
+--- a/transports/config.schema.json
++++ b/transports/config.schema.json
+@@ -4248,7 +4248,7 @@
+           },
+           "name": {
+             "type": "string",
+-            "description": "Name of the plugin (built-in: telemetry, prompts, logging, governance, maxim, semantic_cache, otel, or custom plugin name)"
++            "description": "Name of the plugin (built-in: telemetry, prompts, logging, governance, maxim, semantic_cache, otel, shadow, or custom plugin name)"
+           },
+           "config": {
+             "type": "object",
+@@ -5423,6 +5423,263 @@
+                 }
+               }
+             }
++          },
++          {
++            "if": {
++              "properties": {
++                "name": {
++                  "const": "shadow"
++                }
++              }
++            },
++            "then": {
++              "required": [
++                "config"
++              ],
++              "properties": {
++                "config": {
++                  "type": "object",
++                  "description": "Configuration for the shadow traffic plugin. Mirrors a sample of live chat traffic to candidate models off the request path, scores each candidate against the primary answer, and reports per-candidate readiness, cost savings and latency.",
++                  "required": [
++                    "experiments"
++                  ],
++                  "properties": {
++                    "sample_rate": {
++                      "type": "number",
++                      "exclusiveMinimum": 0,
++                      "maximum": 1,
++                      "default": 0.1,
++                      "description": "Share of eligible requests mirrored, in (0, 1]. An experiment can override it. The x-bf-shadow request header forces (force) or skips (off) mirroring per request."
++                    },
++                    "experiments": {
++                      "type": "array",
++                      "minItems": 1,
++                      "description": "Source model to candidate models mappings",
++                      "items": {
++                        "type": "object",
++                        "required": [
++                          "source",
++                          "candidates"
++                        ],
++                        "properties": {
++                          "name": {
++                            "type": "string",
++                            "description": "Unique experiment name. Defaults to \"<source> vs <candidates>\""
++                          },
++                          "source": {
++                            "type": "object",
++                            "required": [
++                              "model"
++                            ],
++                            "properties": {
++                              "provider": {
++                                "type": "string",
++                                "description": "Provider of the primary model; empty matches any provider"
++                              },
++                              "model": {
++                                "type": "string",
++                                "description": "Primary model name, or \"*\" for every model"
++                              }
++                            },
++                            "additionalProperties": false
++                          },
++                          "candidates": {
++                            "type": "array",
++                            "minItems": 1,
++                            "items": {
++                              "type": "object",
++                              "required": [
++                                "provider",
++                                "model"
++                              ],
++                              "properties": {
++                                "provider": {
++                                  "type": "string",
++                                  "description": "Provider name, e.g. openai"
++                                },
++                                "model": {
++                                  "type": "string",
++                                  "description": "Model name"
++                                }
++                              },
++                              "additionalProperties": false
++                            },
++                            "description": "Models each sampled request is replayed against"
++                          },
++                          "sample_rate": {
++                            "type": "number",
++                            "exclusiveMinimum": 0,
++                            "maximum": 1,
++                            "description": "Overrides the plugin sample_rate for this experiment"
++                          }
++                        },
++                        "additionalProperties": false
++                      }
++                    },
++                    "judge": {
++                      "type": "object",
++                      "required": [
++                        "provider",
++                        "model"
++                      ],
++                      "description": "Optional LLM judge for pairwise quality scoring. Judge calls are internal requests billed to no virtual key.",
++                      "properties": {
++                        "provider": {
++                          "type": "string"
++                        },
++                        "model": {
++                          "type": "string"
++                        },
++                        "sample_rate": {
++                          "type": "number",
++                          "minimum": 0,
++                          "maximum": 1,
++                          "default": 1,
++                          "description": "Share of completed pairs that are judged"
++                        }
++                      },
++                      "additionalProperties": false
++                    },
++                    "embedding": {
++                      "type": "object",
++                      "required": [
++                        "provider",
++                        "model"
++                      ],
++                      "description": "Optional embedding model for semantic similarity between answers",
++                      "properties": {
++                        "provider": {
++                          "type": "string"
++                        },
++                        "model": {
++                          "type": "string"
++                        }
++                      },
++                      "additionalProperties": false
++                    },
++                    "max_concurrency": {
++                      "type": "integer",
++                      "minimum": 1,
++                      "default": 4,
++                      "description": "Concurrent shadow workers"
++                    },
++                    "queue_size": {
++                      "type": "integer",
++                      "minimum": 1,
++                      "default": 256,
++                      "description": "Pending shadow jobs; when full, new jobs are dropped and counted, never blocking live traffic"
++                    },
++                    "timeout_seconds": {
++                      "type": "integer",
++                      "minimum": 1,
++                      "default": 60,
++                      "description": "Timeout for each shadow, judge and embedding call"
++                    },
++                    "daily_budget_usd": {
++                      "type": "number",
++                      "minimum": 0,
++                      "description": "Daily cap on shadow, judge and embedding spend; 0 means unlimited"
++                    },
++                    "virtual_keys": {
++                      "type": "array",
++                      "items": {
++                        "type": "string"
++                      },
++                      "description": "Only mirror requests made with these virtual keys (ID, name or value); empty mirrors all"
++                    },
++                    "max_records": {
++                      "type": "integer",
++                      "minimum": 1,
++                      "default": 5000,
++                      "description": "Comparisons kept in memory (ring buffer)"
++                    },
++                    "store_payloads": {
++                      "type": "boolean",
++                      "default": true,
++                      "description": "Keep prompts and answers in records for the disagreement viewer; set false to keep only scores"
++                    },
++                    "max_payload_chars": {
++                      "type": "integer",
++                      "minimum": 1,
++                      "default": 8000,
++                      "description": "Truncation limit for stored prompts and answers"
++                    },
++                    "persist_path": {
++                      "type": "string",
++                      "description": "Optional JSONL file that records are appended to and reloaded from on start"
++                    },
++                    "pricing": {
++                      "type": "object",
++                      "additionalProperties": {
++                        "type": "object",
++                        "properties": {
++                          "input_per_million": {
++                            "type": "number",
++                            "minimum": 0,
++                            "description": "USD per million input tokens"
++                          },
++                          "output_per_million": {
++                            "type": "number",
++                            "minimum": 0,
++                            "description": "USD per million output tokens"
++                          }
++                        },
++                        "additionalProperties": false
++                      },
++                      "description": "Manual prices keyed by \"provider/model\" or \"model\"; they take precedence over the model catalog"
++                    },
++                    "thresholds": {
++                      "type": "object",
++                      "description": "Readiness rules",
++                      "properties": {
++                        "min_samples": {
++                          "type": "integer",
++                          "minimum": 1,
++                          "default": 20,
++                          "description": "Comparisons needed before a verdict"
++                        },
++                        "min_agreement": {
++                          "type": "number",
++                          "minimum": 0,
++                          "maximum": 1,
++                          "default": 0.9,
++                          "description": "Required 95% Wilson lower bound of the agreement rate"
++                        },
++                        "max_error_rate": {
++                          "type": "number",
++                          "minimum": 0,
++                          "maximum": 1,
++                          "default": 0.05,
++                          "description": "Maximum candidate error rate"
++                        },
++                        "quality_tolerance": {
++                          "type": "number",
++                          "minimum": 0,
++                          "default": 1,
++                          "description": "Judge points a candidate may trail the primary by and still pass"
++                        },
++                        "lexical_threshold": {
++                          "type": "number",
++                          "minimum": 0,
++                          "maximum": 1,
++                          "default": 0.6,
++                          "description": "Token-F1 needed to pass when no judge or embedding is configured"
++                        },
++                        "semantic_threshold": {
++                          "type": "number",
++                          "minimum": 0,
++                          "maximum": 1,
++                          "default": 0.85,
++                          "description": "Embedding cosine needed to pass when no judge is configured"
++                        }
++                      },
++                      "additionalProperties": false
++                    }
++                  },
++                  "additionalProperties": false
++                }
++              }
++            }
+           }
+         ],
+         "additionalProperties": false
