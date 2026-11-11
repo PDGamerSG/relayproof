@@ -92,7 +92,7 @@ type RoutingTarget struct {
 	Weight   float64 `json:"weight"`
 }
 
-// CanaryRule is a ready-to-POST body for /api/governance/routing-rules.
+// CanaryRule is a ready-to-POST body for /api/routing/rules.
 type CanaryRule struct {
 	Name          string          `json:"name"`
 	Description   string          `json:"description"`

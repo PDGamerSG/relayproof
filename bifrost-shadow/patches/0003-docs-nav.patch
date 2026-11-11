@@ -1,0 +1,12 @@
+diff --git a/docs/docs.json b/docs/docs.json
+index 8b57414..87d40ee 100644
+--- a/docs/docs.json
++++ b/docs/docs.json
+@@ -289,6 +289,7 @@
+               "features/drop-in-replacement",
+               "features/retries-and-fallbacks",
+               "features/complexity-router",
++              "features/shadow-traffic",
+               "features/warp",
+               "features/compat-plugin",
+               "features/keys-management",

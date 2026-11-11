@@ -124,7 +124,7 @@ func (h *ShadowHandler) resetRecords(ctx *fasthttp.RequestCtx) {
 	SendJSON(ctx, map[string]any{"message": "shadow records cleared"})
 }
 
-// getCanaryRule returns a routing-rule body for POST /api/governance/routing-rules.
+// getCanaryRule returns a routing-rule body for POST /api/routing/rules.
 // Query: experiment, candidate ("provider/model"), weight (0 < w <= 1, default 0.1).
 func (h *ShadowHandler) getCanaryRule(ctx *fasthttp.RequestCtx) {
 	p := h.plugin(ctx)
