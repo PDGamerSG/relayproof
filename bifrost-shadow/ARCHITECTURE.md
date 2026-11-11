@@ -19,7 +19,7 @@ Code references are to `plugins/shadow/` unless noted. Patches are against
 | The primary never waits for shadow work | Candidate, judge and embedding calls start only after the primary answer is complete (the final chunk for streams). The hand-off is a `select` with a `default` branch on a buffered channel, so it never blocks. `PostLLMHook` returns the response object it was given, and the stream-chunk hook passes chunks through. A sampled request pays for its own snapshot and hand-off: 7,890 ns and 31 allocations in `BenchmarkSampledRequest`. |
 | Bounded queue, drop on overflow | The queue is a channel of `queue_size` jobs (default 256) drained by `max_concurrency` workers (default 4). When it is full, the job is dropped and `counters.dropped` is incremented. Each internal call has a `timeout_seconds` deadline (default 60). |
 | Daily budget | `daily_budget_usd` caps candidate, judge and embedding spend per UTC day (0 means unlimited). It is checked in `PreLLMHook` before a request is snapshotted, and again in the worker before each job; skipped work is counted in `counters.budget_skipped`. Spend is priced from the `pricing` overrides first, then the model catalog (`CalculateCostForUsage`, wired in `patches/0001`). |
-| Per-request opt-out | The HTTP transport pre-hook reads `x-bf-shadow`. `off`, `false`, `0`, `no` or `skip` stop the request from being mirrored; `force`, `on`, `true`, `1` or `yes` mirror it regardless of the sample rate. A forced request must still match an experiment, pass the virtual-key allow-list and fit the budget. |
+| Per-request opt-out | The HTTP transport pre-hook reads `x-bf-shadow`. `off`, `false`, `0`, `no` or `skip` stop the request from being mirrored; `force`, `on`, `true`, `1` or `yes` mirror it regardless of the sample rate, but only when `allow_force_header` is on (off by default: shadow calls skip governance, so any caller could otherwise spend the shadow budget). A forced request must still match an experiment, pass the virtual-key allow-list and fit the budget. |
 | Virtual-key allow-list | With `virtual_keys` set, only requests whose governance virtual-key ID, virtual-key name, or raw `x-bf-vk` value is on the list are eligible. An empty list allows all traffic. |
 | Shadow calls are not user traffic | Workers call the Bifrost client with a context prepared by `bifrost.PrepareContextForInternalRequest`, the helper upstream plugins use for their own sub-requests. It skips the plugin pipeline, so a candidate call cannot be mirrored again or billed to the caller's virtual key, and it clears the caller's key-routing state. Each internal call gets its own `shadow-<uuid>` request ID. |
 | A failing candidate cannot crash the gateway | A panic inside a job is recovered and recorded as a candidate error. |
@@ -34,8 +34,10 @@ cache (`patches/0001`), so a cache hit short-circuits before the request is samp
 2. **Match and sample.** `PreLLMHook` runs for each chat completion attempt, streaming or not,
    after the existing routing has chosen the provider and model. It matches the experiments'
    `source`, applies the allow-list and the sample rate, checks the budget, and for a sampled
-   request serializes a snapshot of the messages, tools and parameters. The capture is stored in
-   the plugin under the request ID, and the request ID is remembered as a marker.
+   request serializes a snapshot of the messages, tools, parameters and `extra_params`, leaving
+   out tools MCP added to the request. The capture is stored in the plugin under the request ID,
+   claimed with a per-request token so two in-flight requests that share a caller-supplied ID
+   never pair one's prompt with the other's answer, and the request ID is remembered as a marker.
 3. **Collect.** `PostLLMHook` finds the capture by request ID. For streams it accumulates text,
    tool calls, the finish reason and usage under a mutex until `bifrost.IsFinalChunk`.
 4. **Hand off.** With the answer complete, the capture is deleted and one job per candidate goes
@@ -46,14 +48,16 @@ cache (`patches/0001`), so a cache hit short-circuits before the request is samp
    gateway runs LLM hooks on a child of the transport context
    (`TestShadowResponseHeaderAcrossContexts`).
 6. **Replay.** A worker decodes the snapshot, swaps in the candidate's provider and model, and
-   calls the candidate as an internal request.
+   calls the candidate as an internal request with empty MCP client and tool allow-lists: MCP
+   runs outside the plugin pipeline, so skipping plugins alone would not stop it.
 7. **Compare.** The pair gets token F1, length ratio and finish-reason agreement, plus tool-call
    matching and JSON-shape matching when they apply. With `embedding` set, both answers are
    embedded in one internal request and compared by cosine similarity. With `judge` set, a
    `judge.sample_rate` share of pairs goes to the judge model, with the candidate placed in slot
    A or B at random; the reply is mapped back to primary and candidate scores.
 8. **Store.** The worker prices the call, adds it to today's spend, and writes one record to the
-   store.
+   store, at most once per job: a panic anywhere in the job, pricing included, becomes a
+   candidate error, and a job whose calls were cancelled by shutdown is dropped.
 9. **Report.** `GET /api/shadow/summary` rebuilds the scorecards from the stored records on each
    call. That work is proportional to `max_records` and happens only when someone asks, never
    on the request path. The dashboard polls it every 5 seconds while the page is open.
@@ -66,8 +70,8 @@ cache (`patches/0001`), so a cache hit short-circuits before the request is samp
 | Markers (`sync.Map`) | request ID | One timestamp | One per sampled request until its headers are written | The response-headers hook, or the janitor after 10 minutes (Go SDK callers and requests that fail before headers never reach the hook) |
 | Job queue (buffered channel) | none | A reference to the snapshot, the prompt, the primary answer and usage | `queue_size` jobs | A worker takes the job |
 | Ring buffer | none | One record. With `store_payloads: true`, the prompt and both answer texts, each truncated to `max_payload_chars`; tool-call arguments are kept as returned | `max_records` (default 5,000) | Overwritten oldest-first when the ring wraps; cleared by reset |
-| JSONL file (optional) | none | One line per record | Not bounded: the file is append-only and is truncated only by reset | Reset. At startup only the last `max_records` lines stay in the ring buffer |
-| Traffic counters | experiment name | Count and first/last timestamps | One per experiment | Reset |
+| JSONL file (optional) | none | One line per record | `2 × max_records` lines: past that the file is rewritten (temp file and rename) with the newest `max_records` records | Compaction or reset. At startup only the last `max_records` lines stay in the ring buffer |
+| Traffic counters | experiment index | Count and first timestamp as atomics in a cache-line-padded slot, so eligible requests never take a lock | One per experiment | Reset |
 | Spend | none | One total for the current UTC day | One value | Rolls over at UTC midnight. Reset keeps it, so clearing results never lifts the budget |
 
 No stream-sized data is stored in `BifrostContext`; the context carries only the
@@ -117,16 +121,19 @@ recent `max_records` comparisons.
 
 1. **Build the rule.** `GET /api/shadow/canary-rule?experiment=…&candidate=provider/model&weight=w`
    (`BuildCanaryRule` in `api.go`) returns a body for the existing routing-rules API. `w` must be
-   in (0, 1] and defaults to 0.1. The rule matches the source model with a CEL expression such
+   between 0.0001 and 1 (NaN is rejected) and defaults to 0.1. The rule matches the source model with a CEL expression such
    as `provider == "openai" && model == "gpt-4o"`, and has two weighted targets: the source at
    `1 - w` and the candidate at `w` (only the candidate when `w` is 1). It is enabled, global in
-   scope, priority 10, and named after the pair. For a wildcard source, the most frequently
+   scope, priority 10 unless `priority` is passed, and named `Shadow canary: <source> ->
+   <candidate>`. For a wildcard source, the most frequently
    observed primary model for that pair is used, because a rule needs a concrete model; with no
    observed traffic yet the call returns 400. An unknown experiment or candidate returns 404.
 2. **Create it.** The plugin never writes routing rules itself. The dashboard's **Promote to
    canary** dialog previews the body, then creates it with the existing
    `POST /api/routing/rules` (the UI's routing-rules mutation) and links to the **Routing Rules**
-   page. `examples/shadow-demo/run.sh` does the same with `curl`, and its error message notes
+   page. It reads the existing rules first: a new rule gets the first free global priority, and
+   when the pair already has a canary rule the dialog updates that rule's share with
+   `PUT /api/routing/rules/{rule_id}` instead of creating a second one. `examples/shadow-demo/run.sh` does the same with `curl`, and its error message notes
    that this API needs the config store and the governance plugin.
 3. **Readiness is advisory in the product.** The API and the dialog accept any candidate; the
    dialog shows a caution with the verdict reason when the candidate is not `ready`.

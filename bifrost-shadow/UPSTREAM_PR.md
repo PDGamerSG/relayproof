@@ -60,7 +60,7 @@ New test files sit next to new source files only. Tests for existing code go int
 | Change | Files | What |
 |---|---|---|
 | Plugin registration and wiring | `transports/bifrost-http/lib/config.go`, `transports/bifrost-http/server/plugins.go`, `transports/bifrost-http/server/server.go`, `transports/go.mod` | Adds `shadow` to the built-in plugin names and to `loadBuiltinPlugin`. Registers it only when its config is present and enabled, at built-in order 10, after the semantic cache (a cache hit short-circuits before sampling); otherwise marks it disabled. `wireShadowPlugin` runs on bootstrap and on plugin reload and passes the client's `ChatCompletionRequest` and `EmbeddingRequest` plus a price function backed by `ModelCatalog.CalculateCostForUsage`. The handler resolves the plugin per request, like the cache handler, so enabling or reloading through `/api/plugins` needs no restart. `go.mod` requires `plugins/shadow v0.1.0` with a `replace` to `../plugins/shadow` until the module is tagged. |
-| Config schema | `transports/config.schema.json`, `transports/bifrost-http/lib/validator_test.go` | A `name: "shadow"` branch in the plugins `allOf` describing every config field with its default and range, `shadow` added to the built-in names in the plugin `name` description, and two tests: `TestValidateConfigSchema_ShadowPlugin` (a full valid config, a wildcard source, and eleven malformed configs that must fail) and `TestValidateConfigSchema_ShadowCoversEverySetting` (by reflection, every field of `shadow.Config`, `Thresholds`, `JudgeConfig` and `EmbeddingConfig` is in the schema and nothing else is). |
+| Config schema | `transports/config.schema.json`, `transports/bifrost-http/lib/validator_test.go` | A `name: "shadow"` branch in the plugins `allOf` describing every config field with its default and range, `shadow` added to the built-in names in the plugin `name` description, and two tests: `TestValidateConfigSchema_ShadowPlugin` (a full valid config, a wildcard source, and twelve malformed configs that must fail) and `TestValidateConfigSchema_ShadowCoversEverySetting` (by reflection, every field of `shadow.Config`, `Thresholds`, `JudgeConfig` and `EmbeddingConfig` is in the schema and nothing else is). |
 | Docs navigation | `docs/docs.json` | Adds `features/shadow-traffic` after `features/complexity-router`. |
 | Dashboard API plumbing | `ui/lib/store/apis/baseApi.ts`, `ui/lib/store/apis/index.ts` | `ShadowSummary` and `ShadowRecords` tag types (invalidated together on reset) and the `shadowApi` export. |
 | Dashboard page entry and strings | `ui/components/navigation/navItems.tsx`, `ui/lib/types/schemas.ts`, `ui/locales/{de,en,es,fr,it,ja,ko,pt,ru,zh-CN,zh-TW}/{models,shell}.json` | Sidebar entry **Models → Shadow Traffic** (`FlaskConical` icon, shown with the same access check as Routing Rules), the zod schema for the promote dialog's whole-percent weight (1 to 100), and the page's strings in all 11 UI languages. |
@@ -98,13 +98,22 @@ Minimal `config.json`:
 | `max_concurrency`, `queue_size`, `timeout_seconds` | `4`, `256`, `60` | Worker pool, pending jobs, per-call timeout |
 | `daily_budget_usd` | `0` (unlimited) | Candidate, judge and embedding spend per UTC day |
 | `virtual_keys` | all | Mirror only requests made with these virtual keys (ID, name or value) |
+| `allow_force_header` | `false` | Honour `x-bf-shadow: force` (see below) |
 | `max_records`, `store_payloads`, `max_payload_chars`, `persist_path` | `5000`, `true`, `8000`, none | Retention and privacy |
 | `pricing` | catalog | Manual prices keyed by `provider/model` or `model`; they take precedence over the catalog |
 | `thresholds` | `min_samples` 20, `min_agreement` 0.9, `max_error_rate` 0.05, `quality_tolerance` 1.0, `semantic_threshold` 0.85, `lexical_threshold` 0.6 | Readiness |
 
-Per-request control: `x-bf-shadow: off` never mirrors a request, `x-bf-shadow: force` mirrors
+Per-request control: `x-bf-shadow: off` never mirrors a request. `x-bf-shadow: force` mirrors
 it regardless of the sample rate (it must still match an experiment, the allow-list and the
-budget). Responses to mirrored requests carry `x-bf-shadow: sampled`.
+budget), but only with `allow_force_header: true`: shadow calls skip governance, so a force
+header any caller can send would be spend on demand. Responses to mirrored requests carry
+`x-bf-shadow: sampled`.
+
+Shadow calls and MCP: MCP adds its tools to a request before plugin hooks run, and its agent
+loop runs outside the plugin pipeline. The replay therefore drops the tools MCP added (client,
+connect and code-mode tools; the caller's own tools stay), and every candidate, judge and
+embedding call sets empty MCP client and tool allow-lists, so no MCP tool runs on a shadow
+call. `extra_params` reach the candidate when the caller opted into passing them through.
 
 API: `GET /api/shadow/summary`, `GET /api/shadow/records`, `GET /api/shadow/records/{id}`,
 `DELETE /api/shadow/records` (audited; keeps today's spend so a reset never lifts the budget),
@@ -156,8 +165,8 @@ handler (management API, not inference), and the dashboard page (not on the requ
 | Markers (`sync.Map`) | request ID | One `time.Time` | One per sampled request until its headers are written | Response-headers hook, or the janitor after 10 minutes (Go SDK callers, requests that fail before headers) |
 | Job queue | none | Snapshot reference, prompt, primary answer, usage | `queue_size` | Taken by a worker |
 | Ring buffer | none | One record; with `store_payloads`, prompt and both answer texts truncated to `max_payload_chars` (tool-call arguments kept as returned) | `max_records` | Overwritten oldest-first; cleared by reset |
-| JSONL file (opt-in) | none | One line per record | Unbounded on disk: append-only, truncated only by reset | Reset |
-| Traffic counters | experiment name | Count and two timestamps | Number of experiments | Reset |
+| JSONL file (opt-in) | none | One line per record | Rewritten with the newest `max_records` records once it holds twice that many lines, so at most `2 × max_records` lines on disk and on replay | Compaction or reset |
+| Traffic counters | experiment index | Three atomics in a cache-line-padded slot | Number of experiments | Reset |
 
 Nothing stream-sized is stored in `BifrostContext`; the context carries only the parsed
 `x-bf-shadow` mode.
@@ -168,13 +177,14 @@ From the verification log (`TESTING.md` in the contribution repository):
 
 | Suite | Command | Platform | Result |
 |---|---|---|---|
-| Plugin (42 tests) | `cd plugins/shadow && go test -count=5 ./...` | windows/amd64 | pass, 5 consecutive runs |
-| Plugin, race detector | `go test -race -count=3 ./...` | linux/amd64 | pass |
-| HTTP handler (6 tests) | `cd transports && go test -race -count=2 -run Shadow ./bifrost-http/handlers/` | linux/amd64 | pass |
+| Plugin (64 tests) | `cd plugins/shadow && go test -count=3 ./...` | windows/amd64 | pass |
+| Plugin under CPU load | four test binaries at once, each `-test.count=3 -test.cpu=1,4` | windows/amd64 | pass |
+| Plugin, race detector | `go test -race -count=2 ./...` | linux/amd64 | pass |
+| HTTP handler (9 tests) | `cd transports && go test -race -count=2 -run Shadow ./bifrost-http/handlers/` | linux/amd64 | pass |
 | Config schema (2 tests) | `go test -run TestValidateConfigSchema_Shadow ./bifrost-http/lib/` | windows/amd64, linux/amd64 | pass |
 | Vet | `go vet` on `plugins/shadow` and `bifrost-http/server`, `handlers`, `lib` | windows/amd64 | clean |
 | Demo tools | `cd examples/shadow-demo && GOWORK=off go vet ./... && go test ./...` | windows/amd64 | pass |
-| Dashboard helpers (22 tests) | `cd ui && npx vitest run lib/utils/shadow.test.ts` | windows/amd64, linux/amd64 | pass |
+| Dashboard helpers (31 tests) | `cd ui && npx vitest run lib/utils/shadow.test.ts` | windows/amd64, linux/amd64 | pass |
 | Dashboard types | `cd ui && npm run typecheck` | windows/amd64 | pass |
 | Dashboard strings | `node scripts/i18nCheck.mjs` scoped to the new files | windows/amd64 | exit 0, all 10 translated catalogs in parity with `en` |
 | Dashboard build | `cd ui && npm run build` | windows/amd64, linux/amd64 | pass |
@@ -183,8 +193,16 @@ The plugin tests cover sampling and per-experiment rates, the `x-bf-shadow` head
 directions, streaming accumulation up to the final chunk, skipping cache hits, failed primaries
 and a candidate equal to the served model, candidate errors and panics, judge parsing with
 randomized order, budget exhaustion, queue overflow, stale-capture and marker sweeping, JSONL
-persistence with torn lines, reset, verdicts and Wilson bounds, canary rules including wildcard
-sources, and pricing overrides.
+persistence with torn lines and compaction, reset, verdicts and Wilson bounds, canary rules
+including wildcard sources, weight bounds and priority, pricing overrides, MCP isolation, the
+opt-in force header, request IDs shared by concurrent requests, streamed refusals,
+`extra_params`, explicit zero thresholds, panics in pricing and storage, and shutdown with jobs
+in flight.
+
+A code review pass after the first version found more defects, from a primary answer blanked
+before scoring with `store_payloads: false` to MCP tools reaching the replay; each is fixed with
+a regression test, and `TESTING.md` lists them. The dashboard E2E suite found one more: a second
+promote of the same pair failed with HTTP 409 because every canary rule had priority 10.
 
 Red before green, for the two bugs found while checking the running gateway and dashboard:
 
@@ -267,8 +285,8 @@ worker and the mock upstream in the E2E environment; that is a follow-up.
 ## Limitations and follow-ups
 
 - Chat completions only. Follow-up: the Responses API.
-- Records are in memory on each node, optionally appended to a JSONL file that is not rotated.
-  In a cluster each node reports on its own traffic. Follow-ups: rotation, and a shared store
+- Records are in memory on each node, optionally appended to a JSONL file that is compacted
+  in place. In a cluster each node reports on its own traffic. Follow-up: a shared store
   through the config or log store.
 - Candidates are compared with the primary, not with ground truth. Tool calls are compared,
   never executed, and multi-turn agents are evaluated one turn at a time. Only the first choice

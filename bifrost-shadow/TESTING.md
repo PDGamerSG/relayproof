@@ -7,13 +7,14 @@ below was observed, not estimated. Base: `maximhq/bifrost@ed62e4b`, Go 1.27.4, N
 
 | Suite | Command | Platform | Result |
 |---|---|---|---|
-| Plugin (42 tests) | `cd plugins/shadow && go test -count=5 ./...` | windows/amd64 | pass, 5 consecutive runs |
-| Plugin, race detector | `go test -race -count=3 ./...` | linux/amd64 (golang:1.27-bookworm) | pass (rerun after the reset fix below) |
-| HTTP handler (6 tests) | `cd transports && go test -race -count=2 -run Shadow ./bifrost-http/handlers/` | linux/amd64 | pass |
+| Plugin (64 tests) | `cd plugins/shadow && go test -count=3 ./...` | windows/amd64 | pass |
+| Plugin under CPU load | four test binaries at once, each `-test.count=3 -test.cpu=1,4` | windows/amd64, 32 threads | pass (after the queue-test fix below) |
+| Plugin, race detector | `go test -race -count=2 ./...` | linux/amd64 (golang:1.27-bookworm) | pass (rerun after the core fixes below) |
+| HTTP handler (9 tests) | `cd transports && go test -race -count=2 -run Shadow ./bifrost-http/handlers/` | linux/amd64 | pass |
 | Config schema (2 tests) | `go test -run TestValidateConfigSchema_Shadow ./bifrost-http/lib/` | windows/amd64, linux/amd64 | pass |
 | Vet | `go vet` on `plugins/shadow`, `bifrost-http/server`, `handlers`, `lib` | windows/amd64 | clean |
 | Demo tools | `cd examples/shadow-demo && GOWORK=off go vet ./... && go test ./...` | windows/amd64 | pass (`checkReady`) |
-| Dashboard helpers (22 tests) | `cd ui && npx vitest run lib/utils/shadow.test.ts` | windows/amd64, linux/amd64 | pass |
+| Dashboard helpers (31 tests) | `cd ui && npx vitest run lib/utils/shadow.test.ts` | windows/amd64, linux/amd64 | pass |
 | Dashboard types | `cd ui && npm run typecheck` | windows/amd64 | pass |
 | Dashboard strings | `node scripts/i18nCheck.mjs app/workspace/shadow components/navigation lib/utils/shadow.ts lib/store/apis/shadowApi.ts lib/types/shadow.ts` | windows/amd64 | exit 0, all 10 translated catalogs in parity with `en` |
 | Dashboard build | `cd ui && npm run build` | windows/amd64, linux/amd64 | pass |
@@ -24,10 +25,13 @@ up to the final chunk, cache hits and failed primaries being skipped, candidate 
 served model being skipped, candidate errors and panics recorded as failures, judge parsing
 with randomized order, budget exhaustion, queue overflow, stale-capture and marker sweeping,
 JSONL persistence with torn lines, reset (including the collection window and kept spend),
-verdicts and Wilson bounds, canary rule generation (including wildcard sources), and pricing
-overrides.
+verdicts and Wilson bounds, canary rule generation (including wildcard sources, weight
+bounds and priority), and pricing overrides. Since the code review below they also cover MCP
+isolation of shadow calls, the opt-in force header, request IDs shared by concurrent requests,
+streamed refusals, `extra_params`, explicit zero thresholds, panics in pricing and storage,
+shutdown with jobs in flight, and compaction of the JSONL file.
 
-The schema tests reject eleven malformed configs and check by reflection that every field of
+The schema tests reject twelve malformed configs and check by reflection that every field of
 `shadow.Config`, `Thresholds`, `JudgeConfig` and `EmbeddingConfig` is in `config.schema.json`
 and nothing else is.
 
@@ -49,6 +53,18 @@ Pre-existing upstream failures on Windows, with and without this change, not rel
 | End-to-end run with a config store | Demo traffic got HTTP 401/403 (inference auth on, `/api` locked behind a setup token) | Demo config and scripts handle both |
 | Dashboard check of Reset | Reset zeroed the counters but `started_at` ("Collecting since") kept the plugin start time | `started_at` is an atomic restarted by `Reset`; `TestResetRestartsCollectionWindowAndKeepsSpend` failed before the fix. Today's spend is kept on purpose (a reset must not lift the daily budget) and the dialog and docs now say so |
 | Dashboard check of disagreements | The judge's reason says "response A is incorrect" in a random order, so it could read as blaming the primary | The record view states which label the candidate had (`candidate_shown_first`); checked against all 42 judged failures in one run: 42 consistent |
+| Code review | With `store_payloads: false` the primary answer was blanked before scoring, so every pair was compared with an empty answer | Only what is stored is left out; `TestShadowStorePayloadsOff` |
+| Code review | MCP adds its tools before plugin hooks run, so the replay carried them, and MCP's agent loop could run a tool on a shadow call | Empty MCP allow-lists on every internal call, MCP-added tools dropped from the replay; `TestInternalContextExcludesMCP`, `TestSnapshotDropsMCPInjectedTools` |
+| Code review | Any caller could send `x-bf-shadow: force`; shadow calls skip governance, so that was unbilled spend on demand | `allow_force_header`, off by default; `TestShadowForceHeaderIgnoredUnlessAllowed` |
+| Code review | Request IDs are caller-supplied: two in-flight requests sharing one could pair one prompt with the other's answer | Captures are claimed with a per-request token; `TestDuplicateRequestIDsNeverCrossPair`, `TestSharedRequestIDStressKeepsActiveBalanced` |
+| Code review | A threshold set to `0` fell back to its default | Explicitly set fields are tracked while decoding; `TestThresholdsHonourExplicitZero` |
+| Code review | A streamed refusal compared as an empty answer; `extra_params` never reached the candidate | `TestShadowStreamingAccumulatesRefusal`, `TestCandidateReceivesExtraParams` |
+| Code review | A panic in pricing escaped the worker's recover, a panic while storing could account a job twice, and shutdown recorded cancelled calls as candidate errors | Recover first, finish once, a worker-level recover, cancelled jobs dropped; `TestPanickingPriceFuncIsRecordedOnce`, `TestFinishRunsOncePerJob`, `TestCleanupDropsCancelledJobs` |
+| Code review | Embedding cost was lost when the returned vectors could not be compared | `TestEmbeddingCostKeptWhenVectorsUnusable` |
+| Code review | `persist_path` grew without bound and was replayed in full on start; a torn last line swallowed the next record | Rewritten with the newest `max_records` once it passes twice that; `TestStoreCompactsPersistFileWhileAppending`, `TestStoreCompactsOversizedFileOnOpen`, `TestStoreTornLastLineDoesNotSwallowNextRecord` |
+| Code review | Switching pairs could briefly show the previous pair's records or promote form | The sheet list and the form are keyed by pair and read only current data |
+| Dashboard E2E | The docs said a candidate could be promoted again to raise its share, but every canary rule had priority 10, so the second promote got HTTP 409 | The API takes `priority`; the dialog picks a free priority and updates an existing canary rule in place |
+| Test runs under CPU load | `TestShadowQueueFullDropsWithoutBlocking` failed when the worker had not yet taken the first job | The test waits until the worker holds the first job |
 | Repeated demo runs | With the mock's gpt-4o-mini at 4% wrong answers, its lower bound was 89.8-91.8% across five runs against the 90% threshold; one run showed `promising`, and `run.sh` would have promoted it anyway | Mock set to 2%; `run.sh` now promotes only a `ready` candidate (`loadgen -report -require-ready`) |
 
 ## Benchmarks

@@ -162,10 +162,11 @@ of AI, user experience, and scalability or potential. No weights were published.
   the loop from evidence to rollout: scorecard, statistical gate, one-click weighted canary. The
   verdict uses a confidence bound, not a raw percentage: 20 of 20 passes is `promising`, not
   `ready`.
-- **Technical execution.** 42 plugin tests (5 consecutive passing runs on Windows, race detector
-  on Linux), 6 handler tests, 2 schema tests, 22 dashboard helper tests, the dashboard
-  typecheck and scoped i18n check, and dashboard builds on Windows and Linux. Seven bugs found
-  by testing and fixed, each recorded with its fix in `TESTING.md`. Eight recorded end-to-end
+- **Technical execution.** 64 plugin tests (repeated runs on Windows, also under CPU load, and
+  the race detector on Linux), 9 handler tests, 2 schema tests, 31 dashboard helper tests, a
+  Playwright suite for the page, the dashboard typecheck and scoped i18n check, and dashboard
+  builds on Windows and Linux. Bugs found by testing, by a code review pass and by the E2E
+  suite are each recorded with their fix and regression test in `TESTING.md`. Eight recorded end-to-end
   runs through a real gateway, a dashboard check in a browser, and a clean build from upstream
   that passed `run.sh`.
 - **Problem and impact.** In the demo, with the mock's prices from the demo config, the ready
@@ -180,7 +181,8 @@ of AI, user experience, and scalability or potential. No weights were published.
   candidate, a promote dialog with a live rule preview and a warning for candidates that are not
   ready, and a reset that keeps the daily budget in force.
 - **Scalability and potential.** Bounded queue and workers, a daily budget, an opt-out header,
-  a virtual-key allow-list and a payload switch keep the cost under the operator's control. The
+  a force header that is off unless the operator allows it, a virtual-key allow-list and a
+  payload switch keep the cost under the operator's control. Shadow calls never run MCP tools. The
   request-path cost is measured, not asserted. The work is shaped as an upstream PR, with
   follow-ups listed in `UPSTREAM_PR.md`.
 
@@ -189,7 +191,8 @@ of AI, user experience, and scalability or potential. No weights were published.
 - Chat completions only (`/v1/chat/completions` and the integrations that map to it, streaming
   included). The Responses API, embeddings, images and audio are not mirrored.
 - Records live in memory on each gateway node, optionally appended to a JSONL file. In a
-  cluster, each node reports on the traffic it served. The JSONL file is not rotated.
+  cluster, each node reports on the traffic it served. The JSONL file is compacted in place
+  once it holds twice `max_records` lines.
 - Candidates are compared with the primary, not with ground truth. A judge measures "as good as
   the primary".
 - Tool calls are compared, never executed. Multi-turn agents are evaluated one turn at a time.
@@ -200,8 +203,9 @@ of AI, user experience, and scalability or potential. No weights were published.
   only the demo script enforces `ready`.
 - All recorded end-to-end runs use the deterministic mock upstream. No run against real provider
   APIs is recorded in `TESTING.md`. TODO: record one small real-provider run before submission.
-- The request-path benchmarks are single-goroutine microbenchmarks. Gateway latency under load
-  with the plugin enabled has not been measured.
+- The request-path figures are microbenchmarks (one parallel benchmark covers contention on
+  the unsampled path). Gateway latency under load with the plugin enabled has not been
+  measured.
 
 ## Submission checklist
 
@@ -244,6 +248,7 @@ of AI, user experience, and scalability or potential. No weights were published.
 8. **Cost on the request path.** About 100 ns and no allocations unsampled, 7.9 µs and 31
    allocations sampled; bounded queue, daily budget, opt-out header.
 9. **Built like an upstream PR.** Plugin, API, page, schema, docs, 11 languages, tests and
-   seven bugs found by testing, on top of `ed62e4b` with one script.
+   bugs found by testing, review and E2E each fixed with a regression test, on top of
+   `ed62e4b` with one script.
 10. **Limits and next steps.** Chat completions only, per-node records, mock-only runs so far;
     links to the repository and the video (TODO).
