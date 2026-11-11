@@ -4,7 +4,7 @@
 // without API keys:
 //
 //	gpt-4o        premium primary: always correct, verbose, slow
-//	gpt-4o-mini   strong cheap candidate: ~4% wrong, concise, fast
+//	gpt-4o-mini   strong cheap candidate: ~2% wrong, concise, fast
 //	llama-3.1-8b  weak cheap candidate: ~25% wrong, breaks JSON, ~6% HTTP 503
 //	judge-1       pairwise judge: scores answers against the dataset's gold facts
 //

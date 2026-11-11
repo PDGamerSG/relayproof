@@ -46,7 +46,7 @@ sequenceDiagram
 3. **Hand off.** When the primary answer is complete, one job per candidate goes onto a bounded queue. A full queue drops the job and counts it, and the primary is never slowed down. Cache hits, failed primaries and candidates identical to the model that actually served the request are skipped.
 4. **Replay.** A worker sends the same messages, tools and parameters to the candidate as an internal request: it skips the plugin pipeline, so it cannot recurse, is not billed to the caller's virtual key, and does not appear as user traffic.
 5. **Compare.** Every pair gets lexical similarity (token F1), length ratio, finish-reason agreement, and, when they apply, tool-call and JSON-structure matching. Optional embedding similarity and an optional LLM judge add semantic and quality signals. The judge sees both answers in a random order to cancel position bias.
-6. **Decide.** Each pair passes or fails on the strongest signal available: judge score (the candidate may trail by `quality_tolerance`), then tool-call or JSON structure, then embedding similarity, then lexical similarity. A candidate error is a failure.
+6. **Decide.** Each pair passes or fails on the strongest signal available: judge score (the candidate may trail by `quality_tolerance`), then tool-call match, then JSON shape (when the shapes match and embeddings are on, embedding similarity still decides), then embedding similarity, then lexical similarity. A candidate error is a failure.
 7. **Report.** Records go into a bounded ring buffer (optionally a JSONL file) and roll up into per-candidate scorecards.
 
 ### Verdicts
@@ -180,8 +180,8 @@ Every provider named in `experiments`, `judge` and `embedding` must be configure
 
 | Header | Direction | Effect |
 |---|---|---|
-| `x-bf-shadow: force` | request | Mirror this request even if it was not sampled (it must still match an experiment). Also accepts `on`, `true`, `1`. |
-| `x-bf-shadow: off` | request | Never mirror this request, for example for sensitive tenants. Also accepts `false`, `0`, `skip`. |
+| `x-bf-shadow: force` | request | Mirror this request even if it was not sampled (it must still match an experiment). Also accepts `on`, `true`, `1`, `yes`. |
+| `x-bf-shadow: off` | request | Never mirror this request, for example for sensitive tenants. Also accepts `false`, `0`, `no`, `skip`. |
 | `x-bf-shadow: sampled` | response | Set on responses whose request was mirrored. |
 
 ---

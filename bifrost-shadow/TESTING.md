@@ -104,12 +104,12 @@ was within 3 standard deviations of 10%.
 
 | Run | Sampled | gpt-4o-mini agreement / lower bound | llama-3.1-8b agreement / lower bound / errors | Canary: mini served |
 |---|---|---|---|---|
-| 1 | 145 | 99.3% / 96.2%, ready | 60.7% / 52.6% / 3.4%, not ready | 28 of 200 |
-| 2 | 162 | 99.4% / 96.6%, ready | 63.0% / 55.3% / 4.3%, not ready | 22 of 200 |
-| 3 | 144 | 100.0% / 97.4%, ready | 66.0% / 57.9% / 2.1%, not ready | 32 of 200 |
-| 4 | 150 | 100.0% / 97.5%, ready | 66.0% / 58.1% / 3.3%, not ready | 25 of 200 |
-| 5 | 135 | 99.3% / 95.9%, ready | 71.9% / 63.7% / 2.2%, not ready | 20 of 200 |
-| 6 | 164 | 100.0% / 97.7%, ready | 66.5% / 58.9% / 3.0%, not ready | 20 of 200 |
+| 3 | 145 | 99.3% / 96.2%, ready | 60.7% / 52.6% / 3.4%, not ready | 28 of 200 |
+| 4 | 162 | 99.4% / 96.6%, ready | 63.0% / 55.3% / 4.3%, not ready | 22 of 200 |
+| 5 | 144 | 100.0% / 97.4%, ready | 66.0% / 57.9% / 2.1%, not ready | 32 of 200 |
+| 6 | 150 | 100.0% / 97.5%, ready | 66.0% / 58.1% / 3.3%, not ready | 25 of 200 |
+| 7 | 135 | 99.3% / 95.9%, ready | 71.9% / 63.7% / 2.2%, not ready | 20 of 200 |
+| 8 | 164 | 100.0% / 97.7%, ready | 66.5% / 58.9% / 3.0%, not ready | 20 of 200 |
 
 ## Dashboard in a browser
 

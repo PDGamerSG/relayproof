@@ -37,8 +37,8 @@ client ──► Bifrost ──► primary model ──► answer to client (unc
 ```
 
 - **Mirror** a sample of chat completions (streaming included) to any number of candidates per
-  source model. Sampling, capture and hand-off add no allocations to unsampled requests; the
-  primary answer is never delayed.
+  source model. Unsampled requests pay about 100 ns and no allocations; the primary answer
+  never waits for shadow work.
 - **Compare** every pair with an LLM judge (position-randomized), embedding similarity, token
   F1, tool-call and JSON-structure matching, finish reasons, latency and cost.
 - **Decide** with statistics, not anecdotes: a candidate is `ready` only when the 95% Wilson
