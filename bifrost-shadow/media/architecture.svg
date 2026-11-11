@@ -1,0 +1,239 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1000" viewBox="0 0 1200 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Bifrost Shadow architecture</title>
+  <desc id="desc">A client request passes through the Bifrost gateway hooks to the primary provider and the primary answer returns to the client unchanged. Sampled requests are handed off without blocking to a bounded queue and worker pool, which call candidate models, an LLM judge and embeddings as internal requests, compare each pair, store records in a ring buffer with optional JSONL, and roll them into scorecards with a Wilson lower-bound verdict. The /api/shadow API and dashboard expose the results, and Promote to canary creates a weighted routing rule that the gateway applies to later requests.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; fill: #1f2328; }
+    .h1 { font-size: 22px; font-weight: 600; }
+    .sub { font-size: 13px; fill: #57606a; }
+    .band { font-size: 12px; font-weight: 600; fill: #57606a; letter-spacing: 0.6px; }
+    .t { font-size: 13px; font-weight: 600; }
+    .tl { font-size: 15px; font-weight: 600; }
+    .b { font-size: 11.5px; fill: #31373d; }
+    .s { font-size: 11px; fill: #57606a; }
+    .lab { font-size: 11px; fill: #57606a; font-style: italic; }
+    .blab { font-size: 11px; fill: #0550ae; font-style: italic; }
+    .m { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; font-size: 11px; fill: #31373d; }
+    .mt { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; font-size: 12px; font-weight: 600; }
+    .new { fill: #ddf4ff; stroke: #0969da; stroke-width: 1.4; }
+    .old { fill: #eaeef2; stroke: #8c959f; stroke-width: 1.2; }
+    .ext { fill: #ffffff; stroke: #57606a; stroke-width: 1.2; }
+    .flow { fill: none; stroke: #57606a; stroke-width: 1.6; }
+    .async { fill: none; stroke: #57606a; stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .loop { fill: none; stroke: #0969da; stroke-width: 2; }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#57606a"/>
+    </marker>
+    <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0969da"/>
+    </marker>
+  </defs>
+
+  <!-- Solid background so the diagram reads the same in light and dark themes -->
+  <rect x="0" y="0" width="1200" height="1000" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+
+  <!-- Title and legend -->
+  <text class="h1" x="48" y="44">Bifrost Shadow: architecture</text>
+  <text class="sub" x="48" y="68">Shadow traffic evaluation for the Bifrost AI gateway. Candidate answers are never served to clients.</text>
+  <rect class="new" x="640" y="31" width="16" height="12" rx="2"/>
+  <text class="s" x="662" y="41">New in this change</text>
+  <rect class="old" x="800" y="31" width="16" height="12" rx="2"/>
+  <text class="s" x="822" y="41">Existing Bifrost</text>
+  <line class="async" x1="945" y1="37" x2="975" y2="37"/>
+  <text class="s" x="982" y="41">Asynchronous hand-off</text>
+
+  <!-- ===================== LIVE REQUEST PATH ===================== -->
+  <rect x="20" y="88" width="1160" height="368" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text class="band" x="48" y="110">LIVE REQUEST PATH · synchronous, per request</text>
+
+  <!-- Client -->
+  <rect class="ext" x="48" y="180" width="128" height="164" rx="8"/>
+  <text class="t" x="112" y="208" text-anchor="middle">Client</text>
+  <text class="b" x="112" y="234" text-anchor="middle">chat completion,</text>
+  <text class="b" x="112" y="250" text-anchor="middle">streaming or not</text>
+  <text class="b" x="112" y="280" text-anchor="middle">receives the</text>
+  <text class="b" x="112" y="296" text-anchor="middle">primary answer,</text>
+  <text class="b" x="112" y="312" text-anchor="middle">unchanged</text>
+
+  <!-- Gateway -->
+  <rect x="196" y="136" width="780" height="310" rx="10" fill="#ffffff" stroke="#57606a" stroke-width="1.5"/>
+  <text class="tl" x="212" y="160">Bifrost gateway</text>
+  <text class="s" x="960" y="160" text-anchor="end">shadow plugin is off unless enabled in config</text>
+
+  <!-- Row 1: request direction -->
+  <rect class="new" x="212" y="172" width="172" height="80" rx="6"/>
+  <text class="t" x="298" y="194" text-anchor="middle">Transport pre-hook</text>
+  <text class="b" x="298" y="212" text-anchor="middle">reads x-bf-shadow:</text>
+  <text class="b" x="298" y="227" text-anchor="middle">off = never mirror,</text>
+  <text class="b" x="298" y="242" text-anchor="middle">force = always mirror</text>
+
+  <rect class="old" x="400" y="172" width="184" height="80" rx="6"/>
+  <text class="t" x="492" y="194" text-anchor="middle">Existing pre-hooks</text>
+  <text class="b" x="492" y="212" text-anchor="middle">governance, routing rules</text>
+  <text class="b" x="492" y="227" text-anchor="middle">(weighted targets),</text>
+  <text class="b" x="492" y="242" text-anchor="middle">semantic cache</text>
+
+  <rect class="new" x="600" y="172" width="220" height="80" rx="6"/>
+  <text class="t" x="710" y="194" text-anchor="middle">PreLLMHook (shadow)</text>
+  <text class="b" x="710" y="212" text-anchor="middle">match experiment, virtual-key</text>
+  <text class="b" x="710" y="227" text-anchor="middle">allow-list, sample, daily budget;</text>
+  <text class="b" x="710" y="242" text-anchor="middle">if sampled: snapshot the request</text>
+
+  <!-- Row 2: response direction -->
+  <rect class="new" x="212" y="272" width="172" height="80" rx="6"/>
+  <text class="t" x="298" y="294" text-anchor="middle">Response-headers hook</text>
+  <text class="b" x="298" y="314" text-anchor="middle">on sampled requests:</text>
+  <text class="m" x="298" y="332" text-anchor="middle">x-bf-shadow: sampled</text>
+
+  <rect class="new" x="600" y="272" width="220" height="80" rx="6"/>
+  <text class="t" x="710" y="294" text-anchor="middle">PostLLMHook (shadow)</text>
+  <text class="b" x="710" y="312" text-anchor="middle">collect the answer (streams:</text>
+  <text class="b" x="710" y="327" text-anchor="middle">accumulate to the final chunk),</text>
+  <text class="b" x="710" y="342" text-anchor="middle">then enqueue 1 job per candidate</text>
+
+  <!-- Plugin-owned state -->
+  <rect x="212" y="368" width="372" height="66" rx="6" fill="#ffffff" stroke="#0969da" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <text class="b" x="224" y="388" font-weight="600">Per-request state, owned by the plugin</text>
+  <text class="s" x="224" y="405">captures and markers: sync.Maps keyed by request ID;</text>
+  <text class="s" x="224" y="421">freed when the response completes, janitor sweeps at 10 min</text>
+
+  <!-- Primary provider -->
+  <rect class="ext" x="1000" y="180" width="160" height="164" rx="8"/>
+  <text class="t" x="1080" y="208" text-anchor="middle">Primary provider</text>
+  <text class="b" x="1080" y="236" text-anchor="middle">the model the request</text>
+  <text class="b" x="1080" y="252" text-anchor="middle">was routed to</text>
+  <text class="m" x="1080" y="276" text-anchor="middle">e.g. openai/gpt-4o</text>
+
+  <!-- Live flow arrows -->
+  <line class="flow" x1="176" y1="212" x2="210" y2="212" marker-end="url(#ah)"/>
+  <line class="flow" x1="384" y1="212" x2="398" y2="212" marker-end="url(#ah)"/>
+  <line class="flow" x1="584" y1="212" x2="598" y2="212" marker-end="url(#ah)"/>
+  <line class="flow" x1="820" y1="212" x2="998" y2="212" marker-end="url(#ah)"/>
+  <text class="lab" x="910" y="204" text-anchor="middle">request</text>
+  <line class="flow" x1="1000" y1="312" x2="822" y2="312" marker-end="url(#ah)"/>
+  <text class="lab" x="910" y="304" text-anchor="middle">primary answer</text>
+  <line class="flow" x1="600" y1="312" x2="386" y2="312" marker-end="url(#ah)"/>
+  <text class="lab" x="492" y="304" text-anchor="middle">same answer</text>
+  <line class="flow" x1="212" y1="312" x2="178" y2="312" marker-end="url(#ah)"/>
+
+  <!-- ===================== BOUNDARY ===================== -->
+  <line x1="20" y1="468" x2="1180" y2="468" stroke="#bf8700" stroke-width="1.6" stroke-dasharray="10 6"/>
+  <rect x="790" y="457" width="370" height="22" rx="11" fill="#fff8c5" stroke="#bf8700"/>
+  <text class="b" x="975" y="472" text-anchor="middle" font-weight="600">End of the live path: nothing below delays the client</text>
+
+  <!-- ===================== ASYNC ===================== -->
+  <rect x="20" y="480" width="1160" height="500" rx="12" fill="#ffffff" stroke="#8c959f" stroke-dasharray="8 5"/>
+  <text class="band" x="1160" y="502" text-anchor="end">OFF THE REQUEST PATH · asynchronous, bounded, budgeted</text>
+
+  <!-- Hand-off from PostLLMHook to the queue -->
+  <path class="async" d="M710,352 V508 H123 V526" marker-end="url(#ah)"/>
+  <text class="lab" x="420" y="501" text-anchor="middle">non-blocking send, one job per candidate; a full queue drops the job</text>
+
+  <!-- Row 1 -->
+  <rect class="new" x="48" y="528" width="150" height="130" rx="6"/>
+  <text class="t" x="123" y="552" text-anchor="middle">Bounded queue</text>
+  <text class="m" x="123" y="576" text-anchor="middle">queue_size</text>
+  <text class="b" x="123" y="592" text-anchor="middle">(default 256)</text>
+  <text class="b" x="123" y="620" text-anchor="middle">full: job dropped</text>
+  <text class="b" x="123" y="636" text-anchor="middle">and counted</text>
+
+  <rect class="new" x="222" y="528" width="164" height="130" rx="6"/>
+  <text class="t" x="304" y="552" text-anchor="middle">Worker pool</text>
+  <text class="m" x="304" y="576" text-anchor="middle">max_concurrency</text>
+  <text class="b" x="304" y="592" text-anchor="middle">(default 4)</text>
+  <text class="b" x="304" y="620" text-anchor="middle">daily budget checked</text>
+  <text class="b" x="304" y="636" text-anchor="middle">again before each job</text>
+
+  <rect class="old" x="410" y="528" width="400" height="130" rx="6"/>
+  <text class="t" x="610" y="550" text-anchor="middle">Internal requests via the Bifrost client</text>
+  <text class="s" x="610" y="567" text-anchor="middle">skip the plugin pipeline: no recursion, no shadow-of-shadow,</text>
+  <text class="s" x="610" y="582" text-anchor="middle">not billed to the caller's virtual key</text>
+  <rect class="ext" x="422" y="596" width="120" height="50" rx="5"/>
+  <text class="b" x="482" y="616" text-anchor="middle" font-weight="600">Candidate models</text>
+  <text class="s" x="482" y="633" text-anchor="middle">same request</text>
+  <rect class="ext" x="552" y="596" width="116" height="50" rx="5"/>
+  <text class="b" x="610" y="616" text-anchor="middle" font-weight="600">LLM judge</text>
+  <text class="s" x="610" y="633" text-anchor="middle">A/B order randomized</text>
+  <rect class="ext" x="678" y="596" width="120" height="50" rx="5"/>
+  <text class="b" x="738" y="616" text-anchor="middle" font-weight="600">Embeddings</text>
+  <text class="s" x="738" y="633" text-anchor="middle">cosine similarity</text>
+
+  <rect class="new" x="834" y="528" width="326" height="130" rx="6"/>
+  <text class="t" x="997" y="552" text-anchor="middle">Compare each pair</text>
+  <text class="b" x="850" y="574">token F1, length ratio, finish reason,</text>
+  <text class="b" x="850" y="590">tool-call match, JSON shape,</text>
+  <text class="b" x="850" y="606">embedding cosine, judge scores</text>
+  <text class="b" x="850" y="628" font-weight="600">pass decided by the strongest signal:</text>
+  <text class="b" x="850" y="644">judge, then structure, then embeddings, then F1</text>
+
+  <line class="flow" x1="198" y1="593" x2="220" y2="593" marker-end="url(#ah)"/>
+  <line class="flow" x1="386" y1="593" x2="408" y2="593" marker-end="url(#ah)"/>
+  <line class="flow" x1="810" y1="593" x2="832" y2="593" marker-end="url(#ah)"/>
+
+  <!-- Row 2 (right to left) -->
+  <rect class="new" x="900" y="694" width="260" height="110" rx="6"/>
+  <text class="t" x="1030" y="716" text-anchor="middle">Store: one record per pair</text>
+  <text class="b" x="916" y="738">ring buffer of max_records</text>
+  <text class="b" x="916" y="754">(default 5000), oldest overwritten</text>
+  <text class="b" x="916" y="776">optional JSONL append to</text>
+  <text class="b" x="916" y="792">persist_path, reloaded at start</text>
+
+  <rect class="new" x="596" y="694" width="280" height="110" rx="6"/>
+  <text class="t" x="736" y="716" text-anchor="middle">Scorecard per candidate</text>
+  <text class="b" x="612" y="738">agreement = passes / samples</text>
+  <text class="s" x="612" y="753">(candidate errors count as failures)</text>
+  <text class="b" x="612" y="772">verdict from the 95% Wilson lower bound:</text>
+  <text class="m" x="612" y="790">collecting · not_ready · promising · ready</text>
+
+  <rect class="new" x="348" y="694" width="224" height="110" rx="6"/>
+  <text class="mt" x="460" y="716" text-anchor="middle">/api/shadow/*</text>
+  <text class="b" x="460" y="740" text-anchor="middle">summary, records,</text>
+  <text class="b" x="460" y="756" text-anchor="middle">records/{id}, reset,</text>
+  <text class="b" x="460" y="772" text-anchor="middle">canary-rule</text>
+  <text class="s" x="460" y="792" text-anchor="middle">404 while the plugin is off</text>
+
+  <rect class="new" x="48" y="694" width="276" height="110" rx="6"/>
+  <text class="t" x="186" y="716" text-anchor="middle">Dashboard page</text>
+  <text class="b" x="186" y="738" text-anchor="middle">Models › Shadow Traffic</text>
+  <text class="b" x="186" y="756" text-anchor="middle">counters, scorecard, verdicts,</text>
+  <text class="b" x="186" y="772" text-anchor="middle">disagreements side by side</text>
+  <text class="s" x="186" y="792" text-anchor="middle">polls the summary every 5 s</text>
+
+  <line class="flow" x1="1030" y1="658" x2="1030" y2="692" marker-end="url(#ah)"/>
+  <text class="lab" x="1038" y="680">record</text>
+  <line class="flow" x1="900" y1="749" x2="878" y2="749" marker-end="url(#ah)"/>
+  <line class="flow" x1="596" y1="749" x2="574" y2="749" marker-end="url(#ah)"/>
+  <line class="flow" x1="348" y1="749" x2="326" y2="749" marker-end="url(#ah)"/>
+
+  <!-- Row 3: promotion -->
+  <rect class="new" x="48" y="840" width="276" height="100" rx="6"/>
+  <text class="t" x="186" y="862" text-anchor="middle">Promote to canary</text>
+  <text class="b" x="186" y="882" text-anchor="middle">choose a share of traffic</text>
+  <text class="b" x="186" y="898" text-anchor="middle">(10% by default), preview the</text>
+  <text class="b" x="186" y="914" text-anchor="middle">rule, confirm; warns when the</text>
+  <text class="b" x="186" y="930" text-anchor="middle">verdict is not ready</text>
+
+  <rect class="new" x="348" y="840" width="300" height="100" rx="6"/>
+  <text class="mt" x="498" y="862" text-anchor="middle">GET /api/shadow/canary-rule</text>
+  <text class="b" x="498" y="884" text-anchor="middle">builds a weighted rule for the pair:</text>
+  <text class="b" x="498" y="900" text-anchor="middle">CEL match on the source model,</text>
+  <text class="b" x="498" y="916" text-anchor="middle">targets source (1 - w), candidate (w)</text>
+  <text class="s" x="498" y="932" text-anchor="middle">w = 0.1 gives a 90/10 split</text>
+
+  <rect class="old" x="672" y="840" width="488" height="100" rx="6"/>
+  <text class="mt" x="916" y="862" text-anchor="middle">POST /api/routing/rules (existing API)</text>
+  <text class="b" x="916" y="884" text-anchor="middle">creates the weighted routing rule; the gateway's routing rules</text>
+  <text class="b" x="916" y="900" text-anchor="middle">then send that share of the source model's traffic to the</text>
+  <text class="b" x="916" y="916" text-anchor="middle">candidate. The rule is listed on the Routing Rules page,</text>
+  <text class="b" x="916" y="932" text-anchor="middle">where its weight can be raised or the rule disabled.</text>
+
+  <line class="flow" x1="186" y1="804" x2="186" y2="838" marker-end="url(#ah)"/>
+  <line class="flow" x1="324" y1="890" x2="346" y2="890" marker-end="url(#ah)"/>
+  <line class="flow" x1="648" y1="890" x2="670" y2="890" marker-end="url(#ah)"/>
+
+  <!-- Promotion loop back into the gateway's routing -->
+  <path class="loop" d="M916,940 V960 H32 V124 H492 V170" marker-end="url(#ahb)"/>
+  <text class="blab" x="48" y="955">the new rule goes back into the gateway's routing and applies to later requests</text>
+  <text class="blab" x="500" y="150">new canary rule</text>
+</svg>
