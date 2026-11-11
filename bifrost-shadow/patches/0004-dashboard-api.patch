@@ -1,0 +1,27 @@
+diff --git a/ui/lib/store/apis/baseApi.ts b/ui/lib/store/apis/baseApi.ts
+index 2dbb1a4..cfe58ba 100644
+--- a/ui/lib/store/apis/baseApi.ts
++++ b/ui/lib/store/apis/baseApi.ts
+@@ -243,6 +243,9 @@ export const baseApi = createApi({
+ 		"AgentLogs",
+ 		"Relays",
+ 		"RelayLogs",
++		// Shadow traffic: the polled scorecard and the comparison records, invalidated together on reset.
++		"ShadowSummary",
++		"ShadowRecords",
+ 	],
+ 	endpoints: () => ({}),
+ });
+diff --git a/ui/lib/store/apis/index.ts b/ui/lib/store/apis/index.ts
+index 98328ab..e3f72fd 100644
+--- a/ui/lib/store/apis/index.ts
++++ b/ui/lib/store/apis/index.ts
+@@ -25,6 +25,7 @@ export * from "./relaysApi";
+ export * from "./providersApi";
+ export * from "./promptsApi";
+ export * from "./sessionApi";
++export * from "./shadowApi";
+ export * from "./skillsApi";
+ export * from "./virtualMcpsApi";
+ export * from "./webhooksApi";
+\ No newline at end of file
