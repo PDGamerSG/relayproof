@@ -15,8 +15,10 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 	const errorRate = counters.completed > 0 ? counters.candidate_errors / counters.completed : 0;
 	const budgetFraction = shadowBudgetFraction(summary.spend_today_usd, summary.daily_budget_usd);
 
+	// The strip's footer is one fixed-height line, so tiles stay three to a row until each is
+	// wide enough to show its caption without cutting it off.
 	return (
-		<MetricStripCard className="grid-cols-2 md:grid-cols-3 xl:grid-cols-6" loading={loading} testId="shadow-counter-tiles">
+		<MetricStripCard className="grid-cols-2 md:grid-cols-3 2xl:grid-cols-6" loading={loading} testId="shadow-counter-tiles">
 			<MetricSegment
 				title={t("sampled")}
 				testId="shadow-tile-sampled"
