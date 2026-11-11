@@ -92,8 +92,15 @@ func (p *Plugin) Reset() error {
 	p.budgetSkipped.Store(0)
 	p.completed.Store(0)
 	p.candidateErrs.Store(0)
+	// Slots roll over lazily when they see the new window; zeroing them here as
+	// well keeps a Reset within the same clock tick from keeping old counts.
+	window := p.startedAt.Load()
 	p.trafficMu.Lock()
-	p.traffic = make(map[string]*trafficCounter)
+	for i := range p.trafficSlots {
+		p.trafficSlots[i].count.Store(0)
+		p.trafficSlots[i].first.Store(0)
+		p.trafficSlots[i].window.Store(window)
+	}
 	p.trafficMu.Unlock()
 	return p.store.reset()
 }

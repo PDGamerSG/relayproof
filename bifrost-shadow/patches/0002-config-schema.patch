@@ -1,5 +1,5 @@
 diff --git a/transports/bifrost-http/lib/validator_test.go b/transports/bifrost-http/lib/validator_test.go
-index dd064d3..fbc99cc 100644
+index dd064d3..d5dcc54 100644
 --- a/transports/bifrost-http/lib/validator_test.go
 +++ b/transports/bifrost-http/lib/validator_test.go
 @@ -17,6 +17,7 @@ import (
@@ -10,7 +10,7 @@ index dd064d3..fbc99cc 100644
  	"github.com/santhosh-tekuri/jsonschema/v6"
  )
  
-@@ -279,6 +280,128 @@ func TestValidateConfigSchema_WarpSectionCoversEverySetting(t *testing.T) {
+@@ -279,6 +280,130 @@ func TestValidateConfigSchema_WarpSectionCoversEverySetting(t *testing.T) {
  	}
  }
  
@@ -23,6 +23,7 @@ index dd064d3..fbc99cc 100644
 +	schemaData := loadLocalSchema(t)
 +	valid := `{
 +		"sample_rate": 0.25,
++		"allow_force_header": true,
 +		"experiments": [{
 +			"name": "cost-down",
 +			"source": {"provider": "openai", "model": "gpt-4o"},
@@ -58,6 +59,7 @@ index dd064d3..fbc99cc 100644
 +		"judge needs model":     `{"judge": {"provider": "openai"}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +		"negative price":        `{"pricing": {"m": {"input_per_million": -1}}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +		"agreement above 1":     `{"thresholds": {"min_agreement": 2}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"force header not bool": `{"allow_force_header": "yes", "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +	}
 +	for name, config := range invalid {
 +		if err := ValidateConfigSchema(shadowPluginConfig(config), schemaData); err == nil {
@@ -140,7 +142,7 @@ index dd064d3..fbc99cc 100644
  	// Empty object should be valid (all properties are optional)
  	emptyConfig := `{}`
 diff --git a/transports/config.schema.json b/transports/config.schema.json
-index 69fd51a..670730b 100644
+index 69fd51a..4e7cf2e 100644
 --- a/transports/config.schema.json
 +++ b/transports/config.schema.json
 @@ -4248,7 +4248,7 @@
@@ -152,7 +154,7 @@ index 69fd51a..670730b 100644
            },
            "config": {
              "type": "object",
-@@ -5423,6 +5423,263 @@
+@@ -5423,6 +5423,268 @@
                  }
                }
              }
@@ -182,7 +184,12 @@ index 69fd51a..670730b 100644
 +                      "exclusiveMinimum": 0,
 +                      "maximum": 1,
 +                      "default": 0.1,
-+                      "description": "Share of eligible requests mirrored, in (0, 1]. An experiment can override it. The x-bf-shadow request header forces (force) or skips (off) mirroring per request."
++                      "description": "Share of eligible requests mirrored, in (0, 1]. An experiment can override it. The x-bf-shadow request header skips mirroring per request (off) and, when allow_force_header is true, forces it (force)."
++                    },
++                    "allow_force_header": {
++                      "type": "boolean",
++                      "default": false,
++                      "description": "Honour the x-bf-shadow: force request header, which mirrors a request regardless of sample_rate. When false the force value is ignored and normal sampling applies; x-bf-shadow: off always skips mirroring."
 +                    },
 +                    "experiments": {
 +                      "type": "array",
@@ -324,7 +331,7 @@ index 69fd51a..670730b 100644
 +                      "type": "integer",
 +                      "minimum": 1,
 +                      "default": 5000,
-+                      "description": "Comparisons kept in memory (ring buffer)"
++                      "description": "Comparisons kept in memory (ring buffer) and reloaded from persist_path on start"
 +                    },
 +                    "store_payloads": {
 +                      "type": "boolean",
@@ -339,7 +346,7 @@ index 69fd51a..670730b 100644
 +                    },
 +                    "persist_path": {
 +                      "type": "string",
-+                      "description": "Optional JSONL file that records are appended to and reloaded from on start"
++                      "description": "Optional JSONL file that records are appended to and reloaded from on start. Once it holds more than twice max_records lines it is rewritten with only the newest max_records records"
 +                    },
 +                    "pricing": {
 +                      "type": "object",

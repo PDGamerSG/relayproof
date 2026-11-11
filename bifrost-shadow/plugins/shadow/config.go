@@ -1,6 +1,7 @@
 package shadow
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -86,20 +87,79 @@ type ModelPrice struct {
 }
 
 // Thresholds decide when a candidate is ready to receive live traffic.
+//
+// A ratio left out of the config gets its default; one the config sets, 0
+// included, is kept as given (see UnmarshalJSON). Built in Go, a zero ratio
+// still means "use the default".
 type Thresholds struct {
 	// MinSamples is the number of completed comparisons needed before a verdict.
 	MinSamples int `json:"min_samples,omitempty"`
 	// MinAgreement is the minimum share of comparisons the candidate must pass.
 	// "ready" requires the 95% Wilson lower bound to clear it; "promising" only the point estimate.
-	MinAgreement float64 `json:"min_agreement,omitempty"`
+	MinAgreement float64 `json:"min_agreement"`
 	// MaxErrorRate is the maximum share of candidate calls allowed to fail.
-	MaxErrorRate float64 `json:"max_error_rate,omitempty"`
+	MaxErrorRate float64 `json:"max_error_rate"`
 	// QualityTolerance is how many judge points (1-10 scale) the candidate may trail by and still pass.
-	QualityTolerance float64 `json:"quality_tolerance,omitempty"`
+	QualityTolerance float64 `json:"quality_tolerance"`
 	// LexicalThreshold is the token-overlap similarity needed to pass when neither judge nor embeddings ran.
-	LexicalThreshold float64 `json:"lexical_threshold,omitempty"`
+	LexicalThreshold float64 `json:"lexical_threshold"`
 	// SemanticThreshold is the embedding cosine similarity needed to pass when the judge did not run.
-	SemanticThreshold float64 `json:"semantic_threshold,omitempty"`
+	SemanticThreshold float64 `json:"semantic_threshold"`
+
+	explicit thresholdFields // ratios the parsed config named, so an explicit 0 is kept
+}
+
+// thresholdFields flags Thresholds ratios that a parsed config set explicitly.
+type thresholdFields uint8
+
+const (
+	explicitMinAgreement thresholdFields = 1 << iota
+	explicitMaxErrorRate
+	explicitQualityTolerance
+	explicitLexicalThreshold
+	explicitSemanticThreshold
+)
+
+// UnmarshalJSON records which ratios the document sets, so normalize can tell an
+// explicit 0 (honoured; the schema allows it) from an absent field (defaulted).
+func (t *Thresholds) UnmarshalJSON(data []byte) error {
+	type plain Thresholds
+	aux := struct {
+		*plain
+		MinAgreement      *float64 `json:"min_agreement"`
+		MaxErrorRate      *float64 `json:"max_error_rate"`
+		QualityTolerance  *float64 `json:"quality_tolerance"`
+		LexicalThreshold  *float64 `json:"lexical_threshold"`
+		SemanticThreshold *float64 `json:"semantic_threshold"`
+	}{plain: (*plain)(t)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	t.explicit = 0
+	for _, f := range []struct {
+		src  *float64
+		dst  *float64
+		flag thresholdFields
+	}{
+		{aux.MinAgreement, &t.MinAgreement, explicitMinAgreement},
+		{aux.MaxErrorRate, &t.MaxErrorRate, explicitMaxErrorRate},
+		{aux.QualityTolerance, &t.QualityTolerance, explicitQualityTolerance},
+		{aux.LexicalThreshold, &t.LexicalThreshold, explicitLexicalThreshold},
+		{aux.SemanticThreshold, &t.SemanticThreshold, explicitSemanticThreshold},
+	} {
+		if f.src != nil {
+			*f.dst = *f.src
+			t.explicit |= f.flag
+		}
+	}
+	return nil
+}
+
+// defaultRatio fills *v with def unless the config set it explicitly.
+func (t *Thresholds) defaultRatio(v *float64, flag thresholdFields, def float64) {
+	if *v == 0 && t.explicit&flag == 0 {
+		*v = def
+	}
 }
 
 // Config is the shadow plugin configuration.
@@ -122,6 +182,8 @@ type Config struct {
 	DailyBudgetUSD float64 `json:"daily_budget_usd,omitempty"`
 	// VirtualKeys restricts mirroring to requests made with these virtual key IDs or names (empty = all).
 	VirtualKeys []string `json:"virtual_keys,omitempty"`
+	// AllowForceHeader lets callers force mirroring with "x-bf-shadow: force" (off by default; "off" always works).
+	AllowForceHeader bool `json:"allow_force_header,omitempty"`
 	// MaxRecords bounds the number of comparisons retained in memory.
 	MaxRecords int `json:"max_records,omitempty"`
 	// StorePayloads keeps (truncated) prompts and answers for the side-by-side diff view.
@@ -217,20 +279,13 @@ func (c *Config) normalize() error {
 	if t.MinSamples <= 0 {
 		t.MinSamples = DefaultMinSamples
 	}
-	if t.MinAgreement <= 0 {
-		t.MinAgreement = DefaultMinAgreement
-	}
-	if t.MaxErrorRate <= 0 {
-		t.MaxErrorRate = DefaultMaxErrorRate
-	}
-	if t.QualityTolerance <= 0 {
-		t.QualityTolerance = DefaultQualityTolerance
-	}
-	if t.LexicalThreshold <= 0 {
-		t.LexicalThreshold = DefaultLexicalThreshold
-	}
-	if t.SemanticThreshold <= 0 {
-		t.SemanticThreshold = DefaultSemanticThresh
+	t.defaultRatio(&t.MinAgreement, explicitMinAgreement, DefaultMinAgreement)
+	t.defaultRatio(&t.MaxErrorRate, explicitMaxErrorRate, DefaultMaxErrorRate)
+	t.defaultRatio(&t.QualityTolerance, explicitQualityTolerance, DefaultQualityTolerance)
+	t.defaultRatio(&t.LexicalThreshold, explicitLexicalThreshold, DefaultLexicalThreshold)
+	t.defaultRatio(&t.SemanticThreshold, explicitSemanticThreshold, DefaultSemanticThresh)
+	if t.MinAgreement < 0 || t.MaxErrorRate < 0 || t.QualityTolerance < 0 || t.LexicalThreshold < 0 || t.SemanticThreshold < 0 {
+		return errors.New("shadow: thresholds cannot be negative")
 	}
 	if t.MinAgreement > 1 || t.MaxErrorRate > 1 || t.LexicalThreshold > 1 || t.SemanticThreshold > 1 {
 		return errors.New("shadow: threshold ratios must be <= 1")

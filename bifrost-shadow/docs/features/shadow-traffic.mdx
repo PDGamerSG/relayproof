@@ -44,7 +44,7 @@ sequenceDiagram
 1. **Match and sample.** For each chat completion (streaming or not), the plugin checks the request's provider and model against the experiments' `source`, applies the virtual-key allow-list and the `x-bf-shadow` header, and samples at the experiment's rate. An unsampled request costs about 100 ns and no allocations.
 2. **Capture.** A sampled request is snapshotted once. The capture lives in the plugin, keyed by request ID, never in the request context. Streams are accumulated chunk by chunk until the final chunk.
 3. **Hand off.** When the primary answer is complete, one job per candidate goes onto a bounded queue. A full queue drops the job and counts it, and the primary is never slowed down. Cache hits, failed primaries and candidates identical to the model that actually served the request are skipped.
-4. **Replay.** A worker sends the same messages, tools and parameters to the candidate as an internal request: it skips the plugin pipeline, so it cannot recurse, is not billed to the caller's virtual key, and does not appear as user traffic.
+4. **Replay.** A worker sends the same messages, tools and parameters to the candidate as an internal request: it skips the plugin pipeline, so it cannot recurse, is not billed to the caller's virtual key, and does not appear as user traffic. Provider-specific `extra_params` go too when the request opted into passing them through. Tools that [MCP](/mcp/overview) added to the request are left out, and MCP is off for the shadow call, so the candidate gets the caller's own tools and never runs an MCP tool.
 5. **Compare.** Every pair gets lexical similarity (token F1), length ratio, finish-reason agreement, and, when they apply, tool-call and JSON-structure matching. Optional embedding similarity and an optional LLM judge add semantic and quality signals. The judge sees both answers in a random order to cancel position bias.
 6. **Decide.** Each pair passes or fails on the strongest signal available: judge score (the candidate may trail by `quality_tolerance`), then tool-call match, then JSON shape (when the shapes match and embeddings are on, embedding similarity still decides), then embedding similarity, then lexical similarity. A candidate error is a failure.
 7. **Report.** Records go into a bounded ring buffer (optionally a JSONL file) and roll up into per-candidate scorecards.
@@ -151,6 +151,7 @@ Every provider named in `experiments`, `judge` and `embedding` must be configure
 | Field | Default | Description |
 |---|---|---|
 | `sample_rate` | `0.1` | Share of eligible requests mirrored, in (0, 1]. |
+| `allow_force_header` | `false` | Honour `x-bf-shadow: force`. Shadow calls skip governance, so with this on any caller can spend the shadow budget on demand; turn it on only where callers are trusted, such as tests and demos. |
 | `experiments[].name` | `"<source> vs <candidates>"` | Unique name; used in the API and the UI. |
 | `experiments[].source` | required | `provider` and `model` of the primary. `model: "*"` matches every model; an empty provider matches any provider. |
 | `experiments[].candidates` | required | Models each sampled request is replayed against. |
@@ -174,13 +175,15 @@ Every provider named in `experiments`, `judge` and `embedding` must be configure
 | `thresholds.semantic_threshold` | `0.85` | Embedding cosine needed to pass when no judge decided. |
 | `thresholds.lexical_threshold` | `0.6` | Token F1 needed to pass when no judge or embedding decided. |
 
+A threshold set to `0` is used as `0`, not replaced by its default: `quality_tolerance: 0` passes only candidates that the judge scores at least as high as the primary. Negative thresholds are rejected.
+
 ---
 
 ## Per-request control
 
 | Header | Direction | Effect |
 |---|---|---|
-| `x-bf-shadow: force` | request | Mirror this request even if it was not sampled (it must still match an experiment). Also accepts `on`, `true`, `1`, `yes`. |
+| `x-bf-shadow: force` | request | Mirror this request even if it was not sampled (it must still match an experiment). Only honoured with `allow_force_header: true`; otherwise the request is sampled as usual. Also accepts `on`, `true`, `1`, `yes`. |
 | `x-bf-shadow: off` | request | Never mirror this request, for example for sensitive tenants. Also accepts `false`, `0`, `no`, `skip`. |
 | `x-bf-shadow: sampled` | response | Set on responses whose request was mirrored. |
 
@@ -220,7 +223,7 @@ All routes answer `404` with a message when the plugin is not enabled.
 ## Cost, privacy and overhead
 
 - **Spend.** Each sampled request costs one candidate call per candidate, plus a judge call and an embedding call when they are configured. Bound it with `sample_rate`, `judge.sample_rate` and `daily_budget_usd`. The summary reports `spend_today_usd`, and every record carries its own costs.
-- **Internal calls.** Candidate, judge and embedding calls run as internal requests: they skip plugins, governance and logging, and are not billed to virtual keys. Their cost is tracked by the shadow plugin only.
+- **Internal calls.** Candidate, judge and embedding calls run as internal requests: they skip plugins, governance and logging, and are not billed to virtual keys. MCP is switched off for them, so no MCP tool or agent loop runs on a shadow call. Their cost is tracked by the shadow plugin only, including embedding calls whose vectors could not be compared.
 - **Payloads.** With `store_payloads: true` the plugin keeps the last user turn and both answers (truncated to `max_payload_chars`) in memory and, if set, in `persist_path`. Use `store_payloads: false`, `virtual_keys`, or `x-bf-shadow: off` to keep sensitive traffic out.
 - **Memory.** Bounded by `max_records` records (a few KB each with payloads) and `queue_size` pending snapshots. Captures whose response never completes are swept after 10 minutes.
 - **Request path.** Measured with `go test -bench . -benchmem` in `plugins/shadow`:

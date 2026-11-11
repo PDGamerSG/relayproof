@@ -28,6 +28,7 @@
       "name": "shadow",
       "config": {
         "sample_rate": 0.5,
+        "allow_force_header": true,
         "experiments": [
           {
             "name": "gpt-4o cost-down",

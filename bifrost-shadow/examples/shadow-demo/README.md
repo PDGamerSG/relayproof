@@ -76,7 +76,7 @@ export BIFROST_SETUP_TOKEN="local-demo-$RANDOM$RANDOM"
 GOWORK=off go build -o bin/ ./mockupstream ./loadgen
 bin/mockupstream -addr 127.0.0.1:18080 -speed 1
 bifrost-http -app-dir gateway -port 8080 -host 127.0.0.1
-bin/loadgen -n 300 -c 12          # -shadow force to mirror every request
+bin/loadgen -n 300 -c 12          # -shadow force mirrors every request (allow_force_header is on here)
 bin/loadgen -report               # print the current scorecard only
 bin/loadgen -report -require-ready openai/gpt-4o-mini   # exit 2 unless it is ready
 ```

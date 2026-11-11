@@ -1,7 +1,6 @@
 package shadow
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -13,7 +12,8 @@ import (
 
 var errExecutorNotConfigured = errors.New("shadow: chat executor is not configured")
 
-// worker drains the job queue until the plugin stops.
+// worker drains the job queue until the plugin stops. A job still queued when
+// the plugin stops is dropped, not started.
 func (p *Plugin) worker() {
 	defer p.wg.Done()
 	for {
@@ -21,15 +21,32 @@ func (p *Plugin) worker() {
 		case <-p.ctx.Done():
 			return
 		case j := <-p.queue:
-			p.inFlight.Add(1)
-			p.runJob(j)
-			p.inFlight.Add(-1)
+			// select picks at random when both cases are ready.
+			if p.ctx.Err() != nil {
+				return
+			}
+			p.runJobContained(j)
 		}
 	}
 }
 
-// runJob calls the candidate, scores the pair and stores the record. It never panics
-// out of the worker: a panic in a provider path is recorded as a candidate error.
+// runJobContained runs one job and keeps the worker alive if the job's own
+// panic recovery panics too (for example while storing the error record).
+func (p *Plugin) runJobContained(j *job) {
+	p.inFlight.Add(1)
+	defer p.inFlight.Add(-1)
+	defer func() {
+		if r := recover(); r != nil {
+			p.logger.Warn("shadow: worker recovered from a panic while finishing a job: %v", r)
+		}
+	}()
+	p.runJob(j)
+}
+
+// runJob calls the candidate, scores the pair and stores the record. A panic in
+// a provider or pricing path is recorded as a candidate error. Each job is
+// accounted and stored at most once. A job whose calls were cancelled because
+// the plugin is stopping is dropped: its error says nothing about the candidate.
 func (p *Plugin) runJob(j *job) {
 	rec := &Record{
 		ID:               uuid.NewString(),
@@ -41,8 +58,30 @@ func (p *Plugin) runJob(j *job) {
 		Candidate:        j.candidate,
 		Prompt:           j.prompt,
 		PrimaryLatencyMs: j.latencyMs,
-		PrimaryCostUSD:   p.cost(j.usage, j.primary.Provider, j.primary.Model, schemas.ChatCompletionRequest),
 	}
+	finished := false
+	done := func() {
+		if finished {
+			return
+		}
+		finished = true
+		if p.ctx.Err() != nil {
+			return
+		}
+		p.finish(rec)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			if finished {
+				p.logger.Warn("shadow: panic after a job was accounted: %v", r)
+				return
+			}
+			rec.CandidateError = fmt.Sprintf("shadow worker panic: %v", r)
+			done()
+		}
+	}()
+
+	rec.PrimaryCostUSD = p.cost(j.usage, j.primary.Provider, j.primary.Model, schemas.ChatCompletionRequest)
 	if j.usage != nil {
 		rec.PrimaryInputTokens = j.usage.PromptTokens
 		rec.PrimaryOutputTokens = j.usage.CompletionTokens
@@ -53,13 +92,6 @@ func (p *Plugin) runJob(j *job) {
 		rec.PrimaryAnswer = &primary
 	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			rec.CandidateError = fmt.Sprintf("shadow worker panic: %v", r)
-			p.finish(rec)
-		}
-	}()
-
 	if p.budgetExhausted() {
 		p.budgetSkipped.Add(1)
 		return
@@ -68,17 +100,17 @@ func (p *Plugin) runJob(j *job) {
 	ex := p.execs.Load()
 	if ex == nil || ex.chat == nil {
 		rec.CandidateError = errExecutorNotConfigured.Error()
-		p.finish(rec)
+		done()
 		return
 	}
 
-	var original schemas.BifrostChatRequest
-	if err := json.Unmarshal(j.snapshot, &original); err != nil {
+	original, err := decodeSnapshot(j.snapshot)
+	if err != nil {
 		rec.CandidateError = fmt.Sprintf("decode snapshot: %v", err)
-		p.finish(rec)
+		done()
 		return
 	}
-	candReq := original
+	candReq := *original
 	candReq.Provider = j.candidate.Provider
 	candReq.Model = j.candidate.Model
 	if candReq.Params != nil {
@@ -88,13 +120,16 @@ func (p *Plugin) runJob(j *job) {
 	}
 
 	ctx, cancel := p.internalContext()
+	if j.passthroughExtra {
+		ctx.SetValue(schemas.BifrostContextKeyPassthroughExtraParams, true)
+	}
 	start := time.Now()
 	resp, bErr := ex.chat(ctx, &candReq)
 	wall := time.Since(start).Milliseconds()
 	cancel()
 	if bErr != nil {
 		rec.CandidateError = bifrostErrorMessage(bErr)
-		p.finish(rec)
+		done()
 		return
 	}
 	candAnswer := answerFromChatResponse(resp)
@@ -114,9 +149,11 @@ func (p *Plugin) runJob(j *job) {
 	rec.Comparison = &cmp
 
 	if ex.embed != nil && p.config.Embedding != nil && j.answer.Text != "" && candAnswer.Text != "" {
-		if sim, cost, err := p.embeddingSimilarity(ex.embed, j.answer.Text, candAnswer.Text); err == nil {
+		sim, cost, err := p.embeddingSimilarity(ex.embed, j.answer.Text, candAnswer.Text)
+		// A call that returned unusable vectors was still billed.
+		rec.EvalCostUSD += cost
+		if err == nil {
 			rec.Comparison.SemanticSimilarity = &sim
-			rec.EvalCostUSD += cost
 		} else {
 			p.logger.Debug("shadow: embedding similarity failed: %v", err)
 		}
@@ -138,17 +175,18 @@ func (p *Plugin) runJob(j *job) {
 		rec.CandidateAnswer = &cand
 	}
 	rec.Pass, rec.PassBasis = p.decidePass(rec.Comparison, rec.Judge)
-	p.finish(rec)
+	done()
 }
 
-// finish accounts spend and stores the record.
+// finish accounts spend and stores the record. Counters are updated before the
+// store call so that a failing store cannot leave the job half accounted.
 func (p *Plugin) finish(rec *Record) {
 	p.addSpend(rec.CandidateCostUSD + rec.EvalCostUSD)
 	if rec.CandidateError != "" {
 		p.candidateErrs.Add(1)
 	}
 	p.completed.Add(1)
-	if err := p.store.add(rec); err != nil {
+	if err := p.storeRecord(rec); err != nil {
 		p.logger.Warn("shadow: failed to persist record: %v", err)
 	}
 }
@@ -189,6 +227,11 @@ func (p *Plugin) internalContext() (*schemas.BifrostContext, func()) {
 	ctx := schemas.NewBifrostContext(p.ctx, deadline)
 	bifrost.PrepareContextForInternalRequest(ctx)
 	ctx.SetValue(schemas.BifrostContextKeyRequestID, "shadow-"+uuid.NewString())
+	// MCP runs outside the plugin pipeline, so skipping plugins does not stop it
+	// from adding its tools or running its agent loop on a shadow call. A non-nil
+	// empty allow-list admits no client and no tool.
+	ctx.SetValue(schemas.MCPContextKeyIncludeClients, []string{})
+	ctx.SetValue(schemas.MCPContextKeyIncludeTools, []string{})
 	return ctx, ctx.Cancel
 }
 
