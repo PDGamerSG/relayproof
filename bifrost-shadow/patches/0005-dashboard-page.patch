@@ -1,0 +1,2312 @@
+diff --git a/ui/components/navigation/navItems.tsx b/ui/components/navigation/navItems.tsx
+index a80bad8..ad11230 100644
+--- a/ui/components/navigation/navItems.tsx
++++ b/ui/components/navigation/navItems.tsx
+@@ -16,6 +16,7 @@ import {
+ 	DatabaseZap,
+ 	FileSpreadsheet,
+ 	Flag,
++	FlaskConical,
+ 	FolderGit,
+ 	Gavel,
+ 	GitCompareArrows,
+@@ -300,6 +301,14 @@ export function useNavItems(): NavItem[] {
+ 						icon: GitCompareArrows,
+ 						hasAccess: hasRoutingRulesAccess,
+ 					},
++					{
++						id: "models.shadow-traffic",
++						title: t("nav.shadowTraffic"),
++						description: t("navDesc.shadowTraffic"),
++						url: "/workspace/shadow",
++						icon: FlaskConical,
++						hasAccess: hasRoutingRulesAccess,
++					},
+ 					{
+ 						id: "models.circuit-breaker",
+ 						title: t("nav.circuitBreaker"),
+diff --git a/ui/lib/types/schemas.ts b/ui/lib/types/schemas.ts
+index f82c129..dbc661d 100644
+--- a/ui/lib/types/schemas.ts
++++ b/ui/lib/types/schemas.ts
+@@ -2258,8 +2258,16 @@ export const authProofOfControlSchema = z
+ 		}
+ 	});
+ 
++// Shadow traffic "Promote to canary": the share of the source model's traffic, in whole
++// percent, that the new weighted routing rule sends to the candidate. Range messages come
++// from the global error map above.
++export const shadowCanaryFormSchema = z.object({
++	weight_percent: z.number().int(msg("validation.valueMustBeAPositiveWholeNumber")).min(1).max(100),
++});
++
+ // Export type inference helpers
+ export type SecretVar = z.infer<typeof secretVarSchema>;
++export type ShadowCanaryFormSchema = z.infer<typeof shadowCanaryFormSchema>;
+ export type AuthProofOfControl = z.infer<typeof authProofOfControlSchema>;
+ export type MCPClientUpdateSchema = z.infer<typeof mcpClientUpdateSchema>;
+ export type ModelProviderKeySchema = z.infer<typeof modelProviderKeySchema>;
+diff --git a/ui/locales/de/models.json b/ui/locales/de/models.json
+index 2c12454..07050fd 100644
+--- a/ui/locales/de/models.json
++++ b/ui/locales/de/models.json
+@@ -2239,5 +2239,180 @@
+ 		"resetAll": "Auf Datenblatt zurücksetzen",
+ 		"noPermission": "Sie haben keine Berechtigung, das Datenblatt zu bearbeiten",
+ 		"saving": "Wird gespeichert..."
++	},
++	"shadow": {
++		"title": "Shadow-Traffic",
++		"description": "Spiegelt eine Stichprobe des Live-Traffics an günstigere Kandidatenmodelle und zeigt, ob sie bereit sind, zu übernehmen.",
++		"pageInfo": "Bifrost kopiert im Hintergrund eine Stichprobe von Live-Chat-Anfragen an Kandidatenmodelle, ohne die Antwort an Ihre Nutzer zu verändern. Jede Kandidatenantwort wird mit der Antwort des primären Modells verglichen, und die Bewertung unten zeigt, wie nah jeder Kandidat an einem sicheren, günstigeren Ersatz ist.",
++		"collectingSince": "Erfasst seit {{date}}",
++		"refresh": "Aktualisieren",
++		"live": "Live",
++		"paused": "Pausiert",
++		"pauseAria": "Live-Aktualisierung pausieren",
++		"resumeAria": "Live-Aktualisierung fortsetzen",
++		"entity": "Shadow-Traffic",
++		"reset": {
++			"button": "Zurücksetzen",
++			"title": "Shadow-Ergebnisse zurücksetzen?",
++			"description": "Dadurch werden alle gespeicherten Vergleiche und Zähler gelöscht. Die Experimente laufen weiter und beginnen wieder bei null. Die heutigen Evaluierungskosten bleiben erhalten, das Tagesbudget gilt also weiterhin.",
++			"confirm": "Ergebnisse zurücksetzen",
++			"success": "Shadow-Ergebnisse gelöscht",
++			"failed": "Shadow-Ergebnisse konnten nicht zurückgesetzt werden"
++		},
++		"budgetExhausted": {
++			"title": "Tagesbudget für Auswertungen aufgebraucht",
++			"description": "Neue Stichproben werden übersprungen, bis das Budget um Mitternacht UTC zurückgesetzt wird. Erhöhen Sie daily_budget_usd in der Plugin-Konfiguration, um weiter zu sammeln."
++		},
++		"notEnabled": {
++			"title": "Shadow-Traffic ist nicht aktiviert",
++			"description": "Das Shadow-Plugin spiegelt im Hintergrund eine Stichprobe von Live-Chat-Anfragen an günstigere Kandidatenmodelle und bewertet jede Antwort im Vergleich zum primären Modell mit einem LLM-Judge, Embeddings und Strukturprüfungen. Ihre Nutzer sehen immer nur die primäre Antwort.",
++			"promote": "Sobald ein Kandidat bereit ist, können Sie ihn mit einem Klick als gewichtete Canary-Routing-Regel freischalten.",
++			"configHint": "Fügen Sie es der Plugin-Liste in config.json hinzu und starten Sie Bifrost neu, oder aktivieren Sie es auf der Seite „Erweiterungen“:",
++			"checkAgain": "Erneut prüfen",
++			"openPlugins": "Erweiterungen öffnen"
++		},
++		"tiles": {
++			"sampled": "Stichproben",
++			"sampledFooter": "{{eligible}} geeignet · Rate {{rate}}",
++			"compared": "Verglichen",
++			"comparedFooter": "In Bearbeitung {{inFlight}} · Warteschlange {{queued}}",
++			"candidateErrors": "Kandidatenfehler",
++			"candidateErrorsFooter": "{{rate}} der Vergleiche",
++			"dropped": "Verworfen",
++			"droppedFooter": "Wegen Budget übersprungen: {{skipped}}",
++			"evalSpend": "Auswertungskosten heute",
++			"budgetOf": "von {{budget}} Tagesbudget",
++			"budgetUnlimited": "Kein Tagesbudget",
++			"budgetExhaustedShort": "Budget aufgebraucht",
++			"judge": "Judge-Modell",
++			"judgeOff": "Kein Judge",
++			"embeddingModel": "Embeddings: {{model}}",
++			"embeddingOff": "Keine Embeddings"
++		},
++		"scorecard": {
++			"title": "Kandidaten-Bewertung",
++			"subtitle": "Eine Zeile pro Kandidat. Die Übereinstimmung zählt Antworten, die als akzeptabler Ersatz für die primäre Antwort bewertet wurden.",
++			"emptyTitle": "Noch keine Vergleiche",
++			"emptyDescription": "Die Experimente sind konfiguriert. Ergebnisse erscheinen hier, sobald Stichprobenanfragen an das Quellmodell abgeschlossen sind.",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "verglichen mit",
++			"primaryModels": "Primäre Modelle: {{models}}",
++			"viewDisagreements": "Abweichungen anzeigen",
++			"promote": "Als Canary freischalten",
++			"samples": "Stichproben",
++			"samplesNeeded": "Benötigt {{count}} Stichprobe für ein Urteil",
++			"samplesNeeded_other": "Benötigt {{count}} Stichproben für ein Urteil",
++			"judgedCount": "{{formatted}} bewertet",
++			"judgedCount_other": "{{formatted}} bewertet",
++			"agreement": "Übereinstimmung",
++			"lowerBound": "95-%-Untergrenze {{value}}",
++			"errorRate": "Fehlerquote",
++			"errorsOfSamples": "{{errors}} von {{samples}} fehlgeschlagen",
++			"judgeScore": "Judge-Bewertung",
++			"scoreVs": "{{primary}} vs. {{candidate}}",
++			"judgeRecord": "Gewonnen {{wins}} · unentschieden {{ties}} · verloren {{losses}}",
++			"notJudged": "Noch nicht bewertet",
++			"latencyP50": "Latenz p50",
++			"latencyP95": "Latenz p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "Primär → Kandidat",
++			"savings": "Einsparung",
++			"projectedMonthly": "{{amount}}/Monat prognostiziert",
++			"lexical": "Lexikalisch",
++			"semantic": "Semantisch",
++			"toolCalls": "Tool-Aufrufe",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "Ø Kosten pro Anfrage: {{primary}} primär, {{candidate}} Kandidat"
++		},
++		"verdict": {
++			"collecting": "Sammelt",
++			"ready": "Bereit",
++			"promising": "Vielversprechend",
++			"not_ready": "Nicht bereit"
++		},
++		"records": {
++			"title": "Abweichungen",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "Nach Ergebnis filtern",
++			"filter": {
++				"fail": "Abweichungen (nicht bestanden)",
++				"error": "Kandidatenfehler",
++				"pass": "Übereinstimmungen (bestanden)",
++				"all": "Alle Ergebnisse"
++			},
++			"refresh": "Einträge aktualisieren",
++			"total": "{{formatted}} Eintrag",
++			"total_other": "{{formatted}} Einträge",
++			"entity": "Vergleichseinträge",
++			"emptyFail": "Für diesen Kandidaten gibt es noch keine Abweichungen.",
++			"empty": "Keine Einträge entsprechen diesem Filter.",
++			"range": "{{from}}–{{to}} von {{total}}",
++			"outcome": {
++				"pass": "Bestanden",
++				"fail": "Nicht bestanden",
++				"error": "Fehler"
++			},
++			"basis": "Entschieden durch: {{basis}}",
++			"passBasis": {
++				"judge": "Judge",
++				"semantic": "Embeddings",
++				"structural": "Struktur",
++				"lexical": "Token-Überlappung"
++			},
++			"passBasisLine": "Ergebnis entschieden durch: {{basis}}",
++			"stream": "Streaming",
++			"promptNotStored": "Prompt nicht gespeichert (store_payloads ist aus)",
++			"prompt": "Prompt",
++			"primary": "Primär",
++			"candidate": "Kandidat",
++			"tokens": "Tokens: {{input}} Eingabe / {{output}} Ausgabe",
++			"emptyText": "Leere Antwort",
++			"toolCalls": "{{count}} Tool-Aufruf",
++			"toolCalls_other": "{{count}} Tool-Aufrufe",
++			"finishReason": "Beendigungsgrund: {{reason}}",
++			"answerNotStored": "Antwort nicht gespeichert",
++			"judge": "Judge",
++			"judgeScores": "Primär {{primary}} / Kandidat {{candidate}}",
++			"winner": {
++				"primary": "Primär gewinnt",
++				"candidate": "Kandidat gewinnt",
++				"tie": "Unentschieden"
++			},
++			"judgeError": "Judge fehlgeschlagen: {{error}}",
++			"judgeOrder": "Der Kandidat wurde dem Judge als Antwort {{label}} gezeigt",
++			"similarity": "Vergleichsmetriken",
++			"match": "Gleich",
++			"mismatch": "Abweichend",
++			"lexical": "Lexikalische Ähnlichkeit",
++			"semantic": "Semantische Ähnlichkeit",
++			"lengthRatio": "Längenverhältnis",
++			"toolCallsMatch": "Tool-Aufrufe",
++			"jsonMatch": "JSON-Struktur",
++			"finishReasonMatch": "Beendigungsgrund",
++			"evalCost": "Auswertungskosten: {{cost}}",
++			"requestId": "Anfrage {{id}}"
++		},
++		"promote": {
++			"title": "Als Canary freischalten",
++			"description": "Erstellt eine gewichtete Routing-Regel, die einen Anteil des {{source}}-Traffics an {{candidate}} sendet. Der Rest geht weiterhin an das primäre Modell.",
++			"cautionTitle": "Das Urteil für diesen Kandidaten lautet: {{verdict}}",
++			"caution": "Er hat die Bereitschaftsschwellen noch nicht erreicht. Beginnen Sie mit einem kleinen Anteil und beobachten Sie die Logs genau.",
++			"weightLabel": "Anteil des Traffics für den Kandidaten",
++			"weightHelp": "Eine ganze Zahl von 1 bis 100. Fangen Sie klein an: 10 % ist ein üblicher erster Canary.",
++			"previewTitle": "Regelvorschau",
++			"previewFailed": "Regel konnte nicht erstellt werden",
++			"celExpression": "CEL-Ausdruck",
++			"targets": "Ziele",
++			"scope": "Geltungsbereich: {{scope}}",
++			"priority": "Priorität {{priority}}",
++			"enabled": "Aktiviert",
++			"disabled": "Deaktiviert",
++			"confirm": "Canary-Regel erstellen",
++			"success": "Routing-Regel „{{name}}“ erstellt",
++			"successDescription": "Der Canary ist aktiv. Verfolgen Sie ihn auf der Seite der Routing-Regeln.",
++			"viewRules": "Regeln anzeigen",
++			"failed": "Routing-Regel konnte nicht erstellt werden"
++		}
+ 	}
+ }
+diff --git a/ui/locales/de/shell.json b/ui/locales/de/shell.json
+index 90b2c0c..ace13cc 100644
+--- a/ui/locales/de/shell.json
++++ b/ui/locales/de/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "Budgets und Limits",
+ 		"routingRules": "Routing-Regeln",
+ 		"complexityRouter": "Komplexitäts-Router",
++		"shadowTraffic": "Shadow-Traffic",
+ 		"circuitBreaker": "Schutzschalter",
+ 		"pricingOverrides": "Preisüberschreibungen",
+ 		"modelSettings": "Modelleinstellungen",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "Budgets und Ratenbegrenzungen",
+ 		"routingRules": "Intelligente Routing-Regeln",
+ 		"complexityRouter": "Routing nach Komplexitätsstufen",
++		"shadowTraffic": "Günstigere Modelle mit echtem Traffic testen",
+ 		"circuitBreaker": "Automatischer Fallback bei Ausfall primärer Endpunkte",
+ 		"pricingOverrides": "Gültigkeitsbereich-spezifische Preisüberschreibungen",
+ 		"modelSettings": "Modell- und Routing-Konfiguration",
+diff --git a/ui/locales/en/models.json b/ui/locales/en/models.json
+index 469ebbb..7720c3a 100644
+--- a/ui/locales/en/models.json
++++ b/ui/locales/en/models.json
+@@ -2239,5 +2239,180 @@
+ 		"resetAll": "Reset to datasheet",
+ 		"noPermission": "You don't have permission to edit the datasheet",
+ 		"saving": "Saving..."
++	},
++	"shadow": {
++		"title": "Shadow Traffic",
++		"description": "Mirror a sample of live traffic to cheaper candidate models and see whether they are ready to take over.",
++		"pageInfo": "Bifrost copies a sample of live chat requests to candidate models in the background, never touching the response your users get. Each candidate answer is scored against the primary model's answer, and the scorecard below shows how close each candidate is to being a safe, cheaper replacement.",
++		"collectingSince": "Collecting since {{date}}",
++		"refresh": "Refresh",
++		"live": "Live",
++		"paused": "Paused",
++		"pauseAria": "Pause live updates",
++		"resumeAria": "Resume live updates",
++		"entity": "shadow traffic",
++		"reset": {
++			"button": "Reset",
++			"title": "Reset shadow results?",
++			"description": "This clears every stored comparison and all counters. Experiments keep running and start collecting again from zero. Today's evaluation spend is kept, so the daily budget still applies.",
++			"confirm": "Reset results",
++			"success": "Shadow results cleared",
++			"failed": "Failed to reset shadow results"
++		},
++		"budgetExhausted": {
++			"title": "Daily evaluation budget exhausted",
++			"description": "New samples are skipped until the budget resets at midnight UTC. Raise daily_budget_usd in the plugin config to keep collecting."
++		},
++		"notEnabled": {
++			"title": "Shadow traffic is not enabled",
++			"description": "The shadow plugin mirrors a sample of live chat requests to cheaper candidate models in the background and scores each answer against the primary model with an LLM judge, embeddings and structural checks. Your users only ever see the primary response.",
++			"promote": "Once a candidate is ready, you can promote it to a weighted canary routing rule in one click.",
++			"configHint": "Add it to the plugins list in config.json and restart Bifrost, or enable it from the plugins page:",
++			"checkAgain": "Check again",
++			"openPlugins": "Open plugins"
++		},
++		"tiles": {
++			"sampled": "Sampled",
++			"sampledFooter": "{{eligible}} eligible · {{rate}} rate",
++			"compared": "Compared",
++			"comparedFooter": "In flight {{inFlight}} · queued {{queued}}",
++			"candidateErrors": "Candidate errors",
++			"candidateErrorsFooter": "{{rate}} of compared",
++			"dropped": "Dropped",
++			"droppedFooter": "Skipped by budget: {{skipped}}",
++			"evalSpend": "Eval spend today",
++			"budgetOf": "of {{budget}} daily budget",
++			"budgetUnlimited": "No daily budget",
++			"budgetExhaustedShort": "Budget exhausted",
++			"judge": "Judge model",
++			"judgeOff": "No judge",
++			"embeddingModel": "Embeddings: {{model}}",
++			"embeddingOff": "No embeddings"
++		},
++		"scorecard": {
++			"title": "Candidate scorecard",
++			"subtitle": "One row per candidate. Agreement counts answers judged an acceptable substitute for the primary answer.",
++			"emptyTitle": "No comparisons yet",
++			"emptyDescription": "Experiments are configured. Results appear here as sampled requests to the source model complete.",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "compared with",
++			"primaryModels": "Primary models: {{models}}",
++			"viewDisagreements": "View disagreements",
++			"promote": "Promote to canary",
++			"samples": "Samples",
++			"samplesNeeded": "Needs {{count}} sample for a verdict",
++			"samplesNeeded_other": "Needs {{count}} samples for a verdict",
++			"judgedCount": "{{formatted}} judged",
++			"judgedCount_other": "{{formatted}} judged",
++			"agreement": "Agreement",
++			"lowerBound": "95% lower bound {{value}}",
++			"errorRate": "Error rate",
++			"errorsOfSamples": "{{errors}} of {{samples}} failed",
++			"judgeScore": "Judge score",
++			"scoreVs": "{{primary}} vs {{candidate}}",
++			"judgeRecord": "Won {{wins}} · tied {{ties}} · lost {{losses}}",
++			"notJudged": "Not judged yet",
++			"latencyP50": "Latency p50",
++			"latencyP95": "Latency p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "Primary → candidate",
++			"savings": "Savings",
++			"projectedMonthly": "{{amount}}/month projected",
++			"lexical": "Lexical",
++			"semantic": "Semantic",
++			"toolCalls": "Tool calls",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "Avg cost per request: {{primary}} primary, {{candidate}} candidate"
++		},
++		"verdict": {
++			"collecting": "Collecting",
++			"ready": "Ready",
++			"promising": "Promising",
++			"not_ready": "Not ready"
++		},
++		"records": {
++			"title": "Disagreements",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "Filter by outcome",
++			"filter": {
++				"fail": "Disagreements (fail)",
++				"error": "Candidate errors",
++				"pass": "Agreements (pass)",
++				"all": "All outcomes"
++			},
++			"refresh": "Refresh records",
++			"total": "{{formatted}} record",
++			"total_other": "{{formatted}} records",
++			"entity": "comparison records",
++			"emptyFail": "No disagreements for this candidate yet.",
++			"empty": "No records match this filter.",
++			"range": "{{from}}–{{to}} of {{total}}",
++			"outcome": {
++				"pass": "Pass",
++				"fail": "Fail",
++				"error": "Error"
++			},
++			"basis": "Decided by {{basis}}",
++			"passBasis": {
++				"judge": "judge",
++				"semantic": "embeddings",
++				"structural": "structure",
++				"lexical": "token overlap"
++			},
++			"passBasisLine": "Pass decided by: {{basis}}",
++			"stream": "Streaming",
++			"promptNotStored": "Prompt not stored (store_payloads is off)",
++			"prompt": "Prompt",
++			"primary": "Primary",
++			"candidate": "Candidate",
++			"tokens": "Tokens: {{input}} in / {{output}} out",
++			"emptyText": "Empty response",
++			"toolCalls": "{{count}} tool call",
++			"toolCalls_other": "{{count}} tool calls",
++			"finishReason": "Finish reason: {{reason}}",
++			"answerNotStored": "Answer not stored",
++			"judge": "Judge",
++			"judgeScores": "Primary {{primary}} / candidate {{candidate}}",
++			"winner": {
++				"primary": "Primary wins",
++				"candidate": "Candidate wins",
++				"tie": "Tie"
++			},
++			"judgeError": "Judge failed: {{error}}",
++			"judgeOrder": "Candidate was shown to the judge as response {{label}}",
++			"similarity": "Comparison metrics",
++			"match": "Match",
++			"mismatch": "Mismatch",
++			"lexical": "Lexical similarity",
++			"semantic": "Semantic similarity",
++			"lengthRatio": "Length ratio",
++			"toolCallsMatch": "Tool calls",
++			"jsonMatch": "JSON structure",
++			"finishReasonMatch": "Finish reason",
++			"evalCost": "Evaluation cost: {{cost}}",
++			"requestId": "Request {{id}}"
++		},
++		"promote": {
++			"title": "Promote to canary",
++			"description": "Create a weighted routing rule that sends a share of {{source}} traffic to {{candidate}}. The rest keeps going to the primary model.",
++			"cautionTitle": "This candidate's verdict is {{verdict}}",
++			"caution": "It has not cleared the readiness thresholds yet. Start with a small share and watch the logs closely.",
++			"weightLabel": "Share of traffic sent to the candidate",
++			"weightHelp": "A whole number from 1 to 100. Start small: 10% is a common first canary.",
++			"previewTitle": "Rule preview",
++			"previewFailed": "Could not build the rule",
++			"celExpression": "CEL expression",
++			"targets": "Targets",
++			"scope": "Scope: {{scope}}",
++			"priority": "Priority {{priority}}",
++			"enabled": "Enabled",
++			"disabled": "Disabled",
++			"confirm": "Create canary rule",
++			"success": "Created routing rule \"{{name}}\"",
++			"successDescription": "The canary is live. Track it on the routing rules page.",
++			"viewRules": "View rules",
++			"failed": "Could not create the routing rule"
++		}
+ 	}
+ }
+\ No newline at end of file
+diff --git a/ui/locales/en/shell.json b/ui/locales/en/shell.json
+index e7655c7..545ef37 100644
+--- a/ui/locales/en/shell.json
++++ b/ui/locales/en/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "Budgets & Limits",
+ 		"routingRules": "Routing Rules",
+ 		"complexityRouter": "Complexity Router",
++		"shadowTraffic": "Shadow Traffic",
+ 		"circuitBreaker": "Circuit Breaker",
+ 		"pricingOverrides": "Pricing Overrides",
+ 		"modelSettings": "Model Settings",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "Budgets and rate limits",
+ 		"routingRules": "Intelligent routing rules",
+ 		"complexityRouter": "Complexity tier routing",
++		"shadowTraffic": "Test cheaper models on live traffic",
+ 		"circuitBreaker": "Automatic fallback when primary endpoints fail",
+ 		"pricingOverrides": "Scoped pricing overrides",
+ 		"modelSettings": "Model and routing configuration",
+diff --git a/ui/locales/es/models.json b/ui/locales/es/models.json
+index 44866af..7e8e2b3 100644
+--- a/ui/locales/es/models.json
++++ b/ui/locales/es/models.json
+@@ -2239,5 +2239,180 @@
+ 		"resetAll": "Restablecer a la ficha técnica",
+ 		"noPermission": "No tienes permiso para editar la ficha técnica",
+ 		"saving": "Guardando..."
++	},
++	"shadow": {
++		"title": "Tráfico sombra",
++		"description": "Replica una muestra del tráfico en vivo en modelos candidatos más baratos y comprueba si están listos para sustituir al principal.",
++		"pageInfo": "Bifrost copia en segundo plano una muestra de las solicitudes de chat en vivo a modelos candidatos, sin tocar nunca la respuesta que reciben tus usuarios. Cada respuesta candidata se puntúa frente a la del modelo principal, y la tabla de abajo muestra lo cerca que está cada candidato de ser un sustituto seguro y más barato.",
++		"collectingSince": "Recopilando desde {{date}}",
++		"refresh": "Actualizar",
++		"live": "En vivo",
++		"paused": "En pausa",
++		"pauseAria": "Pausar actualizaciones en vivo",
++		"resumeAria": "Reanudar actualizaciones en vivo",
++		"entity": "tráfico sombra",
++		"reset": {
++			"button": "Restablecer",
++			"title": "¿Restablecer los resultados del tráfico sombra?",
++			"description": "Se borrarán todas las comparaciones guardadas y todos los contadores. Los experimentos siguen en marcha y vuelven a recopilar desde cero. El gasto de evaluación de hoy se conserva, así que el presupuesto diario sigue aplicándose.",
++			"confirm": "Restablecer resultados",
++			"success": "Resultados del tráfico sombra borrados",
++			"failed": "No se pudieron restablecer los resultados del tráfico sombra"
++		},
++		"budgetExhausted": {
++			"title": "Presupuesto diario de evaluación agotado",
++			"description": "Las nuevas muestras se omiten hasta que el presupuesto se restablezca a medianoche UTC. Aumenta daily_budget_usd en la configuración del complemento para seguir recopilando."
++		},
++		"notEnabled": {
++			"title": "El tráfico sombra no está habilitado",
++			"description": "El complemento shadow replica en segundo plano una muestra de las solicitudes de chat en vivo en modelos candidatos más baratos y puntúa cada respuesta frente al modelo principal con un juez LLM, embeddings y comprobaciones estructurales. Tus usuarios solo ven la respuesta principal.",
++			"promote": "Cuando un candidato esté listo, puedes promoverlo con un clic a una regla de enrutamiento canary ponderada.",
++			"configHint": "Añádelo a la lista de plugins en config.json y reinicia Bifrost, o habilítalo desde la página de complementos:",
++			"checkAgain": "Comprobar de nuevo",
++			"openPlugins": "Abrir complementos"
++		},
++		"tiles": {
++			"sampled": "Muestreadas",
++			"sampledFooter": "{{eligible}} elegibles · tasa {{rate}}",
++			"compared": "Comparadas",
++			"comparedFooter": "En curso {{inFlight}} · en cola {{queued}}",
++			"candidateErrors": "Errores del candidato",
++			"candidateErrorsFooter": "{{rate}} de las comparadas",
++			"dropped": "Descartadas",
++			"droppedFooter": "Omitidas por presupuesto: {{skipped}}",
++			"evalSpend": "Gasto de evaluación hoy",
++			"budgetOf": "de {{budget}} de presupuesto diario",
++			"budgetUnlimited": "Sin presupuesto diario",
++			"budgetExhaustedShort": "Presupuesto agotado",
++			"judge": "Modelo juez",
++			"judgeOff": "Sin juez",
++			"embeddingModel": "Embeddings: {{model}}",
++			"embeddingOff": "Sin embeddings"
++		},
++		"scorecard": {
++			"title": "Evaluación de candidatos",
++			"subtitle": "Una fila por candidato. La concordancia cuenta las respuestas que se consideran un sustituto aceptable de la respuesta principal.",
++			"emptyTitle": "Aún no hay comparaciones",
++			"emptyDescription": "Los experimentos están configurados. Los resultados aparecerán aquí a medida que se completen las solicitudes muestreadas al modelo de origen.",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "comparado con",
++			"primaryModels": "Modelos principales: {{models}}",
++			"viewDisagreements": "Ver discrepancias",
++			"promote": "Promover a canary",
++			"samples": "Muestras",
++			"samplesNeeded": "Necesita {{count}} muestra para un veredicto",
++			"samplesNeeded_other": "Necesita {{count}} muestras para un veredicto",
++			"judgedCount": "{{formatted}} evaluada",
++			"judgedCount_other": "{{formatted}} evaluadas",
++			"agreement": "Concordancia",
++			"lowerBound": "Límite inferior al 95 %: {{value}}",
++			"errorRate": "Tasa de error",
++			"errorsOfSamples": "{{errors}} de {{samples}} fallaron",
++			"judgeScore": "Puntuación del juez",
++			"scoreVs": "{{primary}} frente a {{candidate}}",
++			"judgeRecord": "Ganó {{wins}} · empató {{ties}} · perdió {{losses}}",
++			"notJudged": "Aún sin evaluar",
++			"latencyP50": "Latencia p50",
++			"latencyP95": "Latencia p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "Principal → candidato",
++			"savings": "Ahorro",
++			"projectedMonthly": "{{amount}}/mes previstos",
++			"lexical": "Léxica",
++			"semantic": "Semántica",
++			"toolCalls": "Llamadas a herramientas",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "Coste medio por solicitud: {{primary}} principal, {{candidate}} candidato"
++		},
++		"verdict": {
++			"collecting": "Recopilando",
++			"ready": "Listo",
++			"promising": "Prometedor",
++			"not_ready": "No listo"
++		},
++		"records": {
++			"title": "Discrepancias",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "Filtrar por resultado",
++			"filter": {
++				"fail": "Discrepancias (fallo)",
++				"error": "Errores del candidato",
++				"pass": "Coincidencias (aprobado)",
++				"all": "Todos los resultados"
++			},
++			"refresh": "Actualizar registros",
++			"total": "{{formatted}} registro",
++			"total_other": "{{formatted}} registros",
++			"entity": "registros de comparación",
++			"emptyFail": "Todavía no hay discrepancias para este candidato.",
++			"empty": "Ningún registro coincide con este filtro.",
++			"range": "{{from}}–{{to}} de {{total}}",
++			"outcome": {
++				"pass": "Aprobado",
++				"fail": "Fallo",
++				"error": "Error"
++			},
++			"basis": "Decidido por: {{basis}}",
++			"passBasis": {
++				"judge": "juez",
++				"semantic": "embeddings",
++				"structural": "estructura",
++				"lexical": "coincidencia de tokens"
++			},
++			"passBasisLine": "Aprobación decidida por: {{basis}}",
++			"stream": "Streaming",
++			"promptNotStored": "Prompt no guardado (store_payloads está desactivado)",
++			"prompt": "Prompt",
++			"primary": "Principal",
++			"candidate": "Candidato",
++			"tokens": "Tokens: {{input}} de entrada / {{output}} de salida",
++			"emptyText": "Respuesta vacía",
++			"toolCalls": "{{count}} llamada a herramienta",
++			"toolCalls_other": "{{count}} llamadas a herramientas",
++			"finishReason": "Motivo de finalización: {{reason}}",
++			"answerNotStored": "Respuesta no guardada",
++			"judge": "Juez",
++			"judgeScores": "Principal {{primary}} / candidato {{candidate}}",
++			"winner": {
++				"primary": "Gana el principal",
++				"candidate": "Gana el candidato",
++				"tie": "Empate"
++			},
++			"judgeError": "El juez falló: {{error}}",
++			"judgeOrder": "El candidato se mostró al juez como respuesta {{label}}",
++			"similarity": "Métricas de comparación",
++			"match": "Coincide",
++			"mismatch": "No coincide",
++			"lexical": "Similitud léxica",
++			"semantic": "Similitud semántica",
++			"lengthRatio": "Relación de longitud",
++			"toolCallsMatch": "Llamadas a herramientas",
++			"jsonMatch": "Estructura JSON",
++			"finishReasonMatch": "Motivo de finalización",
++			"evalCost": "Coste de evaluación: {{cost}}",
++			"requestId": "Solicitud {{id}}"
++		},
++		"promote": {
++			"title": "Promover a canary",
++			"description": "Crea una regla de enrutamiento ponderada que envía una parte del tráfico de {{source}} a {{candidate}}. El resto sigue yendo al modelo principal.",
++			"cautionTitle": "El veredicto de este candidato es: {{verdict}}",
++			"caution": "Todavía no ha superado los umbrales de preparación. Empieza con una parte pequeña y vigila los registros de cerca.",
++			"weightLabel": "Parte del tráfico enviada al candidato",
++			"weightHelp": "Un número entero del 1 al 100. Empieza con poco: el 10 % es un primer canary habitual.",
++			"previewTitle": "Vista previa de la regla",
++			"previewFailed": "No se pudo generar la regla",
++			"celExpression": "Expresión CEL",
++			"targets": "Destinos",
++			"scope": "Ámbito: {{scope}}",
++			"priority": "Prioridad {{priority}}",
++			"enabled": "Habilitada",
++			"disabled": "Deshabilitada",
++			"confirm": "Crear regla canary",
++			"success": "Regla de enrutamiento «{{name}}» creada",
++			"successDescription": "El canary está activo. Síguelo en la página de reglas de enrutamiento.",
++			"viewRules": "Ver reglas",
++			"failed": "No se pudo crear la regla de enrutamiento"
++		}
+ 	}
+ }
+diff --git a/ui/locales/es/shell.json b/ui/locales/es/shell.json
+index 3f10e56..ae404b3 100644
+--- a/ui/locales/es/shell.json
++++ b/ui/locales/es/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "Presupuestos y límites",
+ 		"routingRules": "Reglas de enrutamiento",
+ 		"complexityRouter": "Enrutador por complejidad",
++		"shadowTraffic": "Tráfico sombra",
+ 		"circuitBreaker": "Disyuntor",
+ 		"pricingOverrides": "Anulaciones de precios",
+ 		"modelSettings": "Ajustes de modelos",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "Presupuestos y límites de tasa",
+ 		"routingRules": "Reglas de enrutamiento inteligente",
+ 		"complexityRouter": "Enrutamiento por nivel de complejidad",
++		"shadowTraffic": "Prueba modelos más baratos con tráfico real",
+ 		"circuitBreaker": "Reserva automática cuando fallan los endpoints principales",
+ 		"pricingOverrides": "Anulaciones de precios con alcance",
+ 		"modelSettings": "Configuración de modelos y enrutamiento",
+diff --git a/ui/locales/fr/models.json b/ui/locales/fr/models.json
+index f20239a..a146696 100644
+--- a/ui/locales/fr/models.json
++++ b/ui/locales/fr/models.json
+@@ -2239,5 +2239,180 @@
+ 		"resetAll": "Rétablir la fiche technique",
+ 		"noPermission": "Vous n'avez pas l'autorisation de modifier la fiche technique",
+ 		"saving": "Enregistrement..."
++	},
++	"shadow": {
++		"title": "Trafic fantôme",
++		"description": "Duplique un échantillon du trafic en direct vers des modèles candidats moins chers et indique s'ils sont prêts à prendre le relais.",
++		"pageInfo": "Bifrost copie en arrière-plan un échantillon des requêtes de chat en direct vers des modèles candidats, sans jamais modifier la réponse reçue par vos utilisateurs. Chaque réponse candidate est notée par rapport à celle du modèle principal, et le tableau ci-dessous montre à quel point chaque candidat est proche d'un remplacement sûr et moins coûteux.",
++		"collectingSince": "Collecte depuis le {{date}}",
++		"refresh": "Actualiser",
++		"live": "En direct",
++		"paused": "En pause",
++		"pauseAria": "Mettre en pause les mises à jour en direct",
++		"resumeAria": "Reprendre les mises à jour en direct",
++		"entity": "trafic fantôme",
++		"reset": {
++			"button": "Réinitialiser",
++			"title": "Réinitialiser les résultats du trafic fantôme ?",
++			"description": "Toutes les comparaisons enregistrées et tous les compteurs seront effacés. Les expériences continuent et recommencent à collecter depuis zéro. Les dépenses d'évaluation du jour sont conservées : le budget quotidien s'applique toujours.",
++			"confirm": "Réinitialiser les résultats",
++			"success": "Résultats du trafic fantôme effacés",
++			"failed": "Impossible de réinitialiser les résultats du trafic fantôme"
++		},
++		"budgetExhausted": {
++			"title": "Budget quotidien d'évaluation épuisé",
++			"description": "Les nouveaux échantillons sont ignorés jusqu'à la réinitialisation du budget à minuit UTC. Augmentez daily_budget_usd dans la configuration du module pour continuer la collecte."
++		},
++		"notEnabled": {
++			"title": "Le trafic fantôme n'est pas activé",
++			"description": "Le module shadow duplique en arrière-plan un échantillon des requêtes de chat en direct vers des modèles candidats moins chers et note chaque réponse par rapport au modèle principal à l'aide d'un juge LLM, d'embeddings et de vérifications structurelles. Vos utilisateurs ne voient que la réponse principale.",
++			"promote": "Lorsqu'un candidat est prêt, vous pouvez le promouvoir en un clic en règle de routage canary pondérée.",
++			"configHint": "Ajoutez-le à la liste des plugins dans config.json puis redémarrez Bifrost, ou activez-le depuis la page des modules d'extension :",
++			"checkAgain": "Vérifier à nouveau",
++			"openPlugins": "Ouvrir les modules d'extension"
++		},
++		"tiles": {
++			"sampled": "Échantillonnées",
++			"sampledFooter": "{{eligible}} éligibles · taux {{rate}}",
++			"compared": "Comparées",
++			"comparedFooter": "En cours {{inFlight}} · en file {{queued}}",
++			"candidateErrors": "Erreurs du candidat",
++			"candidateErrorsFooter": "{{rate}} des comparaisons",
++			"dropped": "Abandonnées",
++			"droppedFooter": "Ignorées (budget) : {{skipped}}",
++			"evalSpend": "Dépense d'évaluation du jour",
++			"budgetOf": "sur {{budget}} de budget quotidien",
++			"budgetUnlimited": "Pas de budget quotidien",
++			"budgetExhaustedShort": "Budget épuisé",
++			"judge": "Modèle juge",
++			"judgeOff": "Pas de juge",
++			"embeddingModel": "Embeddings : {{model}}",
++			"embeddingOff": "Pas d'embeddings"
++		},
++		"scorecard": {
++			"title": "Tableau des candidats",
++			"subtitle": "Une ligne par candidat. L'accord compte les réponses jugées comme un substitut acceptable de la réponse principale.",
++			"emptyTitle": "Aucune comparaison pour l'instant",
++			"emptyDescription": "Les expériences sont configurées. Les résultats apparaîtront ici à mesure que les requêtes échantillonnées vers le modèle source se terminent.",
++			"experimentLine": "{{name}} : {{source}} → {{candidates}}",
++			"toCandidate": "comparé à",
++			"primaryModels": "Modèles principaux : {{models}}",
++			"viewDisagreements": "Voir les désaccords",
++			"promote": "Promouvoir en canary",
++			"samples": "Échantillons",
++			"samplesNeeded": "{{count}} échantillon requis pour un verdict",
++			"samplesNeeded_other": "{{count}} échantillons requis pour un verdict",
++			"judgedCount": "{{formatted}} évaluée",
++			"judgedCount_other": "{{formatted}} évaluées",
++			"agreement": "Accord",
++			"lowerBound": "Borne inférieure à 95 % : {{value}}",
++			"errorRate": "Taux d'erreur",
++			"errorsOfSamples": "{{errors}} sur {{samples}} en échec",
++			"judgeScore": "Note du juge",
++			"scoreVs": "{{primary}} contre {{candidate}}",
++			"judgeRecord": "Gagné {{wins}} · nul {{ties}} · perdu {{losses}}",
++			"notJudged": "Pas encore évalué",
++			"latencyP50": "Latence p50",
++			"latencyP95": "Latence p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "Principal → candidat",
++			"savings": "Économies",
++			"projectedMonthly": "{{amount}}/mois prévus",
++			"lexical": "Lexicale",
++			"semantic": "Sémantique",
++			"toolCalls": "Appels d'outils",
++			"json": "JSON",
++			"signal": "{{label}} : {{value}}",
++			"costPerRequest": "Coût moyen par requête : {{primary}} principal, {{candidate}} candidat"
++		},
++		"verdict": {
++			"collecting": "Collecte",
++			"ready": "Prêt",
++			"promising": "Prometteur",
++			"not_ready": "Pas prêt"
++		},
++		"records": {
++			"title": "Désaccords",
++			"pairLine": "{{experiment}} : {{source}} → {{candidate}}",
++			"outcomeFilter": "Filtrer par résultat",
++			"filter": {
++				"fail": "Désaccords (échec)",
++				"error": "Erreurs du candidat",
++				"pass": "Accords (réussite)",
++				"all": "Tous les résultats"
++			},
++			"refresh": "Actualiser les enregistrements",
++			"total": "{{formatted}} enregistrement",
++			"total_other": "{{formatted}} enregistrements",
++			"entity": "enregistrements de comparaison",
++			"emptyFail": "Aucun désaccord pour ce candidat pour l'instant.",
++			"empty": "Aucun enregistrement ne correspond à ce filtre.",
++			"range": "{{from}}–{{to}} sur {{total}}",
++			"outcome": {
++				"pass": "Réussite",
++				"fail": "Échec",
++				"error": "Erreur"
++			},
++			"basis": "Décidé par : {{basis}}",
++			"passBasis": {
++				"judge": "juge",
++				"semantic": "embeddings",
++				"structural": "structure",
++				"lexical": "recouvrement de tokens"
++			},
++			"passBasisLine": "Réussite décidée par : {{basis}}",
++			"stream": "Streaming",
++			"promptNotStored": "Prompt non enregistré (store_payloads est désactivé)",
++			"prompt": "Prompt",
++			"primary": "Principal",
++			"candidate": "Candidat",
++			"tokens": "Tokens : {{input}} en entrée / {{output}} en sortie",
++			"emptyText": "Réponse vide",
++			"toolCalls": "{{count}} appel d'outil",
++			"toolCalls_other": "{{count}} appels d'outils",
++			"finishReason": "Motif de fin : {{reason}}",
++			"answerNotStored": "Réponse non enregistrée",
++			"judge": "Juge",
++			"judgeScores": "Principal {{primary}} / candidat {{candidate}}",
++			"winner": {
++				"primary": "Le principal gagne",
++				"candidate": "Le candidat gagne",
++				"tie": "Égalité"
++			},
++			"judgeError": "Échec du juge : {{error}}",
++			"judgeOrder": "Le candidat a été présenté au juge comme réponse {{label}}",
++			"similarity": "Métriques de comparaison",
++			"match": "Identique",
++			"mismatch": "Différent",
++			"lexical": "Similarité lexicale",
++			"semantic": "Similarité sémantique",
++			"lengthRatio": "Rapport de longueur",
++			"toolCallsMatch": "Appels d'outils",
++			"jsonMatch": "Structure JSON",
++			"finishReasonMatch": "Motif de fin",
++			"evalCost": "Coût d'évaluation : {{cost}}",
++			"requestId": "Requête {{id}}"
++		},
++		"promote": {
++			"title": "Promouvoir en canary",
++			"description": "Crée une règle de routage pondérée qui envoie une part du trafic de {{source}} vers {{candidate}}. Le reste continue d'aller au modèle principal.",
++			"cautionTitle": "Le verdict de ce candidat est : {{verdict}}",
++			"caution": "Il n'a pas encore franchi les seuils de préparation. Commencez par une petite part et surveillez attentivement les logs.",
++			"weightLabel": "Part du trafic envoyée au candidat",
++			"weightHelp": "Un nombre entier de 1 à 100. Commencez petit : 10 % est un premier canary courant.",
++			"previewTitle": "Aperçu de la règle",
++			"previewFailed": "Impossible de construire la règle",
++			"celExpression": "Expression CEL",
++			"targets": "Cibles",
++			"scope": "Portée : {{scope}}",
++			"priority": "Priorité {{priority}}",
++			"enabled": "Activée",
++			"disabled": "Désactivée",
++			"confirm": "Créer la règle canary",
++			"success": "Règle de routage « {{name}} » créée",
++			"successDescription": "Le canary est actif. Suivez-le sur la page des règles de routage.",
++			"viewRules": "Voir les règles",
++			"failed": "Impossible de créer la règle de routage"
++		}
+ 	}
+ }
+diff --git a/ui/locales/fr/shell.json b/ui/locales/fr/shell.json
+index be405cf..37a86e2 100644
+--- a/ui/locales/fr/shell.json
++++ b/ui/locales/fr/shell.json
+@@ -17,6 +17,7 @@
+ 		"budgetsLimits": "Budgets et limites",
+ 		"routingRules": "Règles de routage",
+ 		"complexityRouter": "Routeur de complexité",
++		"shadowTraffic": "Trafic fantôme",
+ 		"circuitBreaker": "Disjoncteur",
+ 		"pricingOverrides": "Remplacements de tarification",
+ 		"modelSettings": "Paramètres des modèles",
+@@ -100,6 +101,7 @@
+ 		"budgetsLimits": "Budgets et limites de débit",
+ 		"routingRules": "Règles de routage intelligent",
+ 		"complexityRouter": "Routage par niveau de complexité",
++		"shadowTraffic": "Testez des modèles moins chers sur du trafic réel",
+ 		"circuitBreaker": "Basculement automatique en cas d’échec des points de terminaison principaux",
+ 		"pricingOverrides": "Remplacements de tarification ciblés",
+ 		"modelSettings": "Configuration des modèles et du routage",
+diff --git a/ui/locales/it/models.json b/ui/locales/it/models.json
+index 9d9d3a0..c2fd015 100644
+--- a/ui/locales/it/models.json
++++ b/ui/locales/it/models.json
+@@ -2239,5 +2239,180 @@
+ 		"resetAll": "Ripristina la scheda tecnica",
+ 		"noPermission": "Non hai l'autorizzazione per modificare la scheda tecnica",
+ 		"saving": "Salvataggio..."
++	},
++	"shadow": {
++		"title": "Traffico ombra",
++		"description": "Replica un campione del traffico live su modelli candidati più economici e mostra se sono pronti a sostituire quello principale.",
++		"pageInfo": "Bifrost copia in background un campione delle richieste di chat live verso modelli candidati, senza mai toccare la risposta che ricevono i tuoi utenti. Ogni risposta candidata viene valutata rispetto a quella del modello principale, e la scheda qui sotto mostra quanto ogni candidato sia vicino a essere un sostituto sicuro e più economico.",
++		"collectingSince": "Raccolta dal {{date}}",
++		"refresh": "Aggiorna",
++		"live": "Live",
++		"paused": "In pausa",
++		"pauseAria": "Metti in pausa gli aggiornamenti live",
++		"resumeAria": "Riprendi gli aggiornamenti live",
++		"entity": "traffico ombra",
++		"reset": {
++			"button": "Reimposta",
++			"title": "Reimpostare i risultati del traffico ombra?",
++			"description": "Verranno cancellati tutti i confronti salvati e tutti i contatori. Gli esperimenti continuano e ricominciano a raccogliere da zero. La spesa di valutazione di oggi viene mantenuta, quindi il budget giornaliero resta valido.",
++			"confirm": "Reimposta risultati",
++			"success": "Risultati del traffico ombra cancellati",
++			"failed": "Impossibile reimpostare i risultati del traffico ombra"
++		},
++		"budgetExhausted": {
++			"title": "Budget giornaliero di valutazione esaurito",
++			"description": "I nuovi campioni vengono saltati finché il budget non si azzera a mezzanotte UTC. Aumenta daily_budget_usd nella configurazione del plugin per continuare a raccogliere."
++		},
++		"notEnabled": {
++			"title": "Il traffico ombra non è abilitato",
++			"description": "Il plugin shadow replica in background un campione delle richieste di chat live su modelli candidati più economici e valuta ogni risposta rispetto al modello principale con un giudice LLM, embedding e controlli strutturali. I tuoi utenti vedono sempre e solo la risposta principale.",
++			"promote": "Quando un candidato è pronto, puoi promuoverlo con un clic a una regola di routing canary ponderata.",
++			"configHint": "Aggiungilo all'elenco dei plugin in config.json e riavvia Bifrost, oppure abilitalo dalla pagina dei plugin:",
++			"checkAgain": "Verifica di nuovo",
++			"openPlugins": "Apri plugin"
++		},
++		"tiles": {
++			"sampled": "Campionate",
++			"sampledFooter": "{{eligible}} idonee · tasso {{rate}}",
++			"compared": "Confrontate",
++			"comparedFooter": "In corso {{inFlight}} · in coda {{queued}}",
++			"candidateErrors": "Errori del candidato",
++			"candidateErrorsFooter": "{{rate}} dei confronti",
++			"dropped": "Scartate",
++			"droppedFooter": "Saltate per budget: {{skipped}}",
++			"evalSpend": "Spesa di valutazione oggi",
++			"budgetOf": "su {{budget}} di budget giornaliero",
++			"budgetUnlimited": "Nessun budget giornaliero",
++			"budgetExhaustedShort": "Budget esaurito",
++			"judge": "Modello giudice",
++			"judgeOff": "Nessun giudice",
++			"embeddingModel": "Embedding: {{model}}",
++			"embeddingOff": "Nessun embedding"
++		},
++		"scorecard": {
++			"title": "Scheda dei candidati",
++			"subtitle": "Una riga per candidato. La concordanza conta le risposte giudicate un sostituto accettabile della risposta principale.",
++			"emptyTitle": "Ancora nessun confronto",
++			"emptyDescription": "Gli esperimenti sono configurati. I risultati compariranno qui man mano che si completano le richieste campionate al modello di origine.",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "confrontato con",
++			"primaryModels": "Modelli principali: {{models}}",
++			"viewDisagreements": "Vedi discordanze",
++			"promote": "Promuovi a canary",
++			"samples": "Campioni",
++			"samplesNeeded": "Serve {{count}} campione per un verdetto",
++			"samplesNeeded_other": "Servono {{count}} campioni per un verdetto",
++			"judgedCount": "{{formatted}} valutato",
++			"judgedCount_other": "{{formatted}} valutati",
++			"agreement": "Concordanza",
++			"lowerBound": "Limite inferiore al 95%: {{value}}",
++			"errorRate": "Tasso di errore",
++			"errorsOfSamples": "{{errors}} su {{samples}} non riusciti",
++			"judgeScore": "Punteggio del giudice",
++			"scoreVs": "{{primary}} contro {{candidate}}",
++			"judgeRecord": "Vinte {{wins}} · pari {{ties}} · perse {{losses}}",
++			"notJudged": "Non ancora valutato",
++			"latencyP50": "Latenza p50",
++			"latencyP95": "Latenza p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "Principale → candidato",
++			"savings": "Risparmio",
++			"projectedMonthly": "{{amount}}/mese previsti",
++			"lexical": "Lessicale",
++			"semantic": "Semantica",
++			"toolCalls": "Chiamate a strumenti",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "Costo medio per richiesta: {{primary}} principale, {{candidate}} candidato"
++		},
++		"verdict": {
++			"collecting": "In raccolta",
++			"ready": "Pronto",
++			"promising": "Promettente",
++			"not_ready": "Non pronto"
++		},
++		"records": {
++			"title": "Discordanze",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "Filtra per esito",
++			"filter": {
++				"fail": "Discordanze (non superate)",
++				"error": "Errori del candidato",
++				"pass": "Concordanze (superate)",
++				"all": "Tutti gli esiti"
++			},
++			"refresh": "Aggiorna record",
++			"total": "{{formatted}} record",
++			"total_other": "{{formatted}} record",
++			"entity": "record di confronto",
++			"emptyFail": "Ancora nessuna discordanza per questo candidato.",
++			"empty": "Nessun record corrisponde a questo filtro.",
++			"range": "{{from}}–{{to}} di {{total}}",
++			"outcome": {
++				"pass": "Superato",
++				"fail": "Non superato",
++				"error": "Errore"
++			},
++			"basis": "Deciso da: {{basis}}",
++			"passBasis": {
++				"judge": "giudice",
++				"semantic": "embedding",
++				"structural": "struttura",
++				"lexical": "sovrapposizione di token"
++			},
++			"passBasisLine": "Esito deciso da: {{basis}}",
++			"stream": "Streaming",
++			"promptNotStored": "Prompt non salvato (store_payloads è disattivato)",
++			"prompt": "Prompt",
++			"primary": "Principale",
++			"candidate": "Candidato",
++			"tokens": "Token: {{input}} in ingresso / {{output}} in uscita",
++			"emptyText": "Risposta vuota",
++			"toolCalls": "{{count}} chiamata a strumento",
++			"toolCalls_other": "{{count}} chiamate a strumenti",
++			"finishReason": "Motivo di fine: {{reason}}",
++			"answerNotStored": "Risposta non salvata",
++			"judge": "Giudice",
++			"judgeScores": "Principale {{primary}} / candidato {{candidate}}",
++			"winner": {
++				"primary": "Vince il principale",
++				"candidate": "Vince il candidato",
++				"tie": "Pareggio"
++			},
++			"judgeError": "Errore del giudice: {{error}}",
++			"judgeOrder": "Il candidato è stato mostrato al giudice come risposta {{label}}",
++			"similarity": "Metriche di confronto",
++			"match": "Corrisponde",
++			"mismatch": "Non corrisponde",
++			"lexical": "Similarità lessicale",
++			"semantic": "Similarità semantica",
++			"lengthRatio": "Rapporto di lunghezza",
++			"toolCallsMatch": "Chiamate a strumenti",
++			"jsonMatch": "Struttura JSON",
++			"finishReasonMatch": "Motivo di fine",
++			"evalCost": "Costo di valutazione: {{cost}}",
++			"requestId": "Richiesta {{id}}"
++		},
++		"promote": {
++			"title": "Promuovi a canary",
++			"description": "Crea una regola di routing ponderata che invia una quota del traffico di {{source}} a {{candidate}}. Il resto continua ad andare al modello principale.",
++			"cautionTitle": "Il verdetto di questo candidato è: {{verdict}}",
++			"caution": "Non ha ancora superato le soglie di prontezza. Inizia con una quota piccola e tieni d'occhio i log.",
++			"weightLabel": "Quota di traffico inviata al candidato",
++			"weightHelp": "Un numero intero da 1 a 100. Inizia in piccolo: il 10% è un primo canary comune.",
++			"previewTitle": "Anteprima della regola",
++			"previewFailed": "Impossibile costruire la regola",
++			"celExpression": "Espressione CEL",
++			"targets": "Destinazioni",
++			"scope": "Ambito: {{scope}}",
++			"priority": "Priorità {{priority}}",
++			"enabled": "Abilitata",
++			"disabled": "Disabilitata",
++			"confirm": "Crea regola canary",
++			"success": "Regola di routing \"{{name}}\" creata",
++			"successDescription": "Il canary è attivo. Seguilo nella pagina delle regole di routing.",
++			"viewRules": "Vedi regole",
++			"failed": "Impossibile creare la regola di routing"
++		}
+ 	}
+ }
+diff --git a/ui/locales/it/shell.json b/ui/locales/it/shell.json
+index 9be59a2..c08d2b7 100644
+--- a/ui/locales/it/shell.json
++++ b/ui/locales/it/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "Budget e limiti",
+ 		"routingRules": "Regole di routing",
+ 		"complexityRouter": "Router di complessità",
++		"shadowTraffic": "Traffico ombra",
+ 		"circuitBreaker": "Circuit Breaker",
+ 		"pricingOverrides": "Override dei prezzi",
+ 		"modelSettings": "Impostazioni modelli",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "Budget e rate limit",
+ 		"routingRules": "Regole di routing intelligente",
+ 		"complexityRouter": "Routing per livello di complessità",
++		"shadowTraffic": "Prova modelli più economici sul traffico reale",
+ 		"circuitBreaker": "Fallback automatico quando gli endpoint primari falliscono",
+ 		"pricingOverrides": "Override dei prezzi con ambito",
+ 		"modelSettings": "Configurazione modelli e routing",
+diff --git a/ui/locales/ja/models.json b/ui/locales/ja/models.json
+index cd12ffc..2be12a9 100644
+--- a/ui/locales/ja/models.json
++++ b/ui/locales/ja/models.json
+@@ -2237,5 +2237,180 @@
+ 		"resetAll": "データシートに戻す",
+ 		"noPermission": "データシートを編集する権限がありません",
+ 		"saving": "保存中..."
++	},
++	"shadow": {
++		"title": "シャドートラフィック",
++		"description": "ライブトラフィックのサンプルをより安価な候補モデルにミラーリングし、置き換えの準備ができているかを確認します。",
++		"pageInfo": "Bifrost はライブのチャットリクエストのサンプルをバックグラウンドで候補モデルにコピーします。ユーザーが受け取るレスポンスには一切影響しません。候補の回答はそれぞれプライマリモデルの回答と比較して採点され、下のスコアカードで各候補が安全で安価な代替にどれだけ近いかを確認できます。",
++		"collectingSince": "{{date}} から収集中",
++		"refresh": "更新",
++		"live": "ライブ",
++		"paused": "一時停止中",
++		"pauseAria": "ライブ更新を一時停止",
++		"resumeAria": "ライブ更新を再開",
++		"entity": "シャドートラフィック",
++		"reset": {
++			"button": "リセット",
++			"title": "シャドーの結果をリセットしますか？",
++			"description": "保存されているすべての比較とカウンターが削除されます。実験は継続され、ゼロから収集し直します。本日の評価コストは保持されるため、日次予算は引き続き適用されます。",
++			"confirm": "結果をリセット",
++			"success": "シャドーの結果を削除しました",
++			"failed": "シャドーの結果をリセットできませんでした"
++		},
++		"budgetExhausted": {
++			"title": "評価の日次予算を使い切りました",
++			"description": "予算が UTC の午前 0 時にリセットされるまで、新しいサンプルはスキップされます。収集を続けるには、プラグイン設定の daily_budget_usd を増やしてください。"
++		},
++		"notEnabled": {
++			"title": "シャドートラフィックは有効になっていません",
++			"description": "shadow プラグインは、ライブのチャットリクエストのサンプルをバックグラウンドでより安価な候補モデルにミラーリングし、LLM ジャッジ、埋め込み、構造チェックを使って各回答をプライマリモデルと比較して採点します。ユーザーに返されるのは常にプライマリのレスポンスだけです。",
++			"promote": "候補の準備が整ったら、ワンクリックで重み付きのカナリアルーティングルールに昇格できます。",
++			"configHint": "config.json のプラグイン一覧に追加して Bifrost を再起動するか、プラグインページから有効にしてください:",
++			"checkAgain": "再確認",
++			"openPlugins": "プラグインを開く"
++		},
++		"tiles": {
++			"sampled": "サンプル数",
++			"sampledFooter": "対象 {{eligible}} · 率 {{rate}}",
++			"compared": "比較済み",
++			"comparedFooter": "処理中 {{inFlight}} · 待機 {{queued}}",
++			"candidateErrors": "候補のエラー",
++			"candidateErrorsFooter": "比較の {{rate}}",
++			"dropped": "破棄",
++			"droppedFooter": "予算によりスキップ: {{skipped}}",
++			"evalSpend": "本日の評価コスト",
++			"budgetOf": "日次予算 {{budget}} 中",
++			"budgetUnlimited": "日次予算なし",
++			"budgetExhaustedShort": "予算超過",
++			"judge": "ジャッジモデル",
++			"judgeOff": "ジャッジなし",
++			"embeddingModel": "埋め込み: {{model}}",
++			"embeddingOff": "埋め込みなし"
++		},
++		"scorecard": {
++			"title": "候補スコアカード",
++			"subtitle": "候補ごとに 1 行。一致率は、プライマリの回答の代わりとして許容できると判定された回答の割合です。",
++			"emptyTitle": "まだ比較がありません",
++			"emptyDescription": "実験は設定済みです。ソースモデルへのサンプルリクエストが完了すると、ここに結果が表示されます。",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "比較対象",
++			"primaryModels": "プライマリモデル: {{models}}",
++			"viewDisagreements": "不一致を表示",
++			"promote": "カナリアに昇格",
++			"samples": "サンプル",
++			"samplesNeeded": "判定には {{count}} 件のサンプルが必要",
++			"samplesNeeded_other": "判定には {{count}} 件のサンプルが必要",
++			"judgedCount": "{{formatted}} 件判定済み",
++			"judgedCount_other": "{{formatted}} 件判定済み",
++			"agreement": "一致率",
++			"lowerBound": "95% 下限 {{value}}",
++			"errorRate": "エラー率",
++			"errorsOfSamples": "{{samples}} 件中 {{errors}} 件失敗",
++			"judgeScore": "ジャッジスコア",
++			"scoreVs": "{{primary}} 対 {{candidate}}",
++			"judgeRecord": "勝ち {{wins}} · 引き分け {{ties}} · 負け {{losses}}",
++			"notJudged": "未判定",
++			"latencyP50": "レイテンシ p50",
++			"latencyP95": "レイテンシ p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "プライマリ → 候補",
++			"savings": "削減率",
++			"projectedMonthly": "月間予測 {{amount}}",
++			"lexical": "語彙",
++			"semantic": "意味",
++			"toolCalls": "ツール呼び出し",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "リクエストあたりの平均コスト: プライマリ {{primary}}、候補 {{candidate}}"
++		},
++		"verdict": {
++			"collecting": "収集中",
++			"ready": "準備完了",
++			"promising": "有望",
++			"not_ready": "準備未完了"
++		},
++		"records": {
++			"title": "不一致",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "結果で絞り込み",
++			"filter": {
++				"fail": "不一致（不合格）",
++				"error": "候補のエラー",
++				"pass": "一致（合格）",
++				"all": "すべての結果"
++			},
++			"refresh": "レコードを更新",
++			"total": "{{formatted}} 件",
++			"total_other": "{{formatted}} 件",
++			"entity": "比較レコード",
++			"emptyFail": "この候補にはまだ不一致はありません。",
++			"empty": "このフィルターに一致するレコードはありません。",
++			"range": "{{total}} 件中 {{from}}–{{to}}",
++			"outcome": {
++				"pass": "合格",
++				"fail": "不合格",
++				"error": "エラー"
++			},
++			"basis": "判定根拠: {{basis}}",
++			"passBasis": {
++				"judge": "ジャッジ",
++				"semantic": "埋め込み",
++				"structural": "構造",
++				"lexical": "トークンの一致"
++			},
++			"passBasisLine": "合否の判定根拠: {{basis}}",
++			"stream": "ストリーミング",
++			"promptNotStored": "プロンプトは保存されていません（store_payloads が無効）",
++			"prompt": "プロンプト",
++			"primary": "プライマリ",
++			"candidate": "候補",
++			"tokens": "トークン: 入力 {{input}} / 出力 {{output}}",
++			"emptyText": "空のレスポンス",
++			"toolCalls": "ツール呼び出し {{count}} 件",
++			"toolCalls_other": "ツール呼び出し {{count}} 件",
++			"finishReason": "終了理由: {{reason}}",
++			"answerNotStored": "回答は保存されていません",
++			"judge": "ジャッジ",
++			"judgeScores": "プライマリ {{primary}} / 候補 {{candidate}}",
++			"winner": {
++				"primary": "プライマリの勝ち",
++				"candidate": "候補の勝ち",
++				"tie": "引き分け"
++			},
++			"judgeError": "ジャッジが失敗しました: {{error}}",
++			"judgeOrder": "候補はジャッジに応答 {{label}} として提示されました",
++			"similarity": "比較指標",
++			"match": "一致",
++			"mismatch": "不一致",
++			"lexical": "語彙類似度",
++			"semantic": "意味類似度",
++			"lengthRatio": "長さの比率",
++			"toolCallsMatch": "ツール呼び出し",
++			"jsonMatch": "JSON 構造",
++			"finishReasonMatch": "終了理由",
++			"evalCost": "評価コスト: {{cost}}",
++			"requestId": "リクエスト {{id}}"
++		},
++		"promote": {
++			"title": "カナリアに昇格",
++			"description": "{{source}} のトラフィックの一部を {{candidate}} に送る重み付きルーティングルールを作成します。残りは引き続きプライマリモデルに送られます。",
++			"cautionTitle": "この候補の判定は「{{verdict}}」です",
++			"caution": "まだ準備完了のしきい値を満たしていません。小さな割合から始め、ログを注意深く監視してください。",
++			"weightLabel": "候補に送るトラフィックの割合",
++			"weightHelp": "1 から 100 までの整数です。小さく始めましょう。最初のカナリアには 10% がよく使われます。",
++			"previewTitle": "ルールのプレビュー",
++			"previewFailed": "ルールを作成できませんでした",
++			"celExpression": "CEL 式",
++			"targets": "ターゲット",
++			"scope": "スコープ: {{scope}}",
++			"priority": "優先度 {{priority}}",
++			"enabled": "有効",
++			"disabled": "無効",
++			"confirm": "カナリアルールを作成",
++			"success": "ルーティングルール「{{name}}」を作成しました",
++			"successDescription": "カナリアが有効になりました。ルーティングルールのページで確認できます。",
++			"viewRules": "ルールを表示",
++			"failed": "ルーティングルールを作成できませんでした"
++		}
+ 	}
+ }
+diff --git a/ui/locales/ja/shell.json b/ui/locales/ja/shell.json
+index ed7af79..a9b2801 100644
+--- a/ui/locales/ja/shell.json
++++ b/ui/locales/ja/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "予算と制限",
+ 		"routingRules": "ルーティングルール",
+ 		"complexityRouter": "複雑度ルーター",
++		"shadowTraffic": "シャドートラフィック",
+ 		"circuitBreaker": "サーキットブレーカー",
+ 		"pricingOverrides": "料金オーバーライド",
+ 		"modelSettings": "モデル設定",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "予算とレート制限",
+ 		"routingRules": "インテリジェントルーティングルール",
+ 		"complexityRouter": "複雑度ティアによるルーティング",
++		"shadowTraffic": "安価なモデルを実トラフィックでテスト",
+ 		"circuitBreaker": "プライマリエンドポイント障害時の自動フォールバック",
+ 		"pricingOverrides": "スコープ付き料金オーバーライド",
+ 		"modelSettings": "モデルとルーティングの構成",
+diff --git a/ui/locales/ko/models.json b/ui/locales/ko/models.json
+index e14f4d3..4a1d27d 100644
+--- a/ui/locales/ko/models.json
++++ b/ui/locales/ko/models.json
+@@ -2237,5 +2237,180 @@
+ 		"resetAll": "데이터시트로 재설정",
+ 		"noPermission": "데이터시트를 편집할 권한이 없습니다",
+ 		"saving": "저장 중..."
++	},
++	"shadow": {
++		"title": "섀도 트래픽",
++		"description": "라이브 트래픽 샘플을 더 저렴한 후보 모델로 미러링하고, 대체할 준비가 되었는지 보여 줍니다.",
++		"pageInfo": "Bifrost는 라이브 채팅 요청의 샘플을 백그라운드에서 후보 모델로 복사하며, 사용자가 받는 응답에는 전혀 영향을 주지 않습니다. 각 후보 답변은 기본 모델의 답변과 비교해 채점되며, 아래 스코어카드에서 각 후보가 안전하고 더 저렴한 대체 모델에 얼마나 가까운지 확인할 수 있습니다.",
++		"collectingSince": "{{date}}부터 수집 중",
++		"refresh": "새로 고침",
++		"live": "실시간",
++		"paused": "일시 중지됨",
++		"pauseAria": "실시간 업데이트 일시 중지",
++		"resumeAria": "실시간 업데이트 재개",
++		"entity": "섀도 트래픽",
++		"reset": {
++			"button": "초기화",
++			"title": "섀도 결과를 초기화할까요?",
++			"description": "저장된 모든 비교와 카운터가 삭제됩니다. 실험은 계속 실행되며 처음부터 다시 수집합니다. 오늘의 평가 비용은 유지되므로 일일 예산이 계속 적용됩니다.",
++			"confirm": "결과 초기화",
++			"success": "섀도 결과를 삭제했습니다",
++			"failed": "섀도 결과를 초기화하지 못했습니다"
++		},
++		"budgetExhausted": {
++			"title": "일일 평가 예산 소진",
++			"description": "UTC 자정에 예산이 초기화될 때까지 새 샘플은 건너뜁니다. 계속 수집하려면 플러그인 설정에서 daily_budget_usd를 늘리세요."
++		},
++		"notEnabled": {
++			"title": "섀도 트래픽이 활성화되지 않았습니다",
++			"description": "shadow 플러그인은 라이브 채팅 요청의 샘플을 백그라운드에서 더 저렴한 후보 모델로 미러링하고, LLM 심사, 임베딩, 구조 검사로 각 답변을 기본 모델과 비교해 채점합니다. 사용자는 항상 기본 응답만 받습니다.",
++			"promote": "후보가 준비되면 클릭 한 번으로 가중치 기반 카나리 라우팅 규칙으로 승격할 수 있습니다.",
++			"configHint": "config.json의 플러그인 목록에 추가한 뒤 Bifrost를 다시 시작하거나 플러그인 페이지에서 활성화하세요:",
++			"checkAgain": "다시 확인",
++			"openPlugins": "플러그인 열기"
++		},
++		"tiles": {
++			"sampled": "샘플링됨",
++			"sampledFooter": "대상 {{eligible}} · 비율 {{rate}}",
++			"compared": "비교됨",
++			"comparedFooter": "처리 중 {{inFlight}} · 대기 {{queued}}",
++			"candidateErrors": "후보 오류",
++			"candidateErrorsFooter": "비교의 {{rate}}",
++			"dropped": "삭제됨",
++			"droppedFooter": "예산 초과로 건너뜀: {{skipped}}",
++			"evalSpend": "오늘 평가 비용",
++			"budgetOf": "일일 예산 {{budget}} 중",
++			"budgetUnlimited": "일일 예산 없음",
++			"budgetExhaustedShort": "예산 소진",
++			"judge": "심사 모델",
++			"judgeOff": "심사 없음",
++			"embeddingModel": "임베딩: {{model}}",
++			"embeddingOff": "임베딩 없음"
++		},
++		"scorecard": {
++			"title": "후보 스코어카드",
++			"subtitle": "후보당 한 행입니다. 일치율은 기본 답변을 대신할 수 있다고 판단된 답변의 비율입니다.",
++			"emptyTitle": "아직 비교 결과가 없습니다",
++			"emptyDescription": "실험이 구성되어 있습니다. 소스 모델에 대한 샘플 요청이 완료되면 결과가 여기에 표시됩니다.",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "비교 대상",
++			"primaryModels": "기본 모델: {{models}}",
++			"viewDisagreements": "불일치 보기",
++			"promote": "카나리로 승격",
++			"samples": "샘플",
++			"samplesNeeded": "판정하려면 샘플 {{count}}개가 필요합니다",
++			"samplesNeeded_other": "판정하려면 샘플 {{count}}개가 필요합니다",
++			"judgedCount": "{{formatted}}개 심사됨",
++			"judgedCount_other": "{{formatted}}개 심사됨",
++			"agreement": "일치율",
++			"lowerBound": "95% 하한 {{value}}",
++			"errorRate": "오류율",
++			"errorsOfSamples": "{{samples}}개 중 {{errors}}개 실패",
++			"judgeScore": "심사 점수",
++			"scoreVs": "{{primary}} 대 {{candidate}}",
++			"judgeRecord": "승 {{wins}} · 무 {{ties}} · 패 {{losses}}",
++			"notJudged": "아직 심사되지 않음",
++			"latencyP50": "지연 시간 p50",
++			"latencyP95": "지연 시간 p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "기본 → 후보",
++			"savings": "절감률",
++			"projectedMonthly": "월 예상 {{amount}}",
++			"lexical": "어휘",
++			"semantic": "의미",
++			"toolCalls": "도구 호출",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "요청당 평균 비용: 기본 {{primary}}, 후보 {{candidate}}"
++		},
++		"verdict": {
++			"collecting": "수집 중",
++			"ready": "준비됨",
++			"promising": "유망함",
++			"not_ready": "준비 안 됨"
++		},
++		"records": {
++			"title": "불일치",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "결과로 필터링",
++			"filter": {
++				"fail": "불일치(실패)",
++				"error": "후보 오류",
++				"pass": "일치(통과)",
++				"all": "모든 결과"
++			},
++			"refresh": "기록 새로 고침",
++			"total": "기록 {{formatted}}개",
++			"total_other": "기록 {{formatted}}개",
++			"entity": "비교 기록",
++			"emptyFail": "이 후보에 대한 불일치가 아직 없습니다.",
++			"empty": "이 필터와 일치하는 기록이 없습니다.",
++			"range": "{{total}}개 중 {{from}}–{{to}}",
++			"outcome": {
++				"pass": "통과",
++				"fail": "실패",
++				"error": "오류"
++			},
++			"basis": "판정 기준: {{basis}}",
++			"passBasis": {
++				"judge": "심사",
++				"semantic": "임베딩",
++				"structural": "구조",
++				"lexical": "토큰 중첩"
++			},
++			"passBasisLine": "통과 판정 기준: {{basis}}",
++			"stream": "스트리밍",
++			"promptNotStored": "프롬프트가 저장되지 않았습니다(store_payloads 꺼짐)",
++			"prompt": "프롬프트",
++			"primary": "기본",
++			"candidate": "후보",
++			"tokens": "토큰: 입력 {{input}} / 출력 {{output}}",
++			"emptyText": "빈 응답",
++			"toolCalls": "도구 호출 {{count}}개",
++			"toolCalls_other": "도구 호출 {{count}}개",
++			"finishReason": "종료 이유: {{reason}}",
++			"answerNotStored": "답변이 저장되지 않았습니다",
++			"judge": "심사",
++			"judgeScores": "기본 {{primary}} / 후보 {{candidate}}",
++			"winner": {
++				"primary": "기본 승",
++				"candidate": "후보 승",
++				"tie": "무승부"
++			},
++			"judgeError": "심사 실패: {{error}}",
++			"judgeOrder": "후보는 심사 모델에 응답 {{label}}(으)로 제시되었습니다",
++			"similarity": "비교 지표",
++			"match": "일치",
++			"mismatch": "불일치",
++			"lexical": "어휘 유사도",
++			"semantic": "의미 유사도",
++			"lengthRatio": "길이 비율",
++			"toolCallsMatch": "도구 호출",
++			"jsonMatch": "JSON 구조",
++			"finishReasonMatch": "종료 이유",
++			"evalCost": "평가 비용: {{cost}}",
++			"requestId": "요청 {{id}}"
++		},
++		"promote": {
++			"title": "카나리로 승격",
++			"description": "{{source}} 트래픽의 일부를 {{candidate}}(으)로 보내는 가중치 기반 라우팅 규칙을 만듭니다. 나머지는 계속 기본 모델로 전달됩니다.",
++			"cautionTitle": "이 후보의 판정은 '{{verdict}}'입니다",
++			"caution": "아직 준비 기준을 통과하지 못했습니다. 작은 비율로 시작하고 로그를 면밀히 확인하세요.",
++			"weightLabel": "후보로 보낼 트래픽 비율",
++			"weightHelp": "1~100 사이의 정수입니다. 작게 시작하세요. 첫 카나리에는 보통 10%를 사용합니다.",
++			"previewTitle": "규칙 미리 보기",
++			"previewFailed": "규칙을 만들 수 없습니다",
++			"celExpression": "CEL 표현식",
++			"targets": "대상",
++			"scope": "범위: {{scope}}",
++			"priority": "우선순위 {{priority}}",
++			"enabled": "활성화됨",
++			"disabled": "비활성화됨",
++			"confirm": "카나리 규칙 만들기",
++			"success": "라우팅 규칙 '{{name}}'을(를) 만들었습니다",
++			"successDescription": "카나리가 활성화되었습니다. 라우팅 규칙 페이지에서 확인하세요.",
++			"viewRules": "규칙 보기",
++			"failed": "라우팅 규칙을 만들지 못했습니다"
++		}
+ 	}
+ }
+diff --git a/ui/locales/ko/shell.json b/ui/locales/ko/shell.json
+index 0d5739b..18ee397 100644
+--- a/ui/locales/ko/shell.json
++++ b/ui/locales/ko/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "예산 및 한도",
+ 		"routingRules": "라우팅 규칙",
+ 		"complexityRouter": "복잡도 라우터",
++		"shadowTraffic": "섀도 트래픽",
+ 		"circuitBreaker": "서킷 브레이커",
+ 		"pricingOverrides": "가격 재정의",
+ 		"modelSettings": "모델 설정",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "예산 및 속도 제한",
+ 		"routingRules": "지능형 라우팅 규칙",
+ 		"complexityRouter": "복잡도 계층 라우팅",
++		"shadowTraffic": "실제 트래픽으로 더 저렴한 모델 테스트",
+ 		"circuitBreaker": "기본 엔드포인트 실패 시 자동 폴백",
+ 		"pricingOverrides": "범위별 가격 재정의",
+ 		"modelSettings": "모델 및 라우팅 구성",
+diff --git a/ui/locales/pt/models.json b/ui/locales/pt/models.json
+index d0f6660..8edb942 100644
+--- a/ui/locales/pt/models.json
++++ b/ui/locales/pt/models.json
+@@ -2239,5 +2239,180 @@
+ 		"resetAll": "Redefinir para a ficha técnica",
+ 		"noPermission": "Você não tem permissão para editar a ficha técnica",
+ 		"saving": "Salvando..."
++	},
++	"shadow": {
++		"title": "Tráfego sombra",
++		"description": "Espelha uma amostra do tráfego ao vivo em modelos candidatos mais baratos e mostra se eles estão prontos para assumir.",
++		"pageInfo": "O Bifrost copia em segundo plano uma amostra das solicitações de chat ao vivo para modelos candidatos, sem nunca alterar a resposta que seus usuários recebem. Cada resposta candidata é pontuada em relação à do modelo principal, e o quadro abaixo mostra o quanto cada candidato está perto de ser um substituto seguro e mais barato.",
++		"collectingSince": "Coletando desde {{date}}",
++		"refresh": "Atualizar",
++		"live": "Ao vivo",
++		"paused": "Pausado",
++		"pauseAria": "Pausar atualizações ao vivo",
++		"resumeAria": "Retomar atualizações ao vivo",
++		"entity": "tráfego sombra",
++		"reset": {
++			"button": "Redefinir",
++			"title": "Redefinir os resultados do tráfego sombra?",
++			"description": "Isso apaga todas as comparações armazenadas e todos os contadores. Os experimentos continuam em execução e voltam a coletar do zero. O gasto de avaliação de hoje é mantido, então o orçamento diário continua valendo.",
++			"confirm": "Redefinir resultados",
++			"success": "Resultados do tráfego sombra apagados",
++			"failed": "Não foi possível redefinir os resultados do tráfego sombra"
++		},
++		"budgetExhausted": {
++			"title": "Orçamento diário de avaliação esgotado",
++			"description": "Novas amostras são ignoradas até o orçamento ser redefinido à meia-noite UTC. Aumente daily_budget_usd na configuração do plug-in para continuar coletando."
++		},
++		"notEnabled": {
++			"title": "O tráfego sombra não está habilitado",
++			"description": "O plug-in shadow espelha em segundo plano uma amostra das solicitações de chat ao vivo em modelos candidatos mais baratos e pontua cada resposta em relação ao modelo principal com um juiz LLM, embeddings e verificações estruturais. Seus usuários só veem a resposta principal.",
++			"promote": "Quando um candidato estiver pronto, você pode promovê-lo com um clique a uma regra de encaminhamento canary ponderada.",
++			"configHint": "Adicione-o à lista de plugins no config.json e reinicie o Bifrost, ou habilite-o na página de plug-ins:",
++			"checkAgain": "Verificar novamente",
++			"openPlugins": "Abrir plug-ins"
++		},
++		"tiles": {
++			"sampled": "Amostradas",
++			"sampledFooter": "{{eligible}} elegíveis · taxa {{rate}}",
++			"compared": "Comparadas",
++			"comparedFooter": "Em andamento {{inFlight}} · na fila {{queued}}",
++			"candidateErrors": "Erros do candidato",
++			"candidateErrorsFooter": "{{rate}} das comparadas",
++			"dropped": "Descartadas",
++			"droppedFooter": "Ignoradas por orçamento: {{skipped}}",
++			"evalSpend": "Gasto de avaliação hoje",
++			"budgetOf": "de {{budget}} de orçamento diário",
++			"budgetUnlimited": "Sem orçamento diário",
++			"budgetExhaustedShort": "Orçamento esgotado",
++			"judge": "Modelo juiz",
++			"judgeOff": "Sem juiz",
++			"embeddingModel": "Embeddings: {{model}}",
++			"embeddingOff": "Sem embeddings"
++		},
++		"scorecard": {
++			"title": "Quadro de candidatos",
++			"subtitle": "Uma linha por candidato. A concordância conta as respostas consideradas um substituto aceitável da resposta principal.",
++			"emptyTitle": "Ainda não há comparações",
++			"emptyDescription": "Os experimentos estão configurados. Os resultados aparecem aqui à medida que as solicitações amostradas ao modelo de origem são concluídas.",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "comparado com",
++			"primaryModels": "Modelos principais: {{models}}",
++			"viewDisagreements": "Ver divergências",
++			"promote": "Promover a canary",
++			"samples": "Amostras",
++			"samplesNeeded": "Precisa de {{count}} amostra para um veredito",
++			"samplesNeeded_other": "Precisa de {{count}} amostras para um veredito",
++			"judgedCount": "{{formatted}} avaliada",
++			"judgedCount_other": "{{formatted}} avaliadas",
++			"agreement": "Concordância",
++			"lowerBound": "Limite inferior de 95%: {{value}}",
++			"errorRate": "Taxa de erro",
++			"errorsOfSamples": "{{errors}} de {{samples}} falharam",
++			"judgeScore": "Nota do juiz",
++			"scoreVs": "{{primary}} vs. {{candidate}}",
++			"judgeRecord": "Venceu {{wins}} · empatou {{ties}} · perdeu {{losses}}",
++			"notJudged": "Ainda não avaliado",
++			"latencyP50": "Latência p50",
++			"latencyP95": "Latência p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "Principal → candidato",
++			"savings": "Economia",
++			"projectedMonthly": "{{amount}}/mês projetado",
++			"lexical": "Léxica",
++			"semantic": "Semântica",
++			"toolCalls": "Chamadas de ferramentas",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "Custo médio por solicitação: {{primary}} principal, {{candidate}} candidato"
++		},
++		"verdict": {
++			"collecting": "Coletando",
++			"ready": "Pronto",
++			"promising": "Promissor",
++			"not_ready": "Não pronto"
++		},
++		"records": {
++			"title": "Divergências",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "Filtrar por resultado",
++			"filter": {
++				"fail": "Divergências (reprovadas)",
++				"error": "Erros do candidato",
++				"pass": "Concordâncias (aprovadas)",
++				"all": "Todos os resultados"
++			},
++			"refresh": "Atualizar registros",
++			"total": "{{formatted}} registro",
++			"total_other": "{{formatted}} registros",
++			"entity": "registros de comparação",
++			"emptyFail": "Ainda não há divergências para este candidato.",
++			"empty": "Nenhum registro corresponde a este filtro.",
++			"range": "{{from}}–{{to}} de {{total}}",
++			"outcome": {
++				"pass": "Aprovado",
++				"fail": "Reprovado",
++				"error": "Erro"
++			},
++			"basis": "Decidido por: {{basis}}",
++			"passBasis": {
++				"judge": "juiz",
++				"semantic": "embeddings",
++				"structural": "estrutura",
++				"lexical": "sobreposição de tokens"
++			},
++			"passBasisLine": "Aprovação decidida por: {{basis}}",
++			"stream": "Streaming",
++			"promptNotStored": "Prompt não armazenado (store_payloads está desativado)",
++			"prompt": "Prompt",
++			"primary": "Principal",
++			"candidate": "Candidato",
++			"tokens": "Tokens: {{input}} de entrada / {{output}} de saída",
++			"emptyText": "Resposta vazia",
++			"toolCalls": "{{count}} chamada de ferramenta",
++			"toolCalls_other": "{{count}} chamadas de ferramentas",
++			"finishReason": "Motivo de término: {{reason}}",
++			"answerNotStored": "Resposta não armazenada",
++			"judge": "Juiz",
++			"judgeScores": "Principal {{primary}} / candidato {{candidate}}",
++			"winner": {
++				"primary": "Principal vence",
++				"candidate": "Candidato vence",
++				"tie": "Empate"
++			},
++			"judgeError": "O juiz falhou: {{error}}",
++			"judgeOrder": "O candidato foi mostrado ao juiz como resposta {{label}}",
++			"similarity": "Métricas de comparação",
++			"match": "Igual",
++			"mismatch": "Diferente",
++			"lexical": "Similaridade léxica",
++			"semantic": "Similaridade semântica",
++			"lengthRatio": "Razão de comprimento",
++			"toolCallsMatch": "Chamadas de ferramentas",
++			"jsonMatch": "Estrutura JSON",
++			"finishReasonMatch": "Motivo de término",
++			"evalCost": "Custo de avaliação: {{cost}}",
++			"requestId": "Solicitação {{id}}"
++		},
++		"promote": {
++			"title": "Promover a canary",
++			"description": "Cria uma regra de encaminhamento ponderada que envia uma parte do tráfego de {{source}} para {{candidate}}. O restante continua indo para o modelo principal.",
++			"cautionTitle": "O veredito deste candidato é: {{verdict}}",
++			"caution": "Ele ainda não atingiu os limites de prontidão. Comece com uma parte pequena e acompanhe os logs de perto.",
++			"weightLabel": "Parte do tráfego enviada ao candidato",
++			"weightHelp": "Um número inteiro de 1 a 100. Comece pequeno: 10% é um primeiro canary comum.",
++			"previewTitle": "Prévia da regra",
++			"previewFailed": "Não foi possível montar a regra",
++			"celExpression": "Expressão CEL",
++			"targets": "Destinos",
++			"scope": "Escopo: {{scope}}",
++			"priority": "Prioridade {{priority}}",
++			"enabled": "Ativada",
++			"disabled": "Desativada",
++			"confirm": "Criar regra canary",
++			"success": "Regra de encaminhamento \"{{name}}\" criada",
++			"successDescription": "O canary está ativo. Acompanhe-o na página de regras de encaminhamento.",
++			"viewRules": "Ver regras",
++			"failed": "Não foi possível criar a regra de encaminhamento"
++		}
+ 	}
+ }
+diff --git a/ui/locales/pt/shell.json b/ui/locales/pt/shell.json
+index 7d31def..b567692 100644
+--- a/ui/locales/pt/shell.json
++++ b/ui/locales/pt/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "Orçamentos e limites",
+ 		"routingRules": "Regras de encaminhamento",
+ 		"complexityRouter": "Encaminhador por complexidade",
++		"shadowTraffic": "Tráfego sombra",
+ 		"circuitBreaker": "Disjuntor",
+ 		"pricingOverrides": "Substituições de preços",
+ 		"modelSettings": "Definições de modelos",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "Orçamentos e limites de taxa",
+ 		"routingRules": "Regras de encaminhamento inteligente",
+ 		"complexityRouter": "Encaminhamento por nível de complexidade",
++		"shadowTraffic": "Teste modelos mais baratos com tráfego real",
+ 		"circuitBreaker": "Fallback automático quando os endpoints principais falham",
+ 		"pricingOverrides": "Substituições de preços com âmbito",
+ 		"modelSettings": "Configuração de modelos e encaminhamento",
+diff --git a/ui/locales/ru/models.json b/ui/locales/ru/models.json
+index d133c2f..23a2fdb 100644
+--- a/ui/locales/ru/models.json
++++ b/ui/locales/ru/models.json
+@@ -2283,5 +2283,188 @@
+ 		"resetAll": "Сбросить к спецификации",
+ 		"noPermission": "У вас нет прав на изменение спецификации",
+ 		"saving": "Сохранение..."
++	},
++	"shadow": {
++		"title": "Теневой трафик",
++		"description": "Дублирует выборку живого трафика на более дешёвые модели-кандидаты и показывает, готовы ли они заменить основную модель.",
++		"pageInfo": "Bifrost в фоновом режиме копирует выборку живых чат-запросов на модели-кандидаты, никак не затрагивая ответ, который получают ваши пользователи. Каждый ответ кандидата оценивается относительно ответа основной модели, а таблица ниже показывает, насколько каждый кандидат близок к тому, чтобы стать безопасной и более дешёвой заменой.",
++		"collectingSince": "Сбор данных с {{date}}",
++		"refresh": "Обновить",
++		"live": "Онлайн",
++		"paused": "Пауза",
++		"pauseAria": "Приостановить обновления в реальном времени",
++		"resumeAria": "Возобновить обновления в реальном времени",
++		"entity": "теневой трафик",
++		"reset": {
++			"button": "Сбросить",
++			"title": "Сбросить результаты теневого трафика?",
++			"description": "Все сохранённые сравнения и счётчики будут удалены. Эксперименты продолжат работу и начнут сбор заново с нуля. Расходы на оценку за сегодня сохраняются, поэтому дневной бюджет продолжает действовать.",
++			"confirm": "Сбросить результаты",
++			"success": "Результаты теневого трафика удалены",
++			"failed": "Не удалось сбросить результаты теневого трафика"
++		},
++		"budgetExhausted": {
++			"title": "Дневной бюджет на оценку исчерпан",
++			"description": "Новые выборки пропускаются, пока бюджет не обнулится в полночь по UTC. Увеличьте daily_budget_usd в конфигурации плагина, чтобы продолжить сбор."
++		},
++		"notEnabled": {
++			"title": "Теневой трафик не включён",
++			"description": "Плагин shadow в фоновом режиме дублирует выборку живых чат-запросов на более дешёвые модели-кандидаты и оценивает каждый ответ относительно основной модели с помощью LLM-судьи, эмбеддингов и структурных проверок. Пользователи всегда видят только ответ основной модели.",
++			"promote": "Когда кандидат будет готов, его можно одним щелчком перевести во взвешенное canary-правило маршрутизации.",
++			"configHint": "Добавьте его в список плагинов в config.json и перезапустите Bifrost или включите его на странице плагинов:",
++			"checkAgain": "Проверить снова",
++			"openPlugins": "Открыть плагины"
++		},
++		"tiles": {
++			"sampled": "В выборке",
++			"sampledFooter": "Подходящих {{eligible}} · доля {{rate}}",
++			"compared": "Сравнено",
++			"comparedFooter": "В работе {{inFlight}} · в очереди {{queued}}",
++			"candidateErrors": "Ошибки кандидата",
++			"candidateErrorsFooter": "{{rate}} от сравнений",
++			"dropped": "Отброшено",
++			"droppedFooter": "Пропущено из-за бюджета: {{skipped}}",
++			"evalSpend": "Расходы на оценку сегодня",
++			"budgetOf": "из дневного бюджета {{budget}}",
++			"budgetUnlimited": "Без дневного бюджета",
++			"budgetExhaustedShort": "Бюджет исчерпан",
++			"judge": "Модель-судья",
++			"judgeOff": "Без судьи",
++			"embeddingModel": "Эмбеддинги: {{model}}",
++			"embeddingOff": "Без эмбеддингов"
++		},
++		"scorecard": {
++			"title": "Оценка кандидатов",
++			"subtitle": "Одна строка на кандидата. Согласие учитывает ответы, признанные приемлемой заменой ответа основной модели.",
++			"emptyTitle": "Сравнений пока нет",
++			"emptyDescription": "Эксперименты настроены. Результаты появятся здесь по мере завершения выбранных запросов к исходной модели.",
++			"experimentLine": "{{name}}: {{source}} → {{candidates}}",
++			"toCandidate": "сравнивается с",
++			"primaryModels": "Основные модели: {{models}}",
++			"viewDisagreements": "Показать расхождения",
++			"promote": "Перевести в canary",
++			"samples": "Выборки",
++			"samplesNeeded": "Для вердикта нужна {{count}} выборка",
++			"samplesNeeded_few": "Для вердикта нужны {{count}} выборки",
++			"samplesNeeded_many": "Для вердикта нужно {{count}} выборок",
++			"samplesNeeded_other": "Для вердикта нужно {{count}} выборки",
++			"judgedCount": "Оценено: {{formatted}}",
++			"judgedCount_few": "Оценено: {{formatted}}",
++			"judgedCount_many": "Оценено: {{formatted}}",
++			"judgedCount_other": "Оценено: {{formatted}}",
++			"agreement": "Согласие",
++			"lowerBound": "Нижняя граница 95%: {{value}}",
++			"errorRate": "Доля ошибок",
++			"errorsOfSamples": "Ошибок: {{errors}} из {{samples}}",
++			"judgeScore": "Оценка судьи",
++			"scoreVs": "{{primary}} против {{candidate}}",
++			"judgeRecord": "Победы {{wins}} · ничьи {{ties}} · поражения {{losses}}",
++			"notJudged": "Ещё не оценено",
++			"latencyP50": "Задержка p50",
++			"latencyP95": "Задержка p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "Основная → кандидат",
++			"savings": "Экономия",
++			"projectedMonthly": "Прогноз: {{amount}} в месяц",
++			"lexical": "Лексическое",
++			"semantic": "Семантическое",
++			"toolCalls": "Вызовы инструментов",
++			"json": "JSON",
++			"signal": "{{label}}: {{value}}",
++			"costPerRequest": "Средняя стоимость запроса: основная {{primary}}, кандидат {{candidate}}"
++		},
++		"verdict": {
++			"collecting": "Сбор данных",
++			"ready": "Готов",
++			"promising": "Перспективен",
++			"not_ready": "Не готов"
++		},
++		"records": {
++			"title": "Расхождения",
++			"pairLine": "{{experiment}}: {{source}} → {{candidate}}",
++			"outcomeFilter": "Фильтр по результату",
++			"filter": {
++				"fail": "Расхождения (не пройдено)",
++				"error": "Ошибки кандидата",
++				"pass": "Совпадения (пройдено)",
++				"all": "Все результаты"
++			},
++			"refresh": "Обновить записи",
++			"total": "{{formatted}} запись",
++			"total_few": "{{formatted}} записи",
++			"total_many": "{{formatted}} записей",
++			"total_other": "{{formatted}} записи",
++			"entity": "записи сравнений",
++			"emptyFail": "Для этого кандидата расхождений пока нет.",
++			"empty": "Нет записей, соответствующих фильтру.",
++			"range": "{{from}}–{{to}} из {{total}}",
++			"outcome": {
++				"pass": "Пройдено",
++				"fail": "Не пройдено",
++				"error": "Ошибка"
++			},
++			"basis": "Решение: {{basis}}",
++			"passBasis": {
++				"judge": "судья",
++				"semantic": "эмбеддинги",
++				"structural": "структура",
++				"lexical": "совпадение токенов"
++			},
++			"passBasisLine": "Основание результата: {{basis}}",
++			"stream": "Потоковый",
++			"promptNotStored": "Промпт не сохранён (store_payloads выключен)",
++			"prompt": "Промпт",
++			"primary": "Основная",
++			"candidate": "Кандидат",
++			"tokens": "Токены: {{input}} на входе / {{output}} на выходе",
++			"emptyText": "Пустой ответ",
++			"toolCalls": "{{count}} вызов инструмента",
++			"toolCalls_few": "{{count}} вызова инструментов",
++			"toolCalls_many": "{{count}} вызовов инструментов",
++			"toolCalls_other": "{{count}} вызова инструментов",
++			"finishReason": "Причина завершения: {{reason}}",
++			"answerNotStored": "Ответ не сохранён",
++			"judge": "Судья",
++			"judgeScores": "Основная {{primary}} / кандидат {{candidate}}",
++			"winner": {
++				"primary": "Победила основная",
++				"candidate": "Победил кандидат",
++				"tie": "Ничья"
++			},
++			"judgeError": "Ошибка судьи: {{error}}",
++			"judgeOrder": "Кандидат был показан судье как ответ {{label}}",
++			"similarity": "Метрики сравнения",
++			"match": "Совпадает",
++			"mismatch": "Не совпадает",
++			"lexical": "Лексическое сходство",
++			"semantic": "Семантическое сходство",
++			"lengthRatio": "Отношение длин",
++			"toolCallsMatch": "Вызовы инструментов",
++			"jsonMatch": "Структура JSON",
++			"finishReasonMatch": "Причина завершения",
++			"evalCost": "Стоимость оценки: {{cost}}",
++			"requestId": "Запрос {{id}}"
++		},
++		"promote": {
++			"title": "Перевести в canary",
++			"description": "Создаёт взвешенное правило маршрутизации, которое отправляет часть трафика {{source}} на {{candidate}}. Остальной трафик по-прежнему идёт на основную модель.",
++			"cautionTitle": "Вердикт для этого кандидата: {{verdict}}",
++			"caution": "Он ещё не прошёл пороги готовности. Начните с небольшой доли и внимательно следите за логами.",
++			"weightLabel": "Доля трафика для кандидата",
++			"weightHelp": "Целое число от 1 до 100. Начните с малого: 10% — обычная доля для первого canary.",
++			"previewTitle": "Предпросмотр правила",
++			"previewFailed": "Не удалось построить правило",
++			"celExpression": "Выражение CEL",
++			"targets": "Цели",
++			"scope": "Область: {{scope}}",
++			"priority": "Приоритет {{priority}}",
++			"enabled": "Включено",
++			"disabled": "Выключено",
++			"confirm": "Создать canary-правило",
++			"success": "Правило маршрутизации «{{name}}» создано",
++			"successDescription": "Canary запущен. Следите за ним на странице правил маршрутизации.",
++			"viewRules": "Открыть правила",
++			"failed": "Не удалось создать правило маршрутизации"
++		}
+ 	}
+ }
+diff --git a/ui/locales/ru/shell.json b/ui/locales/ru/shell.json
+index e3a97c1..094cb64 100644
+--- a/ui/locales/ru/shell.json
++++ b/ui/locales/ru/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "Бюджеты и лимиты",
+ 		"routingRules": "Правила маршрутизации",
+ 		"complexityRouter": "Маршрутизатор сложности",
++		"shadowTraffic": "Теневой трафик",
+ 		"circuitBreaker": "Автоматический переключатель",
+ 		"pricingOverrides": "Переопределения цен",
+ 		"modelSettings": "Настройки моделей",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "Бюджеты и лимиты скорости",
+ 		"routingRules": "Интеллектуальные правила маршрутизации",
+ 		"complexityRouter": "Маршрутизация по уровням сложности",
++		"shadowTraffic": "Тестирование более дешёвых моделей на реальном трафике",
+ 		"circuitBreaker": "Автоматический переход при сбое основных конечных точек",
+ 		"pricingOverrides": "Переопределения цен по области",
+ 		"modelSettings": "Конфигурация моделей и маршрутизации",
+diff --git a/ui/locales/zh-CN/models.json b/ui/locales/zh-CN/models.json
+index 27687f6..06b0606 100644
+--- a/ui/locales/zh-CN/models.json
++++ b/ui/locales/zh-CN/models.json
+@@ -2237,5 +2237,180 @@
+ 		"resetAll": "重置为数据表",
+ 		"noPermission": "你没有编辑数据表的权限",
+ 		"saving": "正在保存..."
++	},
++	"shadow": {
++		"title": "影子流量",
++		"description": "将一部分实时流量镜像到更便宜的候选模型，并显示它们是否已准备好接替。",
++		"pageInfo": "Bifrost 会在后台将实时聊天请求的样本复制到候选模型，完全不影响用户收到的响应。每个候选回答都会与主模型的回答对比评分，下方的评分卡显示每个候选离成为安全且更便宜的替代还有多远。",
++		"collectingSince": "自 {{date}} 起收集",
++		"refresh": "刷新",
++		"live": "实时",
++		"paused": "已暂停",
++		"pauseAria": "暂停实时更新",
++		"resumeAria": "恢复实时更新",
++		"entity": "影子流量",
++		"reset": {
++			"button": "重置",
++			"title": "重置影子流量结果？",
++			"description": "这将清除所有已保存的对比和计数器。实验会继续运行，并从零开始重新收集。今日的评估花费会保留，因此每日预算仍然有效。",
++			"confirm": "重置结果",
++			"success": "已清除影子流量结果",
++			"failed": "无法重置影子流量结果"
++		},
++		"budgetExhausted": {
++			"title": "每日评估预算已用完",
++			"description": "在预算于 UTC 午夜重置之前，新样本将被跳过。若要继续收集，请在插件配置中提高 daily_budget_usd。"
++		},
++		"notEnabled": {
++			"title": "影子流量未启用",
++			"description": "shadow 插件会在后台将实时聊天请求的样本镜像到更便宜的候选模型，并使用 LLM 评审、嵌入和结构检查，将每个回答与主模型进行对比评分。用户始终只会看到主模型的响应。",
++			"promote": "候选模型准备就绪后，只需一次点击即可将其提升为加权金丝雀路由规则。",
++			"configHint": "将其添加到 config.json 的插件列表中并重启 Bifrost，或在插件页面中启用：",
++			"checkAgain": "重新检查",
++			"openPlugins": "打开插件"
++		},
++		"tiles": {
++			"sampled": "已采样",
++			"sampledFooter": "符合条件 {{eligible}} · 采样率 {{rate}}",
++			"compared": "已对比",
++			"comparedFooter": "处理中 {{inFlight}} · 排队 {{queued}}",
++			"candidateErrors": "候选错误",
++			"candidateErrorsFooter": "占对比的 {{rate}}",
++			"dropped": "已丢弃",
++			"droppedFooter": "因预算跳过：{{skipped}}",
++			"evalSpend": "今日评估花费",
++			"budgetOf": "每日预算 {{budget}}",
++			"budgetUnlimited": "无每日预算",
++			"budgetExhaustedShort": "预算已用完",
++			"judge": "评审模型",
++			"judgeOff": "无评审",
++			"embeddingModel": "嵌入：{{model}}",
++			"embeddingOff": "无嵌入"
++		},
++		"scorecard": {
++			"title": "候选评分卡",
++			"subtitle": "每个候选一行。一致率统计被判定为可替代主模型回答的答案比例。",
++			"emptyTitle": "尚无对比结果",
++			"emptyDescription": "实验已配置。随着对源模型的采样请求完成，结果将显示在这里。",
++			"experimentLine": "{{name}}：{{source}} → {{candidates}}",
++			"toCandidate": "对比",
++			"primaryModels": "主模型：{{models}}",
++			"viewDisagreements": "查看分歧",
++			"promote": "提升为金丝雀",
++			"samples": "样本",
++			"samplesNeeded": "需要 {{count}} 个样本才能判定",
++			"samplesNeeded_other": "需要 {{count}} 个样本才能判定",
++			"judgedCount": "已评审 {{formatted}} 个",
++			"judgedCount_other": "已评审 {{formatted}} 个",
++			"agreement": "一致率",
++			"lowerBound": "95% 下限 {{value}}",
++			"errorRate": "错误率",
++			"errorsOfSamples": "{{samples}} 个中失败 {{errors}} 个",
++			"judgeScore": "评审分数",
++			"scoreVs": "{{primary}} 对 {{candidate}}",
++			"judgeRecord": "胜 {{wins}} · 平 {{ties}} · 负 {{losses}}",
++			"notJudged": "尚未评审",
++			"latencyP50": "延迟 p50",
++			"latencyP95": "延迟 p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "主模型 → 候选",
++			"savings": "节省",
++			"projectedMonthly": "预计每月 {{amount}}",
++			"lexical": "词汇",
++			"semantic": "语义",
++			"toolCalls": "工具调用",
++			"json": "JSON",
++			"signal": "{{label}}：{{value}}",
++			"costPerRequest": "每次请求平均成本：主模型 {{primary}}，候选 {{candidate}}"
++		},
++		"verdict": {
++			"collecting": "收集中",
++			"ready": "就绪",
++			"promising": "有潜力",
++			"not_ready": "未就绪"
++		},
++		"records": {
++			"title": "分歧",
++			"pairLine": "{{experiment}}：{{source}} → {{candidate}}",
++			"outcomeFilter": "按结果筛选",
++			"filter": {
++				"fail": "分歧（未通过）",
++				"error": "候选错误",
++				"pass": "一致（通过）",
++				"all": "全部结果"
++			},
++			"refresh": "刷新记录",
++			"total": "{{formatted}} 条记录",
++			"total_other": "{{formatted}} 条记录",
++			"entity": "对比记录",
++			"emptyFail": "该候选暂无分歧。",
++			"empty": "没有符合此筛选条件的记录。",
++			"range": "第 {{from}}–{{to}} 条，共 {{total}} 条",
++			"outcome": {
++				"pass": "通过",
++				"fail": "未通过",
++				"error": "错误"
++			},
++			"basis": "判定依据：{{basis}}",
++			"passBasis": {
++				"judge": "评审",
++				"semantic": "嵌入",
++				"structural": "结构",
++				"lexical": "词元重合"
++			},
++			"passBasisLine": "通过判定依据：{{basis}}",
++			"stream": "流式",
++			"promptNotStored": "未保存提示词（store_payloads 已关闭）",
++			"prompt": "提示词",
++			"primary": "主模型",
++			"candidate": "候选",
++			"tokens": "Token：输入 {{input}} / 输出 {{output}}",
++			"emptyText": "空响应",
++			"toolCalls": "{{count}} 次工具调用",
++			"toolCalls_other": "{{count}} 次工具调用",
++			"finishReason": "结束原因：{{reason}}",
++			"answerNotStored": "未保存回答",
++			"judge": "评审",
++			"judgeScores": "主模型 {{primary}} / 候选 {{candidate}}",
++			"winner": {
++				"primary": "主模型胜",
++				"candidate": "候选胜",
++				"tie": "平局"
++			},
++			"judgeError": "评审失败：{{error}}",
++			"judgeOrder": "候选模型以回答 {{label}} 的身份提交给评审",
++			"similarity": "对比指标",
++			"match": "一致",
++			"mismatch": "不一致",
++			"lexical": "词汇相似度",
++			"semantic": "语义相似度",
++			"lengthRatio": "长度比",
++			"toolCallsMatch": "工具调用",
++			"jsonMatch": "JSON 结构",
++			"finishReasonMatch": "结束原因",
++			"evalCost": "评估成本：{{cost}}",
++			"requestId": "请求 {{id}}"
++		},
++		"promote": {
++			"title": "提升为金丝雀",
++			"description": "创建一条加权路由规则，将 {{source}} 的一部分流量发送到 {{candidate}}，其余流量仍发送到主模型。",
++			"cautionTitle": "该候选的判定为“{{verdict}}”",
++			"caution": "它尚未达到就绪阈值。请从较小的比例开始，并密切关注日志。",
++			"weightLabel": "发送到候选的流量比例",
++			"weightHelp": "1 到 100 之间的整数。建议从小比例开始：10% 是常见的首次金丝雀比例。",
++			"previewTitle": "规则预览",
++			"previewFailed": "无法生成规则",
++			"celExpression": "CEL 表达式",
++			"targets": "目标",
++			"scope": "范围：{{scope}}",
++			"priority": "优先级 {{priority}}",
++			"enabled": "已启用",
++			"disabled": "已禁用",
++			"confirm": "创建金丝雀规则",
++			"success": "已创建路由规则“{{name}}”",
++			"successDescription": "金丝雀已生效。可在路由规则页面查看。",
++			"viewRules": "查看规则",
++			"failed": "无法创建路由规则"
++		}
+ 	}
+ }
+diff --git a/ui/locales/zh-CN/shell.json b/ui/locales/zh-CN/shell.json
+index 9a1640a..f3601c9 100644
+--- a/ui/locales/zh-CN/shell.json
++++ b/ui/locales/zh-CN/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "预算与限额",
+ 		"routingRules": "路由规则",
+ 		"complexityRouter": "复杂度路由器",
++		"shadowTraffic": "影子流量",
+ 		"circuitBreaker": "熔断器",
+ 		"pricingOverrides": "定价覆盖",
+ 		"modelSettings": "模型设置",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "预算与速率限制",
+ 		"routingRules": "智能路由规则",
+ 		"complexityRouter": "按复杂度分层路由",
++		"shadowTraffic": "用真实流量测试更便宜的模型",
+ 		"circuitBreaker": "主端点失败时自动回退",
+ 		"pricingOverrides": "作用域定价覆盖",
+ 		"modelSettings": "模型与路由配置",
+diff --git a/ui/locales/zh-TW/models.json b/ui/locales/zh-TW/models.json
+index 5cd46e9..c378e8a 100644
+--- a/ui/locales/zh-TW/models.json
++++ b/ui/locales/zh-TW/models.json
+@@ -2237,5 +2237,180 @@
+ 		"resetAll": "重設為資料表",
+ 		"noPermission": "你沒有編輯資料表的權限",
+ 		"saving": "儲存中..."
++	},
++	"shadow": {
++		"title": "影子流量",
++		"description": "將部分即時流量鏡像到較便宜的候選模型，並顯示它們是否已準備好接手。",
++		"pageInfo": "Bifrost 會在背景將即時聊天請求的樣本複製到候選模型，完全不影響使用者收到的回應。每個候選回答都會與主要模型的回答比較評分，下方的評分卡顯示每個候選距離成為安全且較便宜的替代還有多遠。",
++		"collectingSince": "自 {{date}} 起收集",
++		"refresh": "重新整理",
++		"live": "即時",
++		"paused": "已暫停",
++		"pauseAria": "暫停即時更新",
++		"resumeAria": "繼續即時更新",
++		"entity": "影子流量",
++		"reset": {
++			"button": "重設",
++			"title": "要重設影子流量結果嗎？",
++			"description": "這會清除所有已儲存的比較與計數器。實驗會繼續執行，並從零開始重新收集。今日的評估花費會保留，因此每日預算仍然有效。",
++			"confirm": "重設結果",
++			"success": "已清除影子流量結果",
++			"failed": "無法重設影子流量結果"
++		},
++		"budgetExhausted": {
++			"title": "每日評估預算已用盡",
++			"description": "在預算於 UTC 午夜重設之前，新樣本將被略過。若要繼續收集，請在外掛設定中提高 daily_budget_usd。"
++		},
++		"notEnabled": {
++			"title": "影子流量未啟用",
++			"description": "shadow 外掛會在背景將即時聊天請求的樣本鏡像到較便宜的候選模型，並使用 LLM 評審、嵌入向量與結構檢查，將每個回答與主要模型比較評分。使用者永遠只會看到主要模型的回應。",
++			"promote": "候選模型準備就緒後，只要按一下即可將其升級為加權金絲雀路由規則。",
++			"configHint": "將其加入 config.json 的外掛清單並重新啟動 Bifrost，或在外掛頁面中啟用：",
++			"checkAgain": "重新檢查",
++			"openPlugins": "開啟外掛"
++		},
++		"tiles": {
++			"sampled": "已取樣",
++			"sampledFooter": "符合條件 {{eligible}} · 取樣率 {{rate}}",
++			"compared": "已比較",
++			"comparedFooter": "處理中 {{inFlight}} · 佇列 {{queued}}",
++			"candidateErrors": "候選錯誤",
++			"candidateErrorsFooter": "佔比較的 {{rate}}",
++			"dropped": "已捨棄",
++			"droppedFooter": "因預算略過：{{skipped}}",
++			"evalSpend": "今日評估花費",
++			"budgetOf": "每日預算 {{budget}}",
++			"budgetUnlimited": "無每日預算",
++			"budgetExhaustedShort": "預算已用盡",
++			"judge": "評審模型",
++			"judgeOff": "無評審",
++			"embeddingModel": "嵌入：{{model}}",
++			"embeddingOff": "無嵌入"
++		},
++		"scorecard": {
++			"title": "候選評分卡",
++			"subtitle": "每個候選一列。一致率統計被判定為可替代主要模型回答的答案比例。",
++			"emptyTitle": "尚無比較結果",
++			"emptyDescription": "實驗已設定。隨著對來源模型的取樣請求完成，結果會顯示在這裡。",
++			"experimentLine": "{{name}}：{{source}} → {{candidates}}",
++			"toCandidate": "比較對象",
++			"primaryModels": "主要模型：{{models}}",
++			"viewDisagreements": "檢視分歧",
++			"promote": "升級為金絲雀",
++			"samples": "樣本",
++			"samplesNeeded": "需要 {{count}} 個樣本才能判定",
++			"samplesNeeded_other": "需要 {{count}} 個樣本才能判定",
++			"judgedCount": "已評審 {{formatted}} 個",
++			"judgedCount_other": "已評審 {{formatted}} 個",
++			"agreement": "一致率",
++			"lowerBound": "95% 下限 {{value}}",
++			"errorRate": "錯誤率",
++			"errorsOfSamples": "{{samples}} 個中失敗 {{errors}} 個",
++			"judgeScore": "評審分數",
++			"scoreVs": "{{primary}} 對 {{candidate}}",
++			"judgeRecord": "勝 {{wins}} · 平 {{ties}} · 負 {{losses}}",
++			"notJudged": "尚未評審",
++			"latencyP50": "延遲 p50",
++			"latencyP95": "延遲 p95",
++			"latencyVs": "{{primary}} → {{candidate}}",
++			"primaryVsCandidate": "主要 → 候選",
++			"savings": "節省",
++			"projectedMonthly": "預估每月 {{amount}}",
++			"lexical": "詞彙",
++			"semantic": "語意",
++			"toolCalls": "工具呼叫",
++			"json": "JSON",
++			"signal": "{{label}}：{{value}}",
++			"costPerRequest": "每次請求平均成本：主要 {{primary}}，候選 {{candidate}}"
++		},
++		"verdict": {
++			"collecting": "收集中",
++			"ready": "就緒",
++			"promising": "有潛力",
++			"not_ready": "未就緒"
++		},
++		"records": {
++			"title": "分歧",
++			"pairLine": "{{experiment}}：{{source}} → {{candidate}}",
++			"outcomeFilter": "依結果篩選",
++			"filter": {
++				"fail": "分歧（未通過）",
++				"error": "候選錯誤",
++				"pass": "一致（通過）",
++				"all": "所有結果"
++			},
++			"refresh": "重新整理記錄",
++			"total": "{{formatted}} 筆記錄",
++			"total_other": "{{formatted}} 筆記錄",
++			"entity": "比較記錄",
++			"emptyFail": "此候選目前沒有分歧。",
++			"empty": "沒有符合此篩選條件的記錄。",
++			"range": "第 {{from}}–{{to}} 筆，共 {{total}} 筆",
++			"outcome": {
++				"pass": "通過",
++				"fail": "未通過",
++				"error": "錯誤"
++			},
++			"basis": "判定依據：{{basis}}",
++			"passBasis": {
++				"judge": "評審",
++				"semantic": "嵌入",
++				"structural": "結構",
++				"lexical": "詞元重疊"
++			},
++			"passBasisLine": "通過判定依據：{{basis}}",
++			"stream": "串流",
++			"promptNotStored": "未儲存提示詞（store_payloads 已關閉）",
++			"prompt": "提示詞",
++			"primary": "主要",
++			"candidate": "候選",
++			"tokens": "Token：輸入 {{input}} / 輸出 {{output}}",
++			"emptyText": "空白回應",
++			"toolCalls": "{{count}} 次工具呼叫",
++			"toolCalls_other": "{{count}} 次工具呼叫",
++			"finishReason": "結束原因：{{reason}}",
++			"answerNotStored": "未儲存回答",
++			"judge": "評審",
++			"judgeScores": "主要 {{primary}} / 候選 {{candidate}}",
++			"winner": {
++				"primary": "主要勝",
++				"candidate": "候選勝",
++				"tie": "平手"
++			},
++			"judgeError": "評審失敗：{{error}}",
++			"judgeOrder": "候選模型以回答 {{label}} 的身分提交給評審",
++			"similarity": "比較指標",
++			"match": "一致",
++			"mismatch": "不一致",
++			"lexical": "詞彙相似度",
++			"semantic": "語意相似度",
++			"lengthRatio": "長度比",
++			"toolCallsMatch": "工具呼叫",
++			"jsonMatch": "JSON 結構",
++			"finishReasonMatch": "結束原因",
++			"evalCost": "評估成本：{{cost}}",
++			"requestId": "請求 {{id}}"
++		},
++		"promote": {
++			"title": "升級為金絲雀",
++			"description": "建立一條加權路由規則，將 {{source}} 的部分流量傳送到 {{candidate}}，其餘流量仍傳送到主要模型。",
++			"cautionTitle": "此候選的判定為「{{verdict}}」",
++			"caution": "它尚未達到就緒門檻。請從較小的比例開始，並密切留意日誌。",
++			"weightLabel": "傳送到候選的流量比例",
++			"weightHelp": "1 到 100 之間的整數。建議從小比例開始：10% 是常見的首次金絲雀比例。",
++			"previewTitle": "規則預覽",
++			"previewFailed": "無法產生規則",
++			"celExpression": "CEL 表示式",
++			"targets": "目標",
++			"scope": "範圍：{{scope}}",
++			"priority": "優先順序 {{priority}}",
++			"enabled": "已啟用",
++			"disabled": "已停用",
++			"confirm": "建立金絲雀規則",
++			"success": "已建立路由規則「{{name}}」",
++			"successDescription": "金絲雀已生效。可在路由規則頁面查看。",
++			"viewRules": "檢視規則",
++			"failed": "無法建立路由規則"
++		}
+ 	}
+ }
+diff --git a/ui/locales/zh-TW/shell.json b/ui/locales/zh-TW/shell.json
+index ac15125..f61ceda 100644
+--- a/ui/locales/zh-TW/shell.json
++++ b/ui/locales/zh-TW/shell.json
+@@ -19,6 +19,7 @@
+ 		"budgetsLimits": "預算與限額",
+ 		"routingRules": "路由規則",
+ 		"complexityRouter": "複雜度路由器",
++		"shadowTraffic": "影子流量",
+ 		"circuitBreaker": "熔斷器",
+ 		"pricingOverrides": "定價覆蓋",
+ 		"modelSettings": "模型設定",
+@@ -102,6 +103,7 @@
+ 		"budgetsLimits": "預算與速率限制",
+ 		"routingRules": "智慧路由規則",
+ 		"complexityRouter": "按複雜度分層路由",
++		"shadowTraffic": "以真實流量測試較便宜的模型",
+ 		"circuitBreaker": "主端點失敗時自動回退",
+ 		"pricingOverrides": "作用域定價覆蓋",
+ 		"modelSettings": "模型與路由配置",
