@@ -163,7 +163,7 @@ func (s *store) add(rec *Record) error {
 func (s *store) snapshot() []*Record {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	out := make([]*Record, 0, s.len())
+	out := make([]*Record, 0, s.lenLocked())
 	if s.full {
 		for i := s.next; i < s.max; i++ {
 			out = append(out, s.records[i])
@@ -175,7 +175,15 @@ func (s *store) snapshot() []*Record {
 	return out
 }
 
+// len returns the number of stored records.
 func (s *store) len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.lenLocked()
+}
+
+// lenLocked is len for callers that already hold s.mu.
+func (s *store) lenLocked() int {
 	if s.full {
 		return s.max
 	}
