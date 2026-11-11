@@ -116,7 +116,8 @@ BIFROST_BIN=../bifrost/tmp/bifrost-http ../bifrost/examples/shadow-demo/run.sh
 The five-minute path assumes step 1 is already done. In `TESTING.md`, a clean `setup.sh` run
 with the dashboard took 846 s in a fresh container.
 
-- TODO: time `setup.sh` with `SKIP_UI=1` and one `run.sh`, and record both in `TESTING.md`.
+- Timed in a fresh container with an empty Go module cache: `setup.sh` with `SKIP_UI=1` took
+  524 s and `run.sh` 231 s (`TESTING.md`, "Clean setup from upstream").
 - TODO: decide whether to attach prebuilt gateway binaries to a release of the public
   repository. None are published today.
 
@@ -133,13 +134,13 @@ browser and go to **Models → Shadow Traffic**.
 2. Terminal A: run `run.sh` on spare ports so it does not collide with the dashboard gateway,
    and keep its output on screen:
    `BIFROST_BIN=… PORT=8081 MOCK_ADDR=127.0.0.1:18081 ./run.sh`.
-   TODO: measure how long it takes; if it does not fit, start it before recording and show the
-   finished output.
+   It took 231 s in the clean-container run (`TESTING.md`), longer than the demo slot, so
+   start it before recording and show the finished output.
 3. Terminal B: start the mock and a gateway on port 8080 by hand with the demo config, then
    `bin/loadgen -n 300 -c 12` so the scorecard has data. Start from a fresh copy of the demo app
    directory, so no routing rule or stored record from a rehearsal is left over.
-4. Browser: open the gateway, get past the setup-token screen if one appears (TODO: confirm what
-   the dashboard shows on first visit with a setup token), and open **Models → Shadow Traffic**.
+4. Browser: open the gateway, get past the setup-token screen (with a setup token configured, the
+   first visit redirects to `/login` and asks for it), and open **Models → Shadow Traffic**.
 5. Keep secrets out of frame. The demo uses a throwaway setup token and no real keys.
 
 **Script**
@@ -151,7 +152,7 @@ browser and go to **Models → Shadow Traffic**.
 | 0:50-1:25 | Dashboard, scorecard | Counter tiles: sampled, compared, candidate errors, dropped, eval spend against the daily budget, judge model. One row per candidate: verdict and its reason, agreement with the 95% lower bound, error rate, judge scores, p50/p95 latency, savings. Both candidates are much cheaper; only one is safe. |
 | 1:25-2:00 | **View disagreements** on llama-3.1-8b | Failing pairs side by side with the judge's scores and reason, and the line saying which label (A or B) the candidate had. Switch the filter to "Candidate errors" to show the upstream `HTTP 503` records. |
 | 2:00-2:35 | **Promote to canary** on gpt-4o-mini, then **Routing Rules** | The default share is 10%. The preview shows the CEL expression and the 0.9 / 0.1 targets. **Create canary rule**, follow the toast to **Routing Rules**, and show the new rule: global scope, priority 10, enabled. |
-| 2:35-3:00 | Overhead table (README or slide) | About 100 ns and no allocations for an unsampled request, 7.9 µs and 31 allocations for a sampled one; bounded queue, daily budget, opt-out header. Tested and written as an upstream pull request. One line on limits: chat completions only, per-node records. |
+| 2:35-3:00 | Overhead table (README or slide) | About 100 ns and no allocations for an unsampled request, about 10 µs and 33 allocations for a sampled one; bounded queue, daily budget, opt-out header. Tested and written as an upstream pull request. One line on limits: chat completions only, per-node records. |
 
 ## Judging criteria talking points
 
@@ -245,7 +246,7 @@ of AI, user experience, and scalability or potential. No weights were published.
    `NOT READY` (63.0%, 4.3% errors), both on mock prices; six runs, same verdicts.
 7. **Promote to canary.** Scorecard to a 90/10 routing rule in one dialog; the rule appears on
    the Routing Rules page and the split shows up in follow-up traffic.
-8. **Cost on the request path.** About 100 ns and no allocations unsampled, 7.9 µs and 31
+8. **Cost on the request path.** About 100 ns and no allocations unsampled, about 10 µs and 33
    allocations sampled; bounded queue, daily budget, opt-out header.
 9. **Built like an upstream PR.** Plugin, API, page, schema, docs, 11 languages, tests and
    bugs found by testing, review and E2E each fixed with a regression test, on top of

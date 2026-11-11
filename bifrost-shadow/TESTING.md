@@ -41,7 +41,9 @@ Pre-existing upstream failures on Windows, with and without this change, not rel
   (Windows path escaping in JSON and `file://` URLs).
 - The repository-wide `npm run i18n:check` exits 1 on Windows because its skip lists compare
   `/`-separated paths with `\`-separated ones; it flags only files on its own skip list. The
-  scoped run above, and a run with separators normalized, exit 0.
+  scoped run above, and a run with separators normalized, exit 0. On Linux
+  (`node:26-bookworm`, Node 26.13.0) the repository-wide `node scripts/i18nCheck.mjs` exits 0,
+  all 10 catalogs `ok`.
 
 ## Bugs found by testing, then fixed
 
@@ -69,15 +71,26 @@ Pre-existing upstream failures on Windows, with and without this change, not rel
 
 ## Benchmarks
 
-`cd plugins/shadow && go test -run xxx -bench . -benchmem` (windows/amd64, 32 threads):
+`cd plugins/shadow && go test -run '^$' -bench . -benchmem -count=5` (windows/amd64, 32 threads), median of the
+five runs:
 
 | Benchmark | ns/op | B/op | allocs/op |
 |---|---|---|---|
-| PreLLMHookNotEligible | 64.8 | 0 | 0 |
-| PreLLMHookEligibleNotSampled | 99.7 | 0 | 0 |
-| PostLLMHookNoCapture | 2.2 | 0 | 0 |
-| ResponseHeadersHookNotSampled | 1.5 | 0 | 0 |
-| SampledRequest | 7,890 | 3,575 | 31 |
+| PreLLMHookNotEligible | 67.8 | 0 | 0 |
+| PreLLMHookEligibleNotSampled | 98.6 | 0 | 0 |
+| PreLLMHookEligibleNotSampledParallel | 54.0 | 0 | 0 |
+| UnsampledWhileActive | 160.1 | 0 | 0 |
+| PostLLMHookNoCapture | 2.9 | 0 | 0 |
+| ResponseHeadersHookNotSampled | 2.2 | 0 | 0 |
+| StreamChunkHook | 0.37 | 0 | 0 |
+| StreamChunkInterceptorOnePlugin | 180.9 | 240 | 2 |
+| SampledRequest | 9,560 | about 3,400 | 33 |
+
+`StreamChunkInterceptorOnePlugin` mirrors the gateway's per-chunk interceptor with only this
+plugin registered; its 240 bytes and 2 allocations are the interceptor's scope wrapper, which
+any transport plugin pays. `StreamChunkHook` is this plugin's own share. `SampledRequest` went
+from 7,890 ns and 31 allocations to 9,560 ns and 33 after the snapshot started filtering MCP
+tools and carrying `extra_params`; only sampled requests pay it.
 
 ## End to end through a real gateway
 
@@ -156,9 +169,9 @@ record ids and totals per filter, the judge-order line, and the stored rule's ta
 
 | Group | Tests |
 |---|---|
-| Scorecard | counter tiles and a verdict per candidate; pause and resume live updates |
+| Scorecard | counter tiles and a verdict per candidate, with one unique row id per experiment and candidate; pause and resume live updates (one accessible name in both states) |
 | Disagreements | switch the weak candidate between disagreements and errors; expand a record to both answers and the judge's verdict |
-| Promote to canary | share validation and preview rebuild; caution for a candidate that is not ready; create a rule and find it on **Routing Rules** |
+| Promote to canary | share validation and preview rebuild (rule name, share, priority badge, the `priority` sent); caution for a candidate that is not ready; create a rule and find it on **Routing Rules**; ramp: promoting the same pair again updates its rule in place (a PUT, no POST; same id, priority, scope and condition at the new share); a second pair's canary gets the next free priority (the earlier 409) |
 | Reset | counters cleared, empty scorecard |
 | Without the plugin | the page explains how to enable it |
 
@@ -180,12 +193,34 @@ Gateway without the plugin, twice:  the not-enabled test passed, data tests skip
 
 After both runs `GET /api/routing/rules` returned no rules.
 
+After the review fixes and the dashboard's canary ramp (gateway rebuilt with the new dashboard,
+`allow_force_header: true` because the suite seeds with `x-bf-shadow: force`), with the ramp
+and next-free-priority tests added:
+
+```
+Run 1: 11 passed, 1 skipped (23.9s)   auth setup + 10 shadow-traffic tests; not-enabled skipped
+Run 2: 11 passed, 1 skipped (32.0s)   from the store the reset test cleared, re-seeded
+```
+
+After each run `GET /api/routing/rules` returned `[]`. The new tests were not run against the
+previous UI to watch them fail; the row-id test asserts exact per-pair ids, which the old
+candidate-only ids would not match, and the priority test repeats the request sequence that
+returned 409.
+
 ## Clean setup from upstream
 
 **Without the dashboard.** `scripts/setup.sh` with `SKIP_UI=1` in a fresh
 `golang:1.27-bookworm` container: clones upstream, checks out `ed62e4b`, copies the new files,
 applies the patches, writes `go.work`, runs the plugin, handler and schema tests, and builds
 the gateway with cgo.
+
+**Timed, at `7293821`.** The same in a fresh `golang:1.27-bookworm` container, from a
+`git archive` of the pushed commit, with an empty Go module cache: `SKIP_UI=1 setup.sh` took
+524 s (clone, five patches, plugin, handler and schema tests, gateway build), and `run.sh`
+against the built binary took 231 s. Its scorecard: gpt-4o-mini 135 samples, 99.3% agreement,
+lower bound 95.9%, `ready`; llama-3.1-8b 63.0%, 5.9% errors, `not_ready`. It created the canary
+rule (HTTP 200), and gpt-4o-mini then served 27 of 200 requests against 20 expected, which the
+script's check accepts as a 10% split.
 
 **With the dashboard.** relayproof at `9962752` cloned into a fresh `node:26-bookworm`
 container (Node 26.13.0, npm 11.20.0, gcc 12.2.0) with Go 1.27.4 added; `scripts/setup.sh`

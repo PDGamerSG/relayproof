@@ -161,15 +161,18 @@ upstream files are patches against `ed62e4b`.
 
 ## Overhead
 
-`go test -bench . -benchmem` in `plugins/shadow`:
+`go test -bench . -benchmem -count=5` in `plugins/shadow`, medians (windows/amd64, 32 threads):
 
 | Path | ns/op | allocs/op |
 |---|---|---|
-| Request not matching any experiment | 65 | 0 |
-| Matching but not sampled | 100 | 0 |
-| PostLLMHook with nothing captured | 2 | 0 |
-| Response-header hook, not sampled | 1.5 | 0 |
-| Sampled request (snapshot + hand-off) | 7,900 | 31 |
+| Request not matching any experiment | 68 | 0 |
+| Matching but not sampled | 99 | 0 |
+| Matching but not sampled, every core at once | 54 | 0 |
+| Not sampled while another sampled request is in flight | 160 | 0 |
+| PostLLMHook with nothing captured | 3 | 0 |
+| Response-header hook, not sampled | 2 | 0 |
+| The plugin's own work per streamed chunk | 0.4 | 0 |
+| Sampled request (snapshot + hand-off) | 9,600 | 33 |
 
 ## Limitations
 

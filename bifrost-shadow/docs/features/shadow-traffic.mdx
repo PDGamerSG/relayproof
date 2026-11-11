@@ -234,15 +234,18 @@ All routes answer `404` with a message when the plugin is not enabled.
 - **Internal calls.** Candidate, judge and embedding calls run as internal requests: they skip plugins, governance and logging, and are not billed to virtual keys. MCP is switched off for them, so no MCP tool or agent loop runs on a shadow call. Their cost is tracked by the shadow plugin only, including embedding calls whose vectors could not be compared.
 - **Payloads.** With `store_payloads: true` the plugin keeps the last user turn and both answers (truncated to `max_payload_chars`) in memory and, if set, in `persist_path`. Use `store_payloads: false`, `virtual_keys`, or `x-bf-shadow: off` to keep sensitive traffic out.
 - **Memory.** Bounded by `max_records` records (a few KB each with payloads) and `queue_size` pending snapshots. Captures whose response never completes are swept after 10 minutes.
-- **Request path.** Measured with `go test -bench . -benchmem` in `plugins/shadow`:
+- **Request path.** Measured with `go test -bench . -benchmem -count=5` in `plugins/shadow` (medians):
 
 | Path | ns/op | allocs/op |
 |---|---|---|
-| Request not matching any experiment | 65 | 0 |
-| Matching but not sampled | 100 | 0 |
-| PostLLMHook with nothing captured | 2 | 0 |
-| Response header hook, not sampled | 1.5 | 0 |
-| Sampled request (snapshot + hand-off) | 7,900 | 31 |
+| Request not matching any experiment | 68 | 0 |
+| Matching but not sampled | 99 | 0 |
+| Matching but not sampled, every core at once | 54 | 0 |
+| Not sampled while another sampled request is in flight | 160 | 0 |
+| PostLLMHook with nothing captured | 3 | 0 |
+| Response header hook, not sampled | 2 | 0 |
+| The plugin's own work per streamed chunk | 0.4 | 0 |
+| Sampled request (snapshot + hand-off) | 9,600 | 33 |
 
 ## Limitations
 

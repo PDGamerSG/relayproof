@@ -125,28 +125,29 @@ API: `GET /api/shadow/summary`, `GET /api/shadow/records`, `GET /api/shadow/reco
 runs and the request path is unchanged. The only always-on addition is the `/api/shadow/*`
 routes, which are management API calls, not inference.
 
-**After, with the plugin enabled.** `cd plugins/shadow && go test -run xxx -bench . -benchmem`,
-windows/amd64, 32 threads, Go 1.27.4:
+**After, with the plugin enabled.** `cd plugins/shadow && go test -run '^$' -bench . -benchmem -count=5`,
+windows/amd64, 32 threads, Go 1.27.4, medians:
 
 | Path | Benchmark | ns/op | B/op | allocs/op |
 |---|---|---|---|---|
-| Chat request that matches no experiment | `BenchmarkPreLLMHookNotEligible` | 64.8 | 0 | 0 |
-| Matches an experiment, not sampled | `BenchmarkPreLLMHookEligibleNotSampled` | 99.7 | 0 | 0 |
-| `PostLLMHook` with nothing captured | `BenchmarkPostLLMHookNoCapture` | 2.2 | 0 | 0 |
-| Response-headers hook, not sampled | `BenchmarkResponseHeadersHookNotSampled` | 1.5 | 0 | 0 |
-| Sampled request: snapshot, capture, hand-off | `BenchmarkSampledRequest` | 7,890 | 3,575 | 31 |
+| Chat request that matches no experiment | `BenchmarkPreLLMHookNotEligible` | 67.8 | 0 | 0 |
+| Matches an experiment, not sampled | `BenchmarkPreLLMHookEligibleNotSampled` | 98.6 | 0 | 0 |
+| Same, on every core at once | `BenchmarkPreLLMHookEligibleNotSampledParallel` | 54.0 | 0 | 0 |
+| Not sampled while a sampled request is in flight (capture-map paths) | `BenchmarkUnsampledWhileActive` | 160.1 | 0 | 0 |
+| `PostLLMHook` with nothing captured | `BenchmarkPostLLMHookNoCapture` | 2.9 | 0 | 0 |
+| Response-headers hook, not sampled | `BenchmarkResponseHeadersHookNotSampled` | 2.2 | 0 | 0 |
+| Plugin's own work per streamed chunk | `BenchmarkStreamChunkHook` | 0.37 | 0 | 0 |
+| Per-chunk transport interceptor with only this plugin (the wrapper is core's) | `BenchmarkStreamChunkInterceptorOnePlugin` | 180.9 | 240 | 2 |
+| Sampled request: snapshot, capture, hand-off | `BenchmarkSampledRequest` | 9,560 | about 3,400 | 33 |
 
 What these numbers do and do not cover:
 
 - The `PostLLMHook` and response-headers figures are the fast paths taken while no sampled
-  request is in flight (an atomic counter is zero). While one is, every chat request also does a
-  context read and one `sync.Map` lookup in `PostLLMHook`, a header read and one
-  `sync.Map.LoadAndDelete` in the headers hook, and one `sync.Map.LoadAndDelete` in `PreLLMHook`
-  (which discards a previous attempt's capture on retries). These paths are not benchmarked yet.
-  TODO: add benchmarks with captures and markers in flight.
-- Every eligible request, sampled or not, takes one plugin-wide mutex in `recordTraffic` to update
-  the request-rate counter used for monthly projections. The benchmarks run on one goroutine, so
-  contention under parallel load is not measured. Follow-up: per-experiment atomics.
+  request is in flight (an atomic counter is zero). While one is, an unsampled request takes the
+  capture-map paths in both hooks; `BenchmarkUnsampledWhileActive` measures that case.
+- Every eligible request, sampled or not, counts itself for the monthly projection with atomics
+  in a per-experiment, cache-line-padded slot, so the unsampled path takes no lock;
+  `BenchmarkPreLLMHookEligibleNotSampledParallel` runs it on every core at once.
 - The benchmarks run without a `virtual_keys` allow-list.
 - `BenchmarkSampledRequest` builds a fresh `BifrostContext` inside the loop, so its 31
   allocations include the benchmark's own context. TODO: split that out.
@@ -216,7 +217,8 @@ Red before green, for the two bugs found while checking the running gateway and 
 Pre-existing failures on Windows, with and without this change:
 `TestValidateConfigSchema_ConfigSchemaFilePath`, `TestValidateConfigSchema_FileURL`, and the
 repository-wide `npm run i18n:check`, which compares `/`-separated skip-list paths with
-`\`-separated ones. TODO: run the repository-wide `npm run i18n:check` on Linux to match CI.
+`\`-separated ones. On Linux (`node:26-bookworm`, Node 26.13.0) the repository-wide
+`node scripts/i18nCheck.mjs` exits 0 with all 10 catalogs in parity with `en`.
 
 End to end through a real gateway, with a deterministic mock upstream (300 requests, 12
 concurrent, 25% streamed, sample rate 50%, judge and embeddings on): eight recorded runs on
@@ -261,15 +263,17 @@ plugin returns early for those request types.
 `tests/e2e/features/shadow-traffic/`: a `ShadowTrafficPage` page object on the page's
 `data-testid` attributes, the shared base fixture, data factories, and specs for the
 scorecard, live-update toggle, disagreements (filters and an expanded record), the promote
-dialog (validation, preview, caution, rule creation visible on **Routing Rules**), reset, and
-the not-enabled state. Every routing rule a test creates is deleted in `afterEach`, and the
+dialog (validation, preview, caution, rule creation visible on **Routing Rules**, ramping an
+existing canary in place, and a second pair's canary at the next free priority), reset, and the
+not-enabled state. Every routing rule a test creates is deleted in `afterEach`, and the
 delete is asserted. The data tests seed their own shadow traffic when the store is empty and
 skip when the plugin is off, so under `make run-e2e` (no shadow plugin in its config) only the
 not-enabled test runs.
 
-Result (windows/amd64, Playwright 1.57, against a gateway with the demo config): 9 passed and 1
-skipped on two consecutive runs, one of them from an empty store; against a gateway without the
-plugin, the not-enabled test passed twice. Running the data tests in CI needs a shadow-enabled
+Result (windows/amd64, Playwright 1.57, against a gateway with the demo config): 11 passed and
+1 skipped on two consecutive runs, the second from an empty store; against a gateway without the
+plugin, the not-enabled test passed twice. The suite seeds with `x-bf-shadow: force`, so the
+gateway under test needs `allow_force_header: true`. Running the data tests in CI needs a shadow-enabled
 worker and the mock upstream in the E2E environment; that is a follow-up.
 
 ## Docs
@@ -277,10 +281,10 @@ worker and the mock upstream in the E2E environment; that is a follow-up.
 - `docs/features/shadow-traffic.mdx`: overview, how it works (sequence diagram), verdicts, Web
   UI, API and `config.json` tabs, field reference, per-request headers, promotion, API reference,
   cost, privacy and overhead, and limitations. Linked from `docs/docs.json`.
-- TODO: confirm the two dashboard screenshots the page references (`/media/ui-shadow-traffic.png`,
-  `/media/ui-shadow-disagreements.png`) are included.
-- TODO: validate the page's `config.json` examples against `transports/config.schema.json`, as
-  `/docs-writer` does.
+- Two dashboard screenshots, `docs/media/ui-shadow-traffic.png` and
+  `docs/media/ui-shadow-disagreements.png`, captured from the key-free demo.
+- The page's `config.json` example, the README's and the demo's `config.json` validate against
+  `transports/config.schema.json` with the gateway's `ValidateConfigSchema`.
 
 ## Limitations and follow-ups
 
@@ -297,8 +301,7 @@ worker and the mock upstream in the E2E environment; that is a follow-up.
   question for maintainers: whether either default should be stricter.
 - The API and dashboard allow promoting a candidate that is not `ready`; the dialog warns. Open
   question: whether promotion should require `ready`.
-- Request-path follow-ups from the cost section: benchmarks with captures in flight, removing
-  the shared mutex in `recordTraffic`, and a gateway-level latency measurement.
+- Request-path follow-up from the cost section: a gateway-level latency measurement.
 - `transports/go.mod` carries a `replace` for `plugins/shadow` until the module is tagged.
 
 ## How to verify
