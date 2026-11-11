@@ -47,7 +47,7 @@ index f82c129..dbc661d 100644
  export type MCPClientUpdateSchema = z.infer<typeof mcpClientUpdateSchema>;
  export type ModelProviderKeySchema = z.infer<typeof modelProviderKeySchema>;
 diff --git a/ui/locales/de/models.json b/ui/locales/de/models.json
-index 2c12454..07050fd 100644
+index 2c12454..ba1a5ab 100644
 --- a/ui/locales/de/models.json
 +++ b/ui/locales/de/models.json
 @@ -2239,5 +2239,180 @@
@@ -96,7 +96,7 @@ index 2c12454..07050fd 100644
 +			"dropped": "Verworfen",
 +			"droppedFooter": "Wegen Budget übersprungen: {{skipped}}",
 +			"evalSpend": "Auswertungskosten heute",
-+			"budgetOf": "von {{budget}} Tagesbudget",
++			"budgetOf": "von {{budget}}/Tag",
 +			"budgetUnlimited": "Kein Tagesbudget",
 +			"budgetExhaustedShort": "Budget aufgebraucht",
 +			"judge": "Judge-Modell",
@@ -252,7 +252,7 @@ index 90b2c0c..ace13cc 100644
  		"pricingOverrides": "Gültigkeitsbereich-spezifische Preisüberschreibungen",
  		"modelSettings": "Modell- und Routing-Konfiguration",
 diff --git a/ui/locales/en/models.json b/ui/locales/en/models.json
-index 469ebbb..7720c3a 100644
+index 469ebbb..6da0a7f 100644
 --- a/ui/locales/en/models.json
 +++ b/ui/locales/en/models.json
 @@ -2239,5 +2239,180 @@
@@ -301,7 +301,7 @@ index 469ebbb..7720c3a 100644
 +			"dropped": "Dropped",
 +			"droppedFooter": "Skipped by budget: {{skipped}}",
 +			"evalSpend": "Eval spend today",
-+			"budgetOf": "of {{budget}} daily budget",
++			"budgetOf": "of {{budget}}/day",
 +			"budgetUnlimited": "No daily budget",
 +			"budgetExhaustedShort": "Budget exhausted",
 +			"judge": "Judge model",
@@ -458,7 +458,7 @@ index e7655c7..545ef37 100644
  		"pricingOverrides": "Scoped pricing overrides",
  		"modelSettings": "Model and routing configuration",
 diff --git a/ui/locales/es/models.json b/ui/locales/es/models.json
-index 44866af..7e8e2b3 100644
+index 44866af..08425ab 100644
 --- a/ui/locales/es/models.json
 +++ b/ui/locales/es/models.json
 @@ -2239,5 +2239,180 @@
@@ -507,7 +507,7 @@ index 44866af..7e8e2b3 100644
 +			"dropped": "Descartadas",
 +			"droppedFooter": "Omitidas por presupuesto: {{skipped}}",
 +			"evalSpend": "Gasto de evaluación hoy",
-+			"budgetOf": "de {{budget}} de presupuesto diario",
++			"budgetOf": "de {{budget}}/día",
 +			"budgetUnlimited": "Sin presupuesto diario",
 +			"budgetExhaustedShort": "Presupuesto agotado",
 +			"judge": "Modelo juez",
@@ -663,7 +663,7 @@ index 3f10e56..ae404b3 100644
  		"pricingOverrides": "Anulaciones de precios con alcance",
  		"modelSettings": "Configuración de modelos y enrutamiento",
 diff --git a/ui/locales/fr/models.json b/ui/locales/fr/models.json
-index f20239a..a146696 100644
+index f20239a..1b9427e 100644
 --- a/ui/locales/fr/models.json
 +++ b/ui/locales/fr/models.json
 @@ -2239,5 +2239,180 @@
@@ -712,7 +712,7 @@ index f20239a..a146696 100644
 +			"dropped": "Abandonnées",
 +			"droppedFooter": "Ignorées (budget) : {{skipped}}",
 +			"evalSpend": "Dépense d'évaluation du jour",
-+			"budgetOf": "sur {{budget}} de budget quotidien",
++			"budgetOf": "sur {{budget}}/jour",
 +			"budgetUnlimited": "Pas de budget quotidien",
 +			"budgetExhaustedShort": "Budget épuisé",
 +			"judge": "Modèle juge",
@@ -868,7 +868,7 @@ index be405cf..37a86e2 100644
  		"pricingOverrides": "Remplacements de tarification ciblés",
  		"modelSettings": "Configuration des modèles et du routage",
 diff --git a/ui/locales/it/models.json b/ui/locales/it/models.json
-index 9d9d3a0..c2fd015 100644
+index 9d9d3a0..0a10fd3 100644
 --- a/ui/locales/it/models.json
 +++ b/ui/locales/it/models.json
 @@ -2239,5 +2239,180 @@
@@ -917,7 +917,7 @@ index 9d9d3a0..c2fd015 100644
 +			"dropped": "Scartate",
 +			"droppedFooter": "Saltate per budget: {{skipped}}",
 +			"evalSpend": "Spesa di valutazione oggi",
-+			"budgetOf": "su {{budget}} di budget giornaliero",
++			"budgetOf": "su {{budget}}/giorno",
 +			"budgetUnlimited": "Nessun budget giornaliero",
 +			"budgetExhaustedShort": "Budget esaurito",
 +			"judge": "Modello giudice",
@@ -1483,7 +1483,7 @@ index 0d5739b..18ee397 100644
  		"pricingOverrides": "범위별 가격 재정의",
  		"modelSettings": "모델 및 라우팅 구성",
 diff --git a/ui/locales/pt/models.json b/ui/locales/pt/models.json
-index d0f6660..8edb942 100644
+index d0f6660..311d53c 100644
 --- a/ui/locales/pt/models.json
 +++ b/ui/locales/pt/models.json
 @@ -2239,5 +2239,180 @@
@@ -1532,7 +1532,7 @@ index d0f6660..8edb942 100644
 +			"dropped": "Descartadas",
 +			"droppedFooter": "Ignoradas por orçamento: {{skipped}}",
 +			"evalSpend": "Gasto de avaliação hoje",
-+			"budgetOf": "de {{budget}} de orçamento diário",
++			"budgetOf": "de {{budget}}/dia",
 +			"budgetUnlimited": "Sem orçamento diário",
 +			"budgetExhaustedShort": "Orçamento esgotado",
 +			"judge": "Modelo juiz",
@@ -1688,7 +1688,7 @@ index 7d31def..b567692 100644
  		"pricingOverrides": "Substituições de preços com âmbito",
  		"modelSettings": "Configuração de modelos e encaminhamento",
 diff --git a/ui/locales/ru/models.json b/ui/locales/ru/models.json
-index d133c2f..23a2fdb 100644
+index d133c2f..254a051 100644
 --- a/ui/locales/ru/models.json
 +++ b/ui/locales/ru/models.json
 @@ -2283,5 +2283,188 @@
@@ -1737,7 +1737,7 @@ index d133c2f..23a2fdb 100644
 +			"dropped": "Отброшено",
 +			"droppedFooter": "Пропущено из-за бюджета: {{skipped}}",
 +			"evalSpend": "Расходы на оценку сегодня",
-+			"budgetOf": "из дневного бюджета {{budget}}",
++			"budgetOf": "из {{budget}}/день",
 +			"budgetUnlimited": "Без дневного бюджета",
 +			"budgetExhaustedShort": "Бюджет исчерпан",
 +			"judge": "Модель-судья",

@@ -112,7 +112,7 @@ function Metric({ label, value, detail, className }: { label: string; value: Rea
 		<div className={cn("min-w-0 space-y-0.5", className)}>
 			<dt className="text-muted-foreground text-[11px] tracking-wide uppercase">{label}</dt>
 			<dd className="truncate font-mono text-sm font-medium">{value}</dd>
-			{detail && <dd className="text-muted-foreground truncate text-xs">{detail}</dd>}
+			{detail && <dd className="text-muted-foreground text-xs break-words">{detail}</dd>}
 		</div>
 	);
 }

@@ -22,10 +22,12 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 				testId="shadow-tile-sampled"
 				footer={
 					<MetricTrailing className="text-muted-foreground">
-						{t("sampledFooter", {
-							eligible: formatShadowNumber(counters.eligible),
-							rate: formatShadowPercent(summary.sample_rate),
-						})}
+						<Caption
+							text={t("sampledFooter", {
+								eligible: formatShadowNumber(counters.eligible),
+								rate: formatShadowPercent(summary.sample_rate),
+							})}
+						/>
 					</MetricTrailing>
 				}
 			>
@@ -37,10 +39,12 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 				testId="shadow-tile-compared"
 				footer={
 					<MetricTrailing className="text-muted-foreground">
-						{t("comparedFooter", {
-							inFlight: formatShadowNumber(counters.in_flight),
-							queued: formatShadowNumber(counters.queue_depth),
-						})}
+						<Caption
+							text={t("comparedFooter", {
+								inFlight: formatShadowNumber(counters.in_flight),
+								queued: formatShadowNumber(counters.queue_depth),
+							})}
+						/>
 					</MetricTrailing>
 				}
 			>
@@ -52,7 +56,7 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 				testId="shadow-tile-candidate-errors"
 				footer={
 					<MetricTrailing className={counters.candidate_errors > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}>
-						{t("candidateErrorsFooter", { rate: formatShadowPercent(errorRate) })}
+						<Caption text={t("candidateErrorsFooter", { rate: formatShadowPercent(errorRate) })} />
 					</MetricTrailing>
 				}
 			>
@@ -64,7 +68,7 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 				testId="shadow-tile-dropped"
 				footer={
 					<MetricTrailing className="text-muted-foreground">
-						{t("droppedFooter", { skipped: formatShadowNumber(counters.budget_skipped) })}
+						<Caption text={t("droppedFooter", { skipped: formatShadowNumber(counters.budget_skipped) })} />
 					</MetricTrailing>
 				}
 			>
@@ -77,10 +81,12 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 				footer={
 					summary.budget_exhausted ? (
 						<MetricTrailing className="text-red-600 dark:text-red-400" testId="shadow-tile-budget-exhausted">
-							{t("budgetExhaustedShort")}
+							<Caption text={t("budgetExhaustedShort")} />
 						</MetricTrailing>
 					) : budgetFraction === null ? (
-						<MetricTrailing className="text-muted-foreground">{t("budgetUnlimited")}</MetricTrailing>
+						<MetricTrailing className="text-muted-foreground">
+							<Caption text={t("budgetUnlimited")} />
+						</MetricTrailing>
 					) : (
 						<>
 							<div className="bg-muted h-1.5 w-12 shrink-0 overflow-hidden rounded-full" aria-hidden>
@@ -90,7 +96,7 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 								/>
 							</div>
 							<MetricTrailing className="text-muted-foreground">
-								{t("budgetOf", { budget: formatShadowUsd(summary.daily_budget_usd) })}
+								<Caption text={t("budgetOf", { budget: formatShadowUsd(summary.daily_budget_usd) })} />
 							</MetricTrailing>
 						</>
 					)
@@ -104,7 +110,7 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 				testId="shadow-tile-evaluators"
 				footer={
 					<MetricTrailing className="text-muted-foreground">
-						{summary.embedding_model ? t("embeddingModel", { model: summary.embedding_model }) : t("embeddingOff")}
+						<Caption text={summary.embedding_model ? t("embeddingModel", { model: summary.embedding_model }) : t("embeddingOff")} />
 					</MetricTrailing>
 				}
 			>
@@ -114,4 +120,9 @@ export function ShadowCounterTiles({ summary, loading }: ShadowCounterTilesProps
 			</MetricSegment>
 		</MetricStripCard>
 	);
+}
+
+/** Tile caption: the shared strip truncates long text, so the full text is also the hover title. */
+function Caption({ text }: { text: string }) {
+	return <span title={text}>{text}</span>;
 }
