@@ -36,10 +36,14 @@ sends 300 requests, waits for the shadow queue to drain, prints the scorecard, t
 promotes the ready candidate:
 
 1. `GET /api/shadow/canary-rule` builds a 90/10 weighted routing rule;
-2. `POST /api/governance/routing-rules` creates it;
+2. `POST /api/routing/rules` creates it;
 3. 200 follow-up requests confirm that about 10% are now served by `gpt-4o-mini`.
 
 Tune it with `REQUESTS`, `CONCURRENCY`, `PORT`, `MOCK_ADDR` and `CANARY_WEIGHT`.
+
+The demo is local-only: the gateway listens on 127.0.0.1, inference auth is off
+(`enforce_auth_on_inference: false`), and `/api` calls use a throwaway setup token that
+`run.sh` generates (`BIFROST_SETUP_TOKEN`). Do not reuse this config for a shared gateway.
 
 ## Expected scorecard
 

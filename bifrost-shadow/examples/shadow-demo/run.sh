@@ -19,6 +19,10 @@ BIFROST_BIN="${BIFROST_BIN:?set BIFROST_BIN to a bifrost-http binary built with 
 GATEWAY="http://localhost:${PORT}"
 EXPERIMENT="gpt-4o cost-down"
 CANDIDATE="openai/gpt-4o-mini"
+# With a config store and no dashboard login configured, Bifrost locks /api behind a
+# setup token. The demo makes a throwaway one; loadgen reads it from the environment.
+export BIFROST_SETUP_TOKEN="${BIFROST_SETUP_TOKEN:-shadow-demo-$(date +%s)-$RANDOM}"
+api() { curl -s -H "X-Bifrost-Setup-Token: $BIFROST_SETUP_TOKEN" "$@"; }
 
 work="$(mktemp -d)"
 pids=()
@@ -51,12 +55,12 @@ echo "==> replaying traffic"
 echo
 echo "==> canary rule for $CANDIDATE at $(awk "BEGIN{print $WEIGHT*100}")%"
 q="experiment=$(printf %s "$EXPERIMENT" | sed 's/ /%20/g')&candidate=${CANDIDATE}&weight=${WEIGHT}"
-rule="$(curl -sf "$GATEWAY/api/shadow/canary-rule?$q")"
+rule="$(api -f "$GATEWAY/api/shadow/canary-rule?$q")"
 echo "$rule"
 
 echo
-echo "==> promoting: POST /api/governance/routing-rules"
-status="$(curl -s -o "$work/rule-response.json" -w '%{http_code}' -X POST "$GATEWAY/api/governance/routing-rules" \
+echo "==> promoting: POST /api/routing/rules"
+status="$(api -o "$work/rule-response.json" -w '%{http_code}' -X POST "$GATEWAY/api/routing/rules" \
   -H 'Content-Type: application/json' -d "$rule")"
 echo "HTTP $status: $(cat "$work/rule-response.json")"
 if [ "$status" -ge 300 ]; then
@@ -74,4 +78,11 @@ for _ in $(seq 1 200); do
     tr -d '\r' | awk -F': ' 'tolower($1)=="x-bifrost-routing-info-model"{print $2}')"
   [ "$served" = "gpt-4o-mini" ] && mini=$((mini + 1))
 done
-echo "gpt-4o-mini served $mini of 200 requests (target $(awk "BEGIN{print $WEIGHT*200}"))"
+echo "gpt-4o-mini served $mini of 200 requests (expected $(awk "BEGIN{print $WEIGHT*200}"))"
+# A weighted split is random per request: accept anything within 3 standard deviations.
+if awk -v k="$mini" -v w="$WEIGHT" 'BEGIN { n = 200; m = n * w; sd = sqrt(n * w * (1 - w)); exit !(k >= m - 3 * sd && k <= m + 3 * sd) }'; then
+  echo "canary split is consistent with a $(awk "BEGIN{print $WEIGHT*100}")% weight"
+else
+  echo "canary split is outside the expected range"
+  exit 1
+fi

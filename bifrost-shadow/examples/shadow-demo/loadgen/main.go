@@ -57,6 +57,7 @@ func main() {
 	flag.Int64Var(&o.seed, "seed", 7, "workload shuffle seed")
 	flag.DurationVar(&o.wait, "wait", 90*time.Second, "max time to wait for shadow comparisons to finish")
 	flag.BoolVar(&o.reportOnly, "report", false, "only print the current shadow summary")
+	flag.StringVar(&setupToken, "setup-token", os.Getenv("BIFROST_SETUP_TOKEN"), "X-Bifrost-Setup-Token for /api calls before dashboard auth is configured")
 	flag.Parse()
 
 	if o.reportOnly {
@@ -311,8 +312,18 @@ func printSummary(gateway string) error {
 	return nil
 }
 
+// setupToken authenticates /api calls on a gateway whose dashboard auth is not set up yet.
+var setupToken string
+
 func getJSON(url string, v any) error {
-	resp, err := http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	if setupToken != "" {
+		req.Header.Set("X-Bifrost-Setup-Token", setupToken)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
