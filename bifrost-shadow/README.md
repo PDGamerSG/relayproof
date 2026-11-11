@@ -45,9 +45,10 @@ client ──► Bifrost ──► primary model ──► answer to client (unc
   lower bound of its agreement rate clears the threshold and its error rate is within budget.
 - **Inspect** every disagreement side by side with the judge's reason.
 - **Promote** a ready candidate to a weighted canary routing rule from the dashboard or API.
-- **Stay safe**: bounded queue and workers, daily budget, per-request opt-out header,
-  virtual-key allow-list, payload storage switch. Shadow calls are internal requests: no plugin
-  recursion, no billing to the caller's virtual key.
+- **Stay safe**: bounded queue and workers, daily budget, per-request opt-out header (the
+  force header is off unless the operator allows it), virtual-key allow-list, payload storage
+  switch. Shadow calls are internal requests: no plugin recursion, no billing to the caller's
+  virtual key, and no MCP tools run on them.
 
 ## Demo result (no API keys)
 
@@ -71,6 +72,8 @@ follow-up traffic.
 
 **Models → Shadow Traffic** in the Bifrost UI:
 
+![Shadow Traffic page: counter tiles and one scorecard row per candidate](docs/media/ui-shadow-traffic.png)
+
 - Counters for sampled, compared, failed and dropped comparisons, and eval spend against the
   daily budget.
 - One scorecard row per candidate: verdict, agreement with its 95% lower bound, error rate,
@@ -79,6 +82,11 @@ follow-up traffic.
   which label (A or B) the candidate had in the judge's randomized order.
 - **Promote to canary**: choose a share of traffic, preview the routing rule, create it.
 - **Reset**: clear results. Today's eval spend is kept, so the daily budget still applies.
+
+![Disagreements sheet: primary and candidate answers side by side with the judge's verdict](docs/media/ui-shadow-disagreements.png)
+
+Both screenshots are from the key-free demo (`examples/shadow-demo`), so the answers come
+from the mock upstream.
 
 ## Quick start
 
