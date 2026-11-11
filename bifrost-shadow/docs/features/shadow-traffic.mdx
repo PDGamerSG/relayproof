@@ -70,7 +70,7 @@ The lower bound keeps a lucky streak from promoting a model: 20 out of 20 passes
 
 1. Enable the plugin with `config.json` or the API (the tabs alongside this one).
 2. Open **Models → Shadow Traffic** in the sidebar. The page polls the scorecard every 5 seconds.
-3. Use **View disagreements** on a candidate to read failing pairs side by side with the judge's reason.
+3. Use **View disagreements** on a candidate to read failing pairs side by side with the judge's reason. The judge saw each pair in a random order, so its reason refers to "response A" or "response B"; the record states which one was the candidate.
 4. Use **Promote to canary**, pick the share of traffic (10% by default), check the rule preview, and confirm. The rule appears under **Routing Rules**, where you can raise its weight or disable it.
 
 </Tab>
@@ -210,7 +210,7 @@ The generated rule matches `provider == "openai" && model == "gpt-4o"`, keeps 90
 | `GET` | `/api/shadow/summary` | Counters, spend, thresholds, experiments and per-candidate scorecards (`pairs`). |
 | `GET` | `/api/shadow/records` | Comparisons, newest first. Query: `experiment`, `candidate` (`provider/model`), `outcome` (`pass`, `fail`, `error`), `limit` (default 50, max 500), `offset`. |
 | `GET` | `/api/shadow/records/{id}` | One comparison with both answers, metrics and the judge verdict. |
-| `DELETE` | `/api/shadow/records` | Clear records and counters (audited). |
+| `DELETE` | `/api/shadow/records` | Clear records and counters and restart `started_at` (audited). Today's evaluation spend is kept, so a reset never lifts the daily budget. |
 | `GET` | `/api/shadow/canary-rule` | A routing-rule body for `POST /api/routing/rules`. Query: `experiment`, `candidate`, `weight` in (0, 1], default `0.1`. |
 
 All routes answer `404` with a message when the plugin is not enabled.
