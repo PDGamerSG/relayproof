@@ -147,7 +147,7 @@ type Plugin struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
-	startedAt time.Time
+	startedAt atomic.Int64 // unix nanoseconds; plugin start or last reset
 
 	eligible      atomic.Int64
 	sampled       atomic.Int64
@@ -194,11 +194,11 @@ func Init(ctx context.Context, config *Config, logger schemas.Logger) (*Plugin, 
 		queue:     make(chan *job, config.QueueSize),
 		ctx:       workerCtx,
 		cancel:    cancel,
-		startedAt: time.Now(),
 		traffic:   make(map[string]*trafficCounter),
 		randFloat: rand.Float64,
 		now:       time.Now,
 	}
+	p.startedAt.Store(p.now().UnixNano())
 	for i := 0; i < config.MaxConcurrency; i++ {
 		p.wg.Add(1)
 		go p.worker()

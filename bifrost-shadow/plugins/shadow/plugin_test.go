@@ -750,6 +750,23 @@ func TestStorePersistenceAndReset(t *testing.T) {
 	assert.Empty(t, strings.TrimSpace(string(data)))
 }
 
+func TestResetRestartsCollectionWindowAndKeepsSpend(t *testing.T) {
+	p := newTestPlugin(t, baseConfig())
+	started := p.Summary().StartedAt
+	require.False(t, started.IsZero())
+
+	p.sampled.Store(7)
+	p.addSpend(0.25)
+	later := started.Add(90 * time.Minute)
+	p.now = func() time.Time { return later }
+
+	require.NoError(t, p.Reset())
+	s := p.Summary()
+	assert.True(t, s.StartedAt.Equal(later), "counters restart at reset, so the collection window must too")
+	assert.Zero(t, s.Counters.Sampled)
+	assert.InDelta(t, 0.25, s.SpendTodayUSD, 1e-9, "today's spend survives a reset so the daily budget still applies")
+}
+
 func TestStoreRingBufferAndFilters(t *testing.T) {
 	st, err := newStore(3, "")
 	require.NoError(t, err)

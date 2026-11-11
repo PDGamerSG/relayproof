@@ -26,7 +26,7 @@ type Summary struct {
 // Summary returns counters and per-candidate scorecards.
 func (p *Plugin) Summary() Summary {
 	s := Summary{
-		StartedAt:       p.startedAt,
+		StartedAt:       time.Unix(0, p.startedAt.Load()),
 		SampleRate:      p.config.SampleRate,
 		DailyBudgetUSD:  p.config.DailyBudgetUSD,
 		SpendTodayUSD:   p.spendToday(),
@@ -70,8 +70,11 @@ func (p *Plugin) Records(f RecordFilter) ([]*Record, int) {
 // Record returns one comparison by ID, or nil.
 func (p *Plugin) Record(id string) *Record { return p.store.get(id) }
 
-// Reset clears stored comparisons, counters and traffic observations.
+// Reset clears stored comparisons, counters and traffic observations, and
+// restarts the collection window. Today's spend is kept so that clearing
+// results never lifts the daily budget.
 func (p *Plugin) Reset() error {
+	p.startedAt.Store(p.now().UnixNano())
 	p.eligible.Store(0)
 	p.sampled.Store(0)
 	p.enqueued.Store(0)
