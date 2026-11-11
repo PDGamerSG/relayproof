@@ -59,10 +59,20 @@ func (p *Plugin) counters() Counters {
 	}
 }
 
-// Records lists stored comparisons newest-first.
+// Record listing page sizes.
+const (
+	DefaultRecordsLimit = 50
+	MaxRecordsLimit     = 500
+)
+
+// Records lists stored comparisons newest-first. A limit of 0 or less means
+// DefaultRecordsLimit; one above MaxRecordsLimit is clamped to it.
 func (p *Plugin) Records(f RecordFilter) ([]*Record, int) {
-	if f.Limit <= 0 || f.Limit > 500 {
-		f.Limit = 50
+	switch {
+	case f.Limit <= 0:
+		f.Limit = DefaultRecordsLimit
+	case f.Limit > MaxRecordsLimit:
+		f.Limit = MaxRecordsLimit
 	}
 	return p.store.list(f)
 }
@@ -109,12 +119,47 @@ type CanaryRule struct {
 // ErrUnknownPair is returned when no experiment/candidate pair matches a canary request.
 var ErrUnknownPair = errors.New("shadow: unknown experiment or candidate")
 
-// BuildCanaryRule returns a weighted routing rule that sends weight (0 < weight <= 1)
-// of the source model's traffic to the candidate. For a wildcard source the most
-// frequently observed primary model is used, since a rule must name a concrete model.
-func (p *Plugin) BuildCanaryRule(experiment, candidate string, weight float64) (*CanaryRule, error) {
-	if weight <= 0 || weight > 1 {
-		return nil, fmt.Errorf("shadow: weight must be in (0, 1], got %v", weight)
+// MinCanaryWeight is the smallest canary share: target weights are rounded to
+// four decimals, and a share that rounds to 0 makes a target the routing rules
+// API rejects.
+const MinCanaryWeight = 0.0001
+
+// DefaultCanaryPriority is the routing rule priority used when none is given.
+const DefaultCanaryPriority = 10
+
+// ValidateCanaryWeight checks that weight is a number in [MinCanaryWeight, 1].
+// NaN and infinities are rejected.
+func ValidateCanaryWeight(weight float64) error {
+	if !(weight >= MinCanaryWeight && weight <= 1) {
+		return fmt.Errorf("shadow: weight must be a number from %g to 1, got %v", MinCanaryWeight, weight)
+	}
+	return nil
+}
+
+// BuildCanaryRule returns a weighted routing rule that sends weight
+// (MinCanaryWeight <= weight <= 1) of the source model's traffic to the
+// candidate. The candidate's share is rounded to four decimals and the source
+// gets the rest; a share that rounds to 1 yields a single-target full cutover.
+// For a wildcard source the most frequently observed primary model is used,
+// since a rule must name a concrete model.
+//
+// priority optionally overrides DefaultCanaryPriority (at most one value, not
+// negative): the routing rules API allows one rule per priority in a scope.
+// The rule name depends only on the pair, so a caller can find an existing
+// canary for it and update its weight instead of creating a second rule.
+func (p *Plugin) BuildCanaryRule(experiment, candidate string, weight float64, priority ...int) (*CanaryRule, error) {
+	if err := ValidateCanaryWeight(weight); err != nil {
+		return nil, err
+	}
+	rulePriority := DefaultCanaryPriority
+	if len(priority) > 1 {
+		return nil, errors.New("shadow: at most one priority may be given")
+	}
+	if len(priority) == 1 {
+		if priority[0] < 0 {
+			return nil, fmt.Errorf("shadow: priority must be a non-negative integer, got %d", priority[0])
+		}
+		rulePriority = priority[0]
 	}
 	var exp *Experiment
 	for i := range p.config.Experiments {
@@ -151,18 +196,21 @@ func (p *Plugin) BuildCanaryRule(experiment, candidate string, weight float64) (
 	if source.Provider != "" {
 		cel = fmt.Sprintf("provider == %q && %s", string(source.Provider), cel)
 	}
-	targets := []RoutingTarget{{Provider: string(cand.Provider), Model: cand.Model, Weight: round4(weight)}}
-	if weight < 1 {
-		targets = append([]RoutingTarget{{Provider: string(source.Provider), Model: source.Model, Weight: round4(1 - weight)}}, targets...)
+	// Derive both weights from the rounded share so each is at least
+	// MinCanaryWeight and they sum to 1.
+	share := round4(weight)
+	targets := []RoutingTarget{{Provider: string(cand.Provider), Model: cand.Model, Weight: share}}
+	if share < 1 {
+		targets = append([]RoutingTarget{{Provider: string(source.Provider), Model: source.Model, Weight: round4(1 - share)}}, targets...)
 	}
 	return &CanaryRule{
-		Name:          fmt.Sprintf("Shadow canary: %s -> %s (%g%%)", source.String(), cand.String(), round4(weight*100)),
-		Description:   fmt.Sprintf("Created from shadow experiment %q. Sends %g%% of %s traffic to %s.", experiment, round4(weight*100), source.String(), cand.String()),
+		Name:          fmt.Sprintf("Shadow canary: %s -> %s", source.String(), cand.String()),
+		Description:   fmt.Sprintf("Created from shadow experiment %q. Sends %g%% of %s traffic to %s.", experiment, round4(share*100), source.String(), cand.String()),
 		Enabled:       true,
 		CelExpression: cel,
 		Targets:       targets,
 		Scope:         "global",
-		Priority:      10,
+		Priority:      rulePriority,
 	}, nil
 }
 

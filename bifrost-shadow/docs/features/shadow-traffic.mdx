@@ -165,7 +165,7 @@ Every provider named in `experiments`, `judge` and `embedding` must be configure
 | `max_records` | `5000` | Comparisons kept in memory. |
 | `store_payloads` | `true` | Keep prompts and answers for the disagreement viewer. Set `false` to keep only scores. |
 | `max_payload_chars` | `8000` | Truncation limit for stored prompts and answers. |
-| `persist_path` | none | JSONL file that records are appended to and reloaded from at startup. |
+| `persist_path` | none | JSONL file that records are appended to and reloaded from at startup. When it passes twice `max_records` lines, it is rewritten with only the newest `max_records` records, so the file and the startup replay stay bounded. |
 | `pricing` | catalog | Manual prices keyed by `"provider/model"` or `"model"`: `{ "input_per_million": 0.15, "output_per_million": 0.6 }`. They take precedence over the [model catalog](/features/governance/budget-and-limits). |
 | `thresholds.min_samples` | `20` | Comparisons needed before a verdict. |
 | `thresholds.min_agreement` | `0.9` | Required 95% lower bound of agreement for `ready`. |
@@ -199,7 +199,7 @@ curl -X POST http://localhost:8080/api/routing/rules \
   -H "Content-Type: application/json" -d @rule.json
 ```
 
-The generated rule matches `provider == "openai" && model == "gpt-4o"`, keeps 90% on the primary and sends 10% to the candidate. For a wildcard source, the most frequently observed primary model is used, because a routing rule needs a concrete model. Keep the experiment running after promotion: the sampled share of the remaining primary traffic keeps the scorecard current.
+The generated rule matches `provider == "openai" && model == "gpt-4o"`, keeps 90% on the primary and sends 10% to the candidate. It is named `Shadow canary: <source> -> <candidate>` and has priority 10 unless you pass `priority`; the routing API allows one rule per priority in a scope, so pass a free one when 10 is taken. To ramp an existing canary, build the rule again with the new `weight` and send its `targets` to `PUT /api/routing/rules/{rule_id}`. For a wildcard source, the most frequently observed primary model is used, because a routing rule needs a concrete model. Keep the experiment running after promotion: the sampled share of the remaining primary traffic keeps the scorecard current.
 
 ---
 
@@ -211,7 +211,7 @@ The generated rule matches `provider == "openai" && model == "gpt-4o"`, keeps 90
 | `GET` | `/api/shadow/records` | Comparisons, newest first. Query: `experiment`, `candidate` (`provider/model`), `outcome` (`pass`, `fail`, `error`), `limit` (default 50, max 500), `offset`. |
 | `GET` | `/api/shadow/records/{id}` | One comparison with both answers, metrics and the judge verdict. |
 | `DELETE` | `/api/shadow/records` | Clear records and counters and restart `started_at` (audited). Today's evaluation spend is kept, so a reset never lifts the daily budget. |
-| `GET` | `/api/shadow/canary-rule` | A routing-rule body for `POST /api/routing/rules`. Query: `experiment`, `candidate`, `weight` in (0, 1], default `0.1`. |
+| `GET` | `/api/shadow/canary-rule` | A routing-rule body for `POST /api/routing/rules`. Query: `experiment`, `candidate`, `weight` from `0.0001` to `1` (default `0.1`), `priority` (default `10`). |
 
 All routes answer `404` with a message when the plugin is not enabled.
 

@@ -13,12 +13,14 @@ import (
 
 // fakeShadow is an in-memory ShadowReader.
 type fakeShadow struct {
-	records    []*shadow.Record
-	lastFilter shadow.RecordFilter
-	resets     int
-	resetErr   error
-	ruleErr    error
-	lastWeight float64
+	records      []*shadow.Record
+	lastFilter   shadow.RecordFilter
+	resets       int
+	resetErr     error
+	ruleErr      error
+	lastWeight   float64
+	lastPriority []int
+	ruleCalls    int
 }
 
 func (f *fakeShadow) Summary() shadow.Summary {
@@ -44,8 +46,10 @@ func (f *fakeShadow) Reset() error {
 	return f.resetErr
 }
 
-func (f *fakeShadow) BuildCanaryRule(experiment, candidate string, weight float64) (*shadow.CanaryRule, error) {
+func (f *fakeShadow) BuildCanaryRule(experiment, candidate string, weight float64, priority ...int) (*shadow.CanaryRule, error) {
 	f.lastWeight = weight
+	f.lastPriority = priority
+	f.ruleCalls++
 	if f.ruleErr != nil {
 		return nil, f.ruleErr
 	}
@@ -163,4 +167,50 @@ func TestShadowHandlerCanaryRule(t *testing.T) {
 	ctx = shadowCtx("experiment=e&candidate=c&weight=2")
 	h.getCanaryRule(ctx)
 	assert.Equal(t, fasthttp.StatusBadRequest, ctx.Response.StatusCode())
+}
+
+func TestShadowHandlerCanaryRuleRejectsUnusableWeights(t *testing.T) {
+	f := &fakeShadow{}
+	h := NewShadowHandler(func() ShadowReader { return f })
+	for _, w := range []string{"NaN", "nan", "Inf", "%2BInf", "-Inf", "infinity", "0", "-0.5", "0.00001", "1.5", "lots"} {
+		ctx := shadowCtx("experiment=e&candidate=c&weight=" + w)
+		h.getCanaryRule(ctx)
+		assert.Equal(t, fasthttp.StatusBadRequest, ctx.Response.StatusCode(), "weight=%s", w)
+		assert.Contains(t, string(ctx.Response.Body()), "weight must be a number from 0.0001 to 1", "weight=%s", w)
+	}
+	assert.Zero(t, f.ruleCalls, "an unusable weight is rejected before a rule is built")
+
+	ctx := shadowCtx("experiment=e&candidate=c&weight=0.0001")
+	h.getCanaryRule(ctx)
+	assert.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), "the smallest routable weight is accepted")
+	assert.Equal(t, 0.0001, f.lastWeight)
+}
+
+func TestShadowHandlerCanaryRuleRejectsInvalidPriority(t *testing.T) {
+	f := &fakeShadow{}
+	h := NewShadowHandler(func() ShadowReader { return f })
+	for _, p := range []string{"-1", "abc", "1.5", "1e3"} {
+		ctx := shadowCtx("experiment=e&candidate=c&priority=" + p)
+		h.getCanaryRule(ctx)
+		assert.Equal(t, fasthttp.StatusBadRequest, ctx.Response.StatusCode(), "priority=%s", p)
+		assert.Contains(t, string(ctx.Response.Body()), "priority must be a non-negative integer", "priority=%s", p)
+	}
+	assert.Zero(t, f.ruleCalls)
+}
+
+func TestShadowHandlerCanaryRulePriority(t *testing.T) {
+	f := &fakeShadow{}
+	h := NewShadowHandler(func() ShadowReader { return f })
+
+	ctx := shadowCtx("experiment=e&candidate=c")
+	h.getCanaryRule(ctx)
+	assert.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode())
+	assert.Equal(t, []int{shadow.DefaultCanaryPriority}, f.lastPriority, "priority defaults to 10")
+
+	for query, want := range map[string]int{"priority=25": 25, "priority=0": 0} {
+		ctx := shadowCtx("experiment=e&candidate=c&" + query)
+		h.getCanaryRule(ctx)
+		assert.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), query)
+		assert.Equal(t, []int{want}, f.lastPriority, query)
+	}
 }

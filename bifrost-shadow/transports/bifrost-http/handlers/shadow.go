@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -19,7 +20,7 @@ type ShadowReader interface {
 	Records(f shadow.RecordFilter) ([]*shadow.Record, int)
 	Record(id string) *shadow.Record
 	Reset() error
-	BuildCanaryRule(experiment, candidate string, weight float64) (*shadow.CanaryRule, error)
+	BuildCanaryRule(experiment, candidate string, weight float64, priority ...int) (*shadow.CanaryRule, error)
 }
 
 // ShadowResolver returns the currently loaded shadow plugin, or nil. It is called
@@ -125,7 +126,9 @@ func (h *ShadowHandler) resetRecords(ctx *fasthttp.RequestCtx) {
 }
 
 // getCanaryRule returns a routing-rule body for POST /api/routing/rules.
-// Query: experiment, candidate ("provider/model"), weight (0 < w <= 1, default 0.1).
+// Query: experiment, candidate ("provider/model"), weight (0.0001 <= w <= 1,
+// default 0.1), priority (non-negative integer, default 10; the routing rules
+// API allows one rule per priority in a scope).
 func (h *ShadowHandler) getCanaryRule(ctx *fasthttp.RequestCtx) {
 	p := h.plugin(ctx)
 	if p == nil {
@@ -142,12 +145,26 @@ func (h *ShadowHandler) getCanaryRule(ctx *fasthttp.RequestCtx) {
 	if raw := string(args.Peek("weight")); raw != "" {
 		w, err := strconv.ParseFloat(raw, 64)
 		if err != nil {
-			SendError(ctx, fasthttp.StatusBadRequest, "weight must be a number in (0, 1]")
+			SendError(ctx, fasthttp.StatusBadRequest, fmt.Sprintf("weight must be a number from %g to 1", shadow.MinCanaryWeight))
+			return
+		}
+		// ParseFloat accepts NaN and Inf; reject them and unroutable shares here.
+		if err := shadow.ValidateCanaryWeight(w); err != nil {
+			SendError(ctx, fasthttp.StatusBadRequest, err.Error())
 			return
 		}
 		weight = w
 	}
-	rule, err := p.BuildCanaryRule(experiment, candidate, weight)
+	priority := shadow.DefaultCanaryPriority
+	if raw := args.Peek("priority"); len(raw) > 0 {
+		n, err := parseNonNegative(raw)
+		if err != nil {
+			SendError(ctx, fasthttp.StatusBadRequest, "priority must be a non-negative integer")
+			return
+		}
+		priority = n
+	}
+	rule, err := p.BuildCanaryRule(experiment, candidate, weight, priority)
 	if errors.Is(err, shadow.ErrUnknownPair) {
 		SendError(ctx, fasthttp.StatusNotFound, err.Error())
 		return

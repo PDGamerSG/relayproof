@@ -3,8 +3,10 @@ package shadow
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -74,6 +76,13 @@ type RecordFilter struct {
 // appends each to a JSONL file. Aggregates are recomputed from the buffer on
 // read: the buffer is bounded (max_records) and summaries are requested by
 // humans, not on the request path.
+//
+// The file is compacted to the records in the buffer once it holds more than
+// twice max_records lines, so its size and the startup replay stay bounded.
+//
+// Lock order: persistMu, then mu. When persistence is on, every change to the
+// buffer (add, reset) happens under persistMu so the buffer and the file move
+// together; readers take only mu and never wait on file I/O.
 type store struct {
 	mu      sync.RWMutex
 	records []*Record // ring buffer, oldest first after wrap handling
@@ -81,42 +90,57 @@ type store struct {
 	full    bool
 	max     int
 
-	persistPath string
-	persistMu   sync.Mutex
-	file        *os.File
-	writer      *bufio.Writer
+	persistPath  string
+	persistMu    sync.Mutex
+	file         *os.File // nil when not open; add reopens it
+	lines        int      // lines in the file, counted rather than stat'ed per write
+	compactAt    int      // line count above which the file is compacted
+	truncPending bool     // a reset could not truncate the file; the next open must
+	closed       bool
 }
 
+// errStoreClosed is returned by add after close: the record is kept in memory only.
+var errStoreClosed = errors.New("shadow: persist file is closed")
+
 func newStore(max int, persistPath string) (*store, error) {
-	s := &store{records: make([]*Record, max), max: max, persistPath: persistPath}
+	s := &store{records: make([]*Record, max), max: max, persistPath: persistPath, compactAt: 2 * max}
 	if persistPath == "" {
 		return s, nil
 	}
-	if err := s.load(); err != nil {
+	lines, err := s.load()
+	if err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(persistPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
-	if err != nil {
-		return nil, fmt.Errorf("shadow: open persist file: %w", err)
+	s.lines = lines
+	if s.lines > s.compactAt {
+		// Best effort: a failed compaction leaves the file as it is, retried later.
+		if err := s.compactLocked(); err == nil {
+			return s, nil
+		}
 	}
-	s.file = f
-	s.writer = bufio.NewWriter(f)
+	if s.file == nil {
+		if err := s.openLocked(false); err != nil {
+			return nil, err
+		}
+	}
 	return s, nil
 }
 
-// load replays a persisted JSONL file into the ring buffer.
-func (s *store) load() error {
+// load replays a persisted JSONL file into the ring buffer and returns its line count.
+func (s *store) load() (int, error) {
 	f, err := os.Open(s.persistPath)
 	if os.IsNotExist(err) {
-		return nil
+		return 0, nil
 	}
 	if err != nil {
-		return fmt.Errorf("shadow: open persist file: %w", err)
+		return 0, fmt.Errorf("shadow: open persist file: %w", err)
 	}
 	defer f.Close()
+	lines := 0
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
 	for scanner.Scan() {
+		lines++
 		line := scanner.Bytes()
 		if len(line) == 0 {
 			continue
@@ -128,7 +152,124 @@ func (s *store) load() error {
 		}
 		s.insert(&rec)
 	}
-	return scanner.Err()
+	return lines, scanner.Err()
+}
+
+// openLocked opens the persist file for appending, truncating it when trunc is
+// set. A file whose last line lacks its '\n' (a crash mid-write) is terminated
+// first, so the next record does not join the torn line and get skipped with it
+// on the next load. Caller holds persistMu.
+func (s *store) openLocked(trunc bool) error {
+	flag := os.O_CREATE | os.O_WRONLY | os.O_APPEND
+	if trunc {
+		flag |= os.O_TRUNC
+	}
+	f, err := os.OpenFile(s.persistPath, flag, 0o600)
+	if err != nil {
+		return fmt.Errorf("shadow: open persist file: %w", err)
+	}
+	if !trunc {
+		torn, err := endsTorn(f, s.persistPath)
+		if err == nil && torn {
+			_, err = f.Write([]byte{'\n'})
+		}
+		if err != nil {
+			_ = f.Close()
+			return fmt.Errorf("shadow: open persist file: %w", err)
+		}
+	}
+	s.file = f
+	return nil
+}
+
+// endsTorn reports whether the non-empty file f (opened write-only at path)
+// does not end with '\n'.
+func endsTorn(f *os.File, path string) (bool, error) {
+	info, err := f.Stat()
+	if err != nil || info.Size() == 0 {
+		return false, err
+	}
+	r, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer r.Close()
+	last := make([]byte, 1)
+	if _, err := r.ReadAt(last, info.Size()-1); err != nil {
+		return false, err
+	}
+	return last[0] != '\n', nil
+}
+
+// closeFileLocked closes the persist file if it is open. Caller holds persistMu.
+func (s *store) closeFileLocked() error {
+	if s.file == nil {
+		return nil
+	}
+	err := s.file.Close()
+	s.file = nil
+	return err
+}
+
+// compactLocked rewrites the persist file with only the records in the ring
+// buffer: they are written to a temporary file that then replaces the original.
+// On failure the original file is kept and the next attempt is deferred by
+// another max_records appends. Caller holds persistMu.
+func (s *store) compactLocked() (err error) {
+	defer func() {
+		if err != nil {
+			s.compactAt = s.lines + s.max
+			err = fmt.Errorf("shadow: compact persist file: %w", err)
+		}
+	}()
+	recs := s.snapshot()
+	tmp, err := os.CreateTemp(filepath.Dir(s.persistPath), filepath.Base(s.persistPath)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	written, err := writeRecords(tmp, recs)
+	if syncErr := tmp.Sync(); err == nil {
+		err = syncErr
+	}
+	if closeErr := tmp.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		_ = os.Remove(tmp.Name())
+		return err
+	}
+	// Windows cannot replace a file that is still open, so the append handle goes first.
+	_ = s.closeFileLocked()
+	if err := os.Rename(tmp.Name(), s.persistPath); err != nil {
+		_ = os.Remove(tmp.Name())
+		if openErr := s.openLocked(false); openErr != nil {
+			return errors.Join(err, openErr)
+		}
+		return err
+	}
+	s.lines = written
+	s.compactAt = 2 * s.max
+	// A failed reopen leaves the file closed; the next add retries it.
+	return s.openLocked(false)
+}
+
+// writeRecords writes recs as JSON lines and returns how many it wrote. A record
+// that cannot be encoded is skipped: it could never be appended either.
+func writeRecords(f *os.File, recs []*Record) (int, error) {
+	w := bufio.NewWriter(f)
+	written := 0
+	for _, rec := range recs {
+		line, err := json.Marshal(rec)
+		if err != nil {
+			continue
+		}
+		line = append(line, '\n')
+		if _, err := w.Write(line); err != nil {
+			return written, err
+		}
+		written++
+	}
+	return written, w.Flush()
 }
 
 func (s *store) insert(rec *Record) {
@@ -141,22 +282,43 @@ func (s *store) insert(rec *Record) {
 
 // add stores a record and persists it when configured.
 func (s *store) add(rec *Record) error {
+	if s.persistPath == "" {
+		s.mu.Lock()
+		s.insert(rec)
+		s.mu.Unlock()
+		return nil
+	}
+	line, marshalErr := json.Marshal(rec)
+	s.persistMu.Lock()
+	defer s.persistMu.Unlock()
 	s.mu.Lock()
 	s.insert(rec)
 	s.mu.Unlock()
-	if s.writer == nil {
-		return nil
+	if marshalErr != nil {
+		return marshalErr
 	}
-	line, err := json.Marshal(rec)
-	if err != nil {
-		return err
+	if s.closed {
+		return errStoreClosed
 	}
-	s.persistMu.Lock()
-	defer s.persistMu.Unlock()
-	if _, err := s.writer.Write(append(line, '\n')); err != nil {
-		return err
+	if s.file == nil {
+		// An earlier reopen or write failed; try again, finishing a pending reset.
+		if err := s.openLocked(s.truncPending); err != nil {
+			return err
+		}
+		if s.truncPending {
+			s.truncPending, s.lines, s.compactAt = false, 0, 2*s.max
+		}
 	}
-	return s.writer.Flush()
+	if _, err := s.file.Write(append(line, '\n')); err != nil {
+		// A failed write can leave a partial line; reopening terminates it.
+		_ = s.closeFileLocked()
+		return fmt.Errorf("shadow: append to persist file: %w", err)
+	}
+	s.lines++
+	if s.lines > s.compactAt {
+		return s.compactLocked()
+	}
+	return nil
 }
 
 // snapshot returns records oldest-first.
@@ -241,46 +403,47 @@ func (s *store) list(f RecordFilter) ([]*Record, int) {
 	return matched, total
 }
 
-// reset clears all records and truncates the persist file.
-func (s *store) reset() error {
+// clear empties the ring buffer.
+func (s *store) clear() {
 	s.mu.Lock()
 	s.records = make([]*Record, s.max)
 	s.next = 0
 	s.full = false
 	s.mu.Unlock()
-	if s.file == nil {
+}
+
+// reset clears all records and truncates the persist file. persistMu is held
+// across both so a concurrent add lands in both or in neither.
+func (s *store) reset() error {
+	if s.persistPath == "" {
+		s.clear()
 		return nil
 	}
 	s.persistMu.Lock()
 	defer s.persistMu.Unlock()
-	if err := s.writer.Flush(); err != nil {
-		return err
+	s.clear()
+	if s.closed {
+		return nil
 	}
 	// Reopen with O_TRUNC rather than Truncate: an O_APPEND handle cannot be
 	// truncated on Windows.
-	if err := s.file.Close(); err != nil {
-		return err
-	}
-	f, err := os.OpenFile(s.persistPath, os.O_CREATE|os.O_TRUNC|os.O_APPEND|os.O_WRONLY, 0o600)
-	if err != nil {
-		s.file, s.writer = nil, nil
+	_ = s.closeFileLocked()
+	if err := s.openLocked(true); err != nil {
+		s.truncPending = true
 		return fmt.Errorf("shadow: reopen persist file: %w", err)
 	}
-	s.file = f
-	s.writer = bufio.NewWriter(f)
+	s.truncPending, s.lines, s.compactAt = false, 0, 2*s.max
 	return nil
 }
 
 func (s *store) close() error {
-	if s.file == nil {
+	if s.persistPath == "" {
 		return nil
 	}
 	s.persistMu.Lock()
 	defer s.persistMu.Unlock()
-	if err := s.writer.Flush(); err != nil {
-		return err
-	}
-	return s.file.Close()
+	s.closed = true
+	return s.closeFileLocked()
 }
 
 // Readiness verdicts.
