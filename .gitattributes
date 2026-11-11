@@ -1,2 +1,6 @@
 # Preserve source-snapshot whitespace; source integrity is checked by SHA-256.
 research/sources/** -whitespace
+
+# Patches and shell scripts keep LF endings on every platform so git apply and bash work.
+bifrost-shadow/**/*.patch text eol=lf
+bifrost-shadow/**/*.sh text eol=lf

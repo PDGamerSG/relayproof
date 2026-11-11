@@ -1,0 +1,1 @@
+- feat: shadow traffic plugin. Mirrors a sample of live chat completions (streaming included) to candidate models off the request path, scores each pair with an optional LLM judge, embeddings and structural checks, and reports per-candidate readiness, latency and cost savings. Adds /api/shadow endpoints and canary routing-rule generation.
