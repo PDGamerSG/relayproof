@@ -39,6 +39,15 @@ export function shadowTestIdSlug(value: string): string {
 		.replace(/^-+|-+$/g, "");
 }
 
+/**
+ * data-testid suffix for one experiment/candidate scorecard: two experiments may share a candidate,
+ * so the experiment is part of it ("gpt-4o cost-down", "openai/gpt-4o-mini" -> "gpt-4o-cost-down--openai-gpt-4o-mini").
+ * A slug never contains "--", so the double dash keeps the two parts apart.
+ */
+export function shadowPairTestIdSlug(pair: Pick<ShadowPairSummary, "experiment" | "candidate">): string {
+	return `${shadowTestIdSlug(pair.experiment)}--${shadowTestIdSlug(shadowModelRefLabel(pair.candidate))}`;
+}
+
 export function isShadowVerdict(value: unknown): value is ShadowVerdict {
 	return typeof value === "string" && (SHADOW_VERDICTS as readonly string[]).includes(value);
 }

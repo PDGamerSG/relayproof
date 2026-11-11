@@ -14,14 +14,23 @@ export type ShadowTile =
   | "evaluators";
 
 /**
- * The slug the page builds test ids from: "openai/llama-3.1-8b" -> "openai-llama-3-1-8b".
+ * Lowercase, dash-separated form of a value: "openai/llama-3.1-8b" -> "openai-llama-3-1-8b".
  * Mirrors shadowTestIdSlug in ui/lib/utils/shadow.ts.
  */
-export function shadowSlug(candidate: string): string {
-  return candidate
+function shadowSlug(value: string): string {
+  return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * The suffix the scorecard builds a pair's test ids from. Two experiments can shadow the same
+ * candidate, so it names both: ("gpt-4o cost-down", "openai/gpt-4o-mini") ->
+ * "gpt-4o-cost-down--openai-gpt-4o-mini". Mirrors shadowPairTestIdSlug in ui/lib/utils/shadow.ts.
+ */
+export function shadowPairSlug(experiment: string, candidate: string): string {
+  return `${shadowSlug(experiment)}--${shadowSlug(candidate)}`;
 }
 
 /**
@@ -61,8 +70,11 @@ export class ShadowTrafficPage extends BasePage {
   readonly weightInput: Locator;
   readonly weightError: Locator;
   readonly caution: Locator;
+  readonly existingRuleAlert: Locator;
+  readonly rulesError: Locator;
   readonly preview: Locator;
   readonly previewName: Locator;
+  readonly previewPriority: Locator;
   readonly previewError: Locator;
   readonly promoteError: Locator;
   readonly promoteConfirmBtn: Locator;
@@ -100,8 +112,11 @@ export class ShadowTrafficPage extends BasePage {
     this.weightInput = page.getByTestId("shadow-promote-weight-input");
     this.weightError = page.getByTestId("shadow-promote-weight-error");
     this.caution = page.getByTestId("shadow-promote-caution");
+    this.existingRuleAlert = page.getByTestId("shadow-promote-existing");
+    this.rulesError = page.getByTestId("shadow-promote-rules-error");
     this.preview = page.getByTestId("shadow-promote-preview");
     this.previewName = page.getByTestId("shadow-promote-preview-name");
+    this.previewPriority = page.getByTestId("shadow-promote-preview-priority");
     this.previewError = page.getByTestId("shadow-promote-preview-error");
     this.promoteError = page.getByTestId("shadow-promote-error");
     this.promoteConfirmBtn = page.getByTestId("shadow-promote-confirm-button");
@@ -138,32 +153,37 @@ export class ShadowTrafficPage extends BasePage {
    */
   async expectTileValue(name: ShadowTile, title: string, value: string): Promise<void> {
     const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    await expect(this.tile(name)).toHaveText(new RegExp(`^\\s*${escape(title)}\\s+${escape(value)}\\s`, "i"), {
-      useInnerText: true,
-    });
+    await expect(this.tile(name)).toHaveText(
+      new RegExp(`^\\s*${escape(title)}\\s+${escape(value)}\\s`, "i"),
+      {
+        useInnerText: true,
+      },
+    );
   }
 
-  pairRow(candidate: string): Locator {
-    return this.page.getByTestId(`shadow-pair-row-${shadowSlug(candidate)}`);
+  pairRow(experiment: string, candidate: string): Locator {
+    return this.page.getByTestId(`shadow-pair-row-${shadowPairSlug(experiment, candidate)}`);
   }
 
-  verdictBadge(candidate: string): Locator {
-    return this.page.getByTestId(`shadow-verdict-${shadowSlug(candidate)}`);
+  verdictBadge(experiment: string, candidate: string): Locator {
+    return this.page.getByTestId(`shadow-verdict-${shadowPairSlug(experiment, candidate)}`);
   }
 
-  disagreementsButton(candidate: string): Locator {
-    return this.page.getByTestId(`shadow-disagreements-button-${shadowSlug(candidate)}`);
+  disagreementsButton(experiment: string, candidate: string): Locator {
+    return this.page.getByTestId(
+      `shadow-disagreements-button-${shadowPairSlug(experiment, candidate)}`,
+    );
   }
 
-  promoteButton(candidate: string): Locator {
-    return this.page.getByTestId(`shadow-promote-button-${shadowSlug(candidate)}`);
+  promoteButton(experiment: string, candidate: string): Locator {
+    return this.page.getByTestId(`shadow-promote-button-${shadowPairSlug(experiment, candidate)}`);
   }
 
   /**
-   * Open the disagreements sheet for a candidate and wait for its first page of records.
+   * Open the disagreements sheet for one experiment/candidate pair and wait for its first page of records.
    */
-  async openDisagreements(candidate: string): Promise<void> {
-    await this.disagreementsButton(candidate).click();
+  async openDisagreements(experiment: string, candidate: string): Promise<void> {
+    await this.disagreementsButton(experiment, candidate).click();
     await expect(this.disagreementsSheet).toBeVisible();
     await this.waitForSheetAnimation();
   }
@@ -223,11 +243,13 @@ export class ShadowTrafficPage extends BasePage {
   }
 
   /**
-   * Open the promote dialog for a candidate and wait for the first rule preview.
+   * Open the promote dialog for one experiment/candidate pair and wait for the first rule preview.
+   * The preview waits for the routing rules list, so the dialog already knows by then whether it
+   * creates a canary or updates the pair's existing one.
    */
-  async openPromote(candidate: string): Promise<void> {
+  async openPromote(experiment: string, candidate: string): Promise<void> {
     await this.dismissToasts();
-    await this.promoteButton(candidate).click();
+    await this.promoteButton(experiment, candidate).click();
     await expect(this.promoteDialog).toBeVisible();
     await expect(this.previewName).toBeVisible();
   }

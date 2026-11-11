@@ -24,6 +24,7 @@ import {
 	shadowJudgeScoreDelta,
 	shadowModelRefLabel,
 	shadowPairKey,
+	shadowPairTestIdSlug,
 	shadowSavingsTone,
 	shadowTestIdSlug,
 	shadowVerdictBadgeVariant,
@@ -67,6 +68,21 @@ describe("model labels and keys", () => {
 		expect(shadowTestIdSlug("openai/gpt-4o-mini")).toBe("openai-gpt-4o-mini");
 		expect(shadowTestIdSlug("openai/llama-3.1-8b")).toBe("openai-llama-3-1-8b");
 		expect(shadowTestIdSlug("/Anthropic/Claude 3.5/")).toBe("anthropic-claude-3-5");
+	});
+
+	it("gives each experiment/candidate pair its own readable data-testid slug", () => {
+		const mini = { provider: "openai", model: "gpt-4o-mini" };
+		expect(shadowPairTestIdSlug({ experiment: "gpt-4o cost-down", candidate: mini })).toBe("gpt-4o-cost-down--openai-gpt-4o-mini");
+		expect(shadowPairTestIdSlug({ experiment: "openai/gpt-4o vs openai/gpt-4o-mini", candidate: { model: "Llama 3.1" } })).toBe(
+			"openai-gpt-4o-vs-openai-gpt-4o-mini--llama-3-1",
+		);
+		// Two experiments that shadow the same candidate must not produce duplicate ids.
+		const slugs = [
+			shadowPairTestIdSlug({ experiment: "gpt-4o cost-down", candidate: mini }),
+			shadowPairTestIdSlug({ experiment: "claude cost-down", candidate: mini }),
+			shadowPairTestIdSlug({ experiment: "gpt-4o cost-down", candidate: { provider: "openai", model: "llama-3.1-8b" } }),
+		];
+		expect(new Set(slugs).size).toBe(3);
 	});
 });
 

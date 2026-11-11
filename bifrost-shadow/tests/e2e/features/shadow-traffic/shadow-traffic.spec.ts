@@ -1,6 +1,6 @@
 import type { APIRequestContext } from "@playwright/test";
 import { expect, test as base } from "../../core/fixtures/base.fixture";
-import { ShadowTrafficPage } from "./pages/shadow-traffic.page";
+import { ShadowTrafficPage, shadowPairSlug } from "./pages/shadow-traffic.page";
 import {
   OUTCOME_FILTER_LABELS,
   SHADOW_SOURCE,
@@ -8,9 +8,13 @@ import {
   VERDICT_LABELS,
   WEAK_CANDIDATE,
   WINNER_LABELS,
+  canaryRuleName,
+  canaryShareSentence,
   createChatCompletionData,
   createShadowTrafficPrompts,
+  firstFreeCanaryPriority,
   modelLabel,
+  type RoutingRuleRecord,
   type ShadowPair,
   type ShadowRecordsPage,
   type ShadowSummary,
@@ -39,6 +43,7 @@ const createdRuleIds: string[] = [];
 /** Counts as the page renders them (en). */
 const count = (n: number) => new Intl.NumberFormat("en-US").format(n);
 const isPath = (url: string, path: string) => new URL(url).pathname === path;
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 async function getSummary(request: APIRequestContext): Promise<ShadowSummary> {
   const res = await request.get(SUMMARY_API);
@@ -57,7 +62,12 @@ async function getRecords(
   outcome: "fail" | "error" | "pass",
 ): Promise<ShadowRecordsPage> {
   const res = await request.get(RECORDS_API, {
-    params: { experiment: pair.experiment, candidate: modelLabel(pair.candidate), outcome, limit: RECORDS_PAGE_SIZE },
+    params: {
+      experiment: pair.experiment,
+      candidate: modelLabel(pair.candidate),
+      outcome,
+      limit: RECORDS_PAGE_SIZE,
+    },
   });
   expect(res.status(), await res.text()).toBe(200);
   return res.json();
@@ -65,11 +75,86 @@ async function getRecords(
 
 /** A disagreement on the first page that the judge scored and that kept both answers. */
 function findJudgedDisagreement(fails: ShadowRecordsPage) {
-  return (fails.records ?? []).find((r) => r.judge && r.primary_answer?.text && r.candidate_answer?.text);
+  return (fails.records ?? []).find(
+    (r) => r.judge && r.primary_answer?.text && r.candidate_answer?.text,
+  );
+}
+
+async function getRoutingRules(request: APIRequestContext): Promise<RoutingRuleRecord[]> {
+  const res = await request.get(RULES_API);
+  expect(res.status(), await res.text()).toBe(200);
+  return (await res.json()).rules ?? [];
+}
+
+async function getRoutingRule(request: APIRequestContext, id: string): Promise<RoutingRuleRecord> {
+  const res = await request.get(`${RULES_API}/${id}`);
+  expect(res.status(), await res.text()).toBe(200);
+  return (await res.json()).rule;
+}
+
+/** The global rules named as the canary of the source -> candidate pair (names are unique per scope). */
+async function getCanaryRules(
+  request: APIRequestContext,
+  candidate: string,
+): Promise<RoutingRuleRecord[]> {
+  return (await getRoutingRules(request)).filter(
+    (rule) => rule.name === canaryRuleName(candidate) && rule.scope === "global" && !rule.scope_id,
+  );
+}
+
+/** A test that promotes a pair from scratch needs it to have no canary rule yet. */
+async function expectNoCanaryRule(request: APIRequestContext, candidate: string): Promise<void> {
+  const leftovers = (await getCanaryRules(request, candidate)).map(
+    (rule) => `${rule.name} (${rule.id})`,
+  );
+  expect(
+    leftovers,
+    `canary rules for ${candidate} left on the server; delete them before running this suite`,
+  ).toEqual([]);
+}
+
+/** A rule's targets in a comparable form. */
+function targetWeights(rule: RoutingRuleRecord) {
+  return rule.targets.map(({ provider, model, weight }) => ({ provider, model, weight }));
+}
+
+/** The preview lists each target with its share: "openai/gpt-4o 90%". */
+async function expectPreviewShare(
+  shadowTrafficPage: ShadowTrafficPage,
+  model: string,
+  percent: number,
+): Promise<void> {
+  await expect(shadowTrafficPage.preview).toContainText(
+    new RegExp(`${escapeRegExp(model)}\\s+${percent}%`),
+    {
+      useInnerText: true,
+    },
+  );
+}
+
+/**
+ * Confirm the promote dialog while it creates a canary, and return the new rule (tracked for cleanup).
+ */
+async function confirmCreate(shadowTrafficPage: ShadowTrafficPage): Promise<RoutingRuleRecord> {
+  await expect(shadowTrafficPage.promoteConfirmBtn).toHaveText("Create canary rule");
+  const createdResponse = shadowTrafficPage.page.waitForResponse(
+    (res) => isPath(res.url(), RULES_API) && res.request().method() === "POST",
+  );
+  await shadowTrafficPage.promoteConfirmBtn.click();
+  const created = await createdResponse;
+  expect(created.ok(), await created.text()).toBe(true);
+  const rule = (await created.json()).rule as RoutingRuleRecord;
+  createdRuleIds.push(rule.id);
+  await expect(shadowTrafficPage.promoteDialog).not.toBeVisible();
+  return rule;
 }
 
 /** Mirrors every prompt to the candidates: x-bf-shadow: force bypasses the sample rate. */
-async function sendShadowTraffic(request: APIRequestContext, prompts: string[], concurrency = 8): Promise<void> {
+async function sendShadowTraffic(
+  request: APIRequestContext,
+  prompts: string[],
+  concurrency = 8,
+): Promise<void> {
   for (let i = 0; i < prompts.length; i += concurrency) {
     await Promise.all(
       prompts.slice(i, i + concurrency).map(async (prompt) => {
@@ -89,7 +174,11 @@ async function waitForShadowIdle(request: APIRequestContext): Promise<void> {
     .poll(
       async () => {
         const { counters } = await getSummary(request);
-        return counters.in_flight === 0 && counters.queue_depth === 0 && counters.completed >= counters.enqueued;
+        return (
+          counters.in_flight === 0 &&
+          counters.queue_depth === 0 &&
+          counters.completed >= counters.enqueued
+        );
       },
       { timeout: 120_000, intervals: [500, 1000] },
     )
@@ -121,7 +210,8 @@ async function scorecardGaps(request: APIRequestContext): Promise<string[]> {
  * The scorecard tests read whatever the server has collected. When that is not enough
  * (a fresh server, or the Reset test of a previous run cleared it), mirror the demo
  * prompt set until both candidates have a verdict and the weak one has disagreements
- * and errors to show.
+ * and errors to show. Mirroring uses x-bf-shadow: force, which the gateway honours only
+ * with "allow_force_header": true in the shadow plugin config (as examples/shadow-demo sets).
  */
 async function ensureScorecardData(request: APIRequestContext): Promise<void> {
   if ((await scorecardGaps(request)).length === 0) return;
@@ -174,47 +264,94 @@ test.describe("Shadow Traffic", () => {
 
       // Counter tiles show the server's counters.
       await expect(shadowTrafficPage.counterTiles).toBeVisible();
-      for (const tile of ["sampled", "compared", "candidate-errors", "dropped", "eval-spend", "evaluators"] as const) {
+      for (const tile of [
+        "sampled",
+        "compared",
+        "candidate-errors",
+        "dropped",
+        "eval-spend",
+        "evaluators",
+      ] as const) {
         await expect(shadowTrafficPage.tile(tile)).toBeVisible();
       }
-      await shadowTrafficPage.expectTileValue("sampled", "Sampled", count(summary.counters.sampled));
-      await shadowTrafficPage.expectTileValue("compared", "Compared", count(summary.counters.completed));
+      await shadowTrafficPage.expectTileValue(
+        "sampled",
+        "Sampled",
+        count(summary.counters.sampled),
+      );
+      await shadowTrafficPage.expectTileValue(
+        "compared",
+        "Compared",
+        count(summary.counters.completed),
+      );
       await shadowTrafficPage.expectTileValue(
         "candidate-errors",
         "Candidate errors",
         count(summary.counters.candidate_errors),
       );
-      await shadowTrafficPage.expectTileValue("dropped", "Dropped", count(summary.counters.dropped));
+      await shadowTrafficPage.expectTileValue(
+        "dropped",
+        "Dropped",
+        count(summary.counters.dropped),
+      );
       if (summary.judge_model) {
         await expect(shadowTrafficPage.tile("evaluators")).toContainText(summary.judge_model);
       }
 
-      // One scorecard row per candidate, each with the verdict the server computed.
+      // One scorecard row per experiment/candidate pair, each with its own test id.
       await expect(shadowTrafficPage.scorecardEmpty).toHaveCount(0);
       await expect(shadowTrafficPage.pairRows).toHaveCount(pairs.length);
+      const rowIds = await shadowTrafficPage.pairRows.evaluateAll((rows) =>
+        rows.map((row) => row.getAttribute("data-testid")),
+      );
+      expect(rowIds.sort()).toEqual(
+        pairs
+          .map(
+            (pair) =>
+              `shadow-pair-row-${shadowPairSlug(pair.experiment, modelLabel(pair.candidate))}`,
+          )
+          .sort(),
+      );
+      expect(new Set(rowIds).size).toBe(pairs.length);
+
+      // Each row shows the pair and the verdict the server computed.
       for (const candidate of [STRONG_CANDIDATE, WEAK_CANDIDATE]) {
         const pair = findPair(summary, candidate)!;
-        const row = shadowTrafficPage.pairRow(candidate);
+        const row = shadowTrafficPage.pairRow(pair.experiment, candidate);
         await expect(row).toBeVisible();
+        await expect(row).toContainText(pair.experiment);
         await expect(row).toContainText(SHADOW_SOURCE);
         await expect(row).toContainText(candidate);
         await expect(row).toContainText(pair.verdict_reason);
-        await expect(shadowTrafficPage.verdictBadge(candidate)).toHaveText(VERDICT_LABELS[pair.verdict]);
+        await expect(shadowTrafficPage.verdictBadge(pair.experiment, candidate)).toHaveText(
+          VERDICT_LABELS[pair.verdict],
+        );
       }
 
       // The demo's strong candidate clears the thresholds and the weak one does not.
-      await expect(shadowTrafficPage.verdictBadge(STRONG_CANDIDATE)).toHaveText(VERDICT_LABELS.ready);
-      await expect(shadowTrafficPage.verdictBadge(WEAK_CANDIDATE)).toHaveText(VERDICT_LABELS.not_ready);
+      const strong = findPair(summary, STRONG_CANDIDATE)!;
+      const weak = findPair(summary, WEAK_CANDIDATE)!;
+      await expect(shadowTrafficPage.verdictBadge(strong.experiment, STRONG_CANDIDATE)).toHaveText(
+        VERDICT_LABELS.ready,
+      );
+      await expect(shadowTrafficPage.verdictBadge(weak.experiment, WEAK_CANDIDATE)).toHaveText(
+        VERDICT_LABELS.not_ready,
+      );
     });
 
     test("should pause and resume live updates", async ({ shadowTrafficPage }) => {
       await shadowTrafficPage.goto();
+      // The toggle keeps one accessible name; aria-pressed carries its state.
+      await expect(shadowTrafficPage.liveToggle).toHaveAccessibleName("Live updates");
       await expect(shadowTrafficPage.liveToggle).toHaveAttribute("aria-pressed", "true");
+      await expect(shadowTrafficPage.liveToggle).toHaveText("Live");
       await expect(shadowTrafficPage.refreshBtn).toHaveCount(0);
 
       await shadowTrafficPage.liveToggle.click();
       await expect(shadowTrafficPage.liveToggle).toHaveAttribute("aria-pressed", "false");
-      await expect(shadowTrafficPage.liveToggle).toHaveText(/Paused/);
+      await expect(shadowTrafficPage.liveToggle).toHaveAccessibleName("Live updates");
+      // Sighted users see a "Paused" tag next to the label.
+      await expect(shadowTrafficPage.liveToggle).toContainText("Paused");
 
       // While paused, a manual refresh re-reads the summary.
       const refreshed = shadowTrafficPage.page.waitForResponse(
@@ -225,7 +362,8 @@ test.describe("Shadow Traffic", () => {
 
       await shadowTrafficPage.liveToggle.click();
       await expect(shadowTrafficPage.liveToggle).toHaveAttribute("aria-pressed", "true");
-      await expect(shadowTrafficPage.liveToggle).toHaveText(/Live/);
+      await expect(shadowTrafficPage.liveToggle).toHaveAccessibleName("Live updates");
+      await expect(shadowTrafficPage.liveToggle).toHaveText("Live");
       await expect(shadowTrafficPage.refreshBtn).toHaveCount(0);
     });
   });
@@ -243,7 +381,9 @@ test.describe("Shadow Traffic", () => {
       );
       await expect(shadowTrafficPage.recordToggles).toHaveCount(records.length);
       for (const record of records) {
-        await expect(shadowTrafficPage.recordToggle(record.id)).toHaveText(new RegExp(`^\\s*${outcomeBadge}`));
+        await expect(shadowTrafficPage.recordToggle(record.id)).toHaveText(
+          new RegExp(`^\\s*${outcomeBadge}`),
+        );
       }
     }
 
@@ -258,7 +398,7 @@ test.describe("Shadow Traffic", () => {
       expect(errors.total).toBeGreaterThan(0);
 
       await shadowTrafficPage.goto();
-      await shadowTrafficPage.openDisagreements(WEAK_CANDIDATE);
+      await shadowTrafficPage.openDisagreements(pair.experiment, WEAK_CANDIDATE);
       await expect(shadowTrafficPage.disagreementsSheet).toContainText(
         `${pair.experiment}: ${SHADOW_SOURCE} → ${WEAK_CANDIDATE}`,
       );
@@ -279,7 +419,9 @@ test.describe("Shadow Traffic", () => {
       const failed = errors.records![0];
       await shadowTrafficPage.expandRecord(failed.id);
       await expect(shadowTrafficPage.recordCandidate(failed.id)).toContainText(WEAK_CANDIDATE);
-      await expect(shadowTrafficPage.recordCandidate(failed.id)).toContainText(failed.candidate_error!);
+      await expect(shadowTrafficPage.recordCandidate(failed.id)).toContainText(
+        failed.candidate_error!,
+      );
 
       // And back again.
       await shadowTrafficPage.selectOutcome("fail");
@@ -297,7 +439,7 @@ test.describe("Shadow Traffic", () => {
       const { id, judge } = record!;
 
       await shadowTrafficPage.goto();
-      await shadowTrafficPage.openDisagreements(WEAK_CANDIDATE);
+      await shadowTrafficPage.openDisagreements(pair.experiment, WEAK_CANDIDATE);
       await expect(shadowTrafficPage.recordToggle(id)).toHaveAttribute("aria-expanded", "false");
       await expect(shadowTrafficPage.recordDetails(id)).toHaveCount(0);
 
@@ -307,7 +449,9 @@ test.describe("Shadow Traffic", () => {
       await expect(shadowTrafficPage.recordPrimary(id)).toContainText(modelLabel(record!.primary));
       await expect(shadowTrafficPage.recordPrimary(id)).toContainText(record!.primary_answer!.text);
       await expect(shadowTrafficPage.recordCandidate(id)).toContainText(WEAK_CANDIDATE);
-      await expect(shadowTrafficPage.recordCandidate(id)).toContainText(record!.candidate_answer!.text);
+      await expect(shadowTrafficPage.recordCandidate(id)).toContainText(
+        record!.candidate_answer!.text,
+      );
 
       // The judge's verdict, and which slot the candidate had in the judge prompt.
       await expect(shadowTrafficPage.recordJudge(id)).toBeVisible();
@@ -330,16 +474,44 @@ test.describe("Shadow Traffic", () => {
     }) => {
       const pair = findPair(await getSummary(request), STRONG_CANDIDATE)!;
       expect(pair.verdict).toBe("ready");
+      await expectNoCanaryRule(request, STRONG_CANDIDATE);
+      const ruleName = canaryRuleName(STRONG_CANDIDATE);
+      // A new canary takes the first global priority from the default up that no rule holds.
+      const priority = firstFreeCanaryPriority(await getRoutingRules(request));
+      const previewFor = (weight: string) =>
+        shadowTrafficPage.page.waitForRequest((req) => {
+          if (!isPath(req.url(), CANARY_RULE_API)) return false;
+          const params = new URL(req.url()).searchParams;
+          return (
+            params.get("experiment") === pair.experiment &&
+            params.get("candidate") === STRONG_CANDIDATE &&
+            params.get("weight") === weight &&
+            params.get("priority") === String(priority)
+          );
+        });
 
       await shadowTrafficPage.goto();
-      await shadowTrafficPage.openPromote(STRONG_CANDIDATE);
-      await expect(shadowTrafficPage.promoteDialog).toContainText(`${SHADOW_SOURCE} traffic to ${STRONG_CANDIDATE}`);
-      // A ready candidate gets no caution.
+      const firstPreview = previewFor("0.1");
+      await shadowTrafficPage.openPromote(pair.experiment, STRONG_CANDIDATE);
+      await firstPreview;
+      await expect(shadowTrafficPage.promoteDialog).toContainText(
+        `${SHADOW_SOURCE} traffic to ${STRONG_CANDIDATE}`,
+      );
+      // A ready candidate gets no caution, and a pair without a canary gets a new rule.
       await expect(shadowTrafficPage.caution).toHaveCount(0);
+      await expect(shadowTrafficPage.existingRuleAlert).toHaveCount(0);
+      await expect(shadowTrafficPage.rulesError).toHaveCount(0);
 
-      // Opens on the default 10% share.
+      // Opens on the default 10% share. The rule is named after the pair, not the share.
       await expect(shadowTrafficPage.weightInput).toHaveValue("10");
-      await expect(shadowTrafficPage.previewName).toContainText(`${STRONG_CANDIDATE} (10%)`);
+      await expect(shadowTrafficPage.previewName).toHaveText(ruleName);
+      await expect(shadowTrafficPage.preview).toContainText(
+        canaryShareSentence(10, STRONG_CANDIDATE),
+      );
+      await expectPreviewShare(shadowTrafficPage, SHADOW_SOURCE, 90);
+      await expectPreviewShare(shadowTrafficPage, STRONG_CANDIDATE, 10);
+      await expect(shadowTrafficPage.previewPriority).toHaveText(`Priority ${priority}`);
+      await expect(shadowTrafficPage.promoteConfirmBtn).toHaveText("Create canary rule");
       await expect(shadowTrafficPage.promoteConfirmBtn).toBeEnabled();
 
       // 0% is rejected inline and blocks the submit.
@@ -355,29 +527,23 @@ test.describe("Shadow Traffic", () => {
       await expect(shadowTrafficPage.promoteConfirmBtn).toBeDisabled();
 
       // A valid share clears the error and rebuilds the preview for that share.
-      const previewRequest = shadowTrafficPage.page.waitForRequest(
-        (req) => isPath(req.url(), CANARY_RULE_API) && new URL(req.url()).searchParams.get("weight") === "0.25",
-      );
+      const previewRequest = previewFor("0.25");
       await shadowTrafficPage.setWeight("25");
       await expect(shadowTrafficPage.weightError).toHaveCount(0);
       await expect(shadowTrafficPage.weightInput).not.toHaveAttribute("aria-invalid", "true");
       await previewRequest;
-      await expect(shadowTrafficPage.previewName).toContainText(`${STRONG_CANDIDATE} (25%)`);
-      await expect(shadowTrafficPage.preview).toContainText(new RegExp(`${SHADOW_SOURCE}\\s+75%`), {
-        useInnerText: true,
-      });
-      await expect(shadowTrafficPage.preview).toContainText(new RegExp(`${STRONG_CANDIDATE}\\s+25%`), {
-        useInnerText: true,
-      });
+      await expect(shadowTrafficPage.preview).toContainText(
+        canaryShareSentence(25, STRONG_CANDIDATE),
+      );
+      await expect(shadowTrafficPage.previewName).toHaveText(ruleName);
+      await expectPreviewShare(shadowTrafficPage, SHADOW_SOURCE, 75);
+      await expectPreviewShare(shadowTrafficPage, STRONG_CANDIDATE, 25);
+      await expect(shadowTrafficPage.previewPriority).toHaveText(`Priority ${priority}`);
       await expect(shadowTrafficPage.promoteConfirmBtn).toBeEnabled();
 
       // Cancelling creates nothing.
-      const previewedName = (await shadowTrafficPage.previewName.textContent())!.trim();
       await shadowTrafficPage.cancelPromote();
-      const rules = await request.get(RULES_API);
-      expect(rules.ok(), await rules.text()).toBe(true);
-      const names = ((await rules.json()).rules ?? []).map((rule: { name: string }) => rule.name);
-      expect(names).not.toContain(previewedName);
+      expect(await getCanaryRules(request, STRONG_CANDIDATE)).toEqual([]);
     });
 
     test("should caution before promoting a candidate that is not ready", async ({
@@ -388,13 +554,16 @@ test.describe("Shadow Traffic", () => {
       expect(pair.verdict).not.toBe("ready");
 
       await shadowTrafficPage.goto();
-      await shadowTrafficPage.openPromote(WEAK_CANDIDATE);
+      await shadowTrafficPage.openPromote(pair.experiment, WEAK_CANDIDATE);
       await expect(shadowTrafficPage.caution).toBeVisible();
       await expect(shadowTrafficPage.caution).toContainText(
         `This candidate's verdict is ${VERDICT_LABELS[pair.verdict]}`,
       );
       await expect(shadowTrafficPage.caution).toContainText(pair.verdict_reason);
-      await expect(shadowTrafficPage.previewName).toContainText(`${WEAK_CANDIDATE} (10%)`);
+      await expect(shadowTrafficPage.previewName).toHaveText(canaryRuleName(WEAK_CANDIDATE));
+      await expect(shadowTrafficPage.preview).toContainText(
+        canaryShareSentence(10, WEAK_CANDIDATE),
+      );
       // The caution warns but does not block.
       await expect(shadowTrafficPage.promoteConfirmBtn).toBeEnabled();
       await shadowTrafficPage.cancelPromote();
@@ -406,23 +575,21 @@ test.describe("Shadow Traffic", () => {
       request,
     }) => {
       const { page } = shadowTrafficPage;
+      const pair = findPair(await getSummary(request), STRONG_CANDIDATE)!;
+      await expectNoCanaryRule(request, STRONG_CANDIDATE);
+      const ruleName = canaryRuleName(STRONG_CANDIDATE);
+      const priority = firstFreeCanaryPriority(await getRoutingRules(request));
+
       await shadowTrafficPage.goto();
-      await shadowTrafficPage.openPromote(STRONG_CANDIDATE);
+      await shadowTrafficPage.openPromote(pair.experiment, STRONG_CANDIDATE);
       await shadowTrafficPage.setWeight("15");
-      await expect(shadowTrafficPage.previewName).toContainText(`${STRONG_CANDIDATE} (15%)`);
-      await expect(shadowTrafficPage.promoteConfirmBtn).toBeEnabled();
-      const ruleName = (await shadowTrafficPage.previewName.textContent())!.trim();
-
-      const createdResponse = page.waitForResponse(
-        (res) => isPath(res.url(), RULES_API) && res.request().method() === "POST",
+      await expect(shadowTrafficPage.preview).toContainText(
+        canaryShareSentence(15, STRONG_CANDIDATE),
       );
-      await shadowTrafficPage.promoteConfirmBtn.click();
-      const created = await createdResponse;
-      expect(created.ok(), await created.text()).toBe(true);
-      const ruleId = (await created.json()).rule.id as string;
-      createdRuleIds.push(ruleId);
+      await expect(shadowTrafficPage.previewName).toHaveText(ruleName);
+      await expect(shadowTrafficPage.promoteConfirmBtn).toBeEnabled();
 
-      await expect(shadowTrafficPage.promoteDialog).not.toBeVisible();
+      const { id: ruleId } = await confirmCreate(shadowTrafficPage);
       const toast = shadowTrafficPage.getToast("success");
       await expect(toast).toContainText(`Created routing rule "${ruleName}"`);
 
@@ -432,16 +599,16 @@ test.describe("Shadow Traffic", () => {
       await routingRulesPage.waitForRuleToAppear(ruleName);
 
       // The stored rule is the previewed one: 85% stays on the source, 15% goes to the candidate.
-      const stored = await request.get(`${RULES_API}/${ruleId}`);
-      expect(stored.ok(), await stored.text()).toBe(true);
-      const rule = (await stored.json()).rule as {
-        name: string;
-        enabled: boolean;
-        targets: { provider: string; model: string; weight: number }[];
-      };
-      expect(rule.name).toBe(ruleName);
-      expect(rule.enabled).toBe(true);
-      expect(rule.targets.map(({ provider, model, weight }) => ({ provider, model, weight }))).toEqual(
+      const rule = await getRoutingRule(request, ruleId);
+      expect(rule).toMatchObject({
+        name: ruleName,
+        enabled: true,
+        scope: "global",
+        priority,
+        cel_expression: 'provider == "openai" && model == "gpt-4o"',
+      });
+      expect(rule.description).toContain(canaryShareSentence(15, STRONG_CANDIDATE));
+      expect(targetWeights(rule)).toEqual(
         expect.arrayContaining([
           { provider: "openai", model: "gpt-4o", weight: 0.85 },
           { provider: "openai", model: "gpt-4o-mini", weight: 0.15 },
@@ -449,12 +616,138 @@ test.describe("Shadow Traffic", () => {
       );
       expect(rule.targets).toHaveLength(2);
     });
+
+    test("should ramp the pair's existing canary instead of creating a second rule", async ({
+      shadowTrafficPage,
+      request,
+    }) => {
+      const { page } = shadowTrafficPage;
+      const pair = findPair(await getSummary(request), STRONG_CANDIDATE)!;
+      await expectNoCanaryRule(request, STRONG_CANDIDATE);
+      const ruleName = canaryRuleName(STRONG_CANDIDATE);
+
+      // First promotion: a new rule at the default 10%.
+      await shadowTrafficPage.goto();
+      await shadowTrafficPage.openPromote(pair.experiment, STRONG_CANDIDATE);
+      await expect(shadowTrafficPage.existingRuleAlert).toHaveCount(0);
+      await expect(shadowTrafficPage.weightInput).toHaveValue("10");
+      await expect(shadowTrafficPage.preview).toContainText(
+        canaryShareSentence(10, STRONG_CANDIDATE),
+      );
+      await expect(shadowTrafficPage.promoteConfirmBtn).toBeEnabled();
+      const created = await confirmCreate(shadowTrafficPage);
+      await shadowTrafficPage.waitForSuccessToast(`Created routing rule "${ruleName}"`);
+      const original = await getRoutingRule(request, created.id);
+      expect(original.name).toBe(ruleName);
+
+      // Promoting the same pair again finds that rule and offers to change its share.
+      await shadowTrafficPage.openPromote(pair.experiment, STRONG_CANDIDATE);
+      await expect(shadowTrafficPage.existingRuleAlert).toBeVisible();
+      await expect(shadowTrafficPage.existingRuleAlert).toContainText(
+        `"${ruleName}" currently sends 10% of this traffic to the candidate.`,
+      );
+      await expect(shadowTrafficPage.promoteDialog).toContainText("Update canary share");
+      await expect(shadowTrafficPage.promoteConfirmBtn).toHaveText("Update canary rule");
+      // The preview is the existing rule with the new split: same name, same priority.
+      await expect(shadowTrafficPage.previewName).toHaveText(ruleName);
+      await expect(shadowTrafficPage.previewPriority).toHaveText(`Priority ${original.priority}`);
+
+      await shadowTrafficPage.setWeight("25");
+      await expect(shadowTrafficPage.preview).toContainText(
+        canaryShareSentence(25, STRONG_CANDIDATE),
+      );
+      await expectPreviewShare(shadowTrafficPage, SHADOW_SOURCE, 75);
+      await expectPreviewShare(shadowTrafficPage, STRONG_CANDIDATE, 25);
+      await expect(shadowTrafficPage.previewPriority).toHaveText(`Priority ${original.priority}`);
+      await expect(shadowTrafficPage.promoteConfirmBtn).toHaveText("Update canary rule");
+      await expect(shadowTrafficPage.promoteConfirmBtn).toBeEnabled();
+
+      // Confirming updates the rule in place; no second rule is posted.
+      const posted: string[] = [];
+      const onRequest = (req: { url(): string; method(): string }) => {
+        if (isPath(req.url(), RULES_API) && req.method() === "POST") posted.push(req.url());
+      };
+      page.on("request", onRequest);
+      const updatedResponse = page.waitForResponse(
+        (res) =>
+          isPath(res.url(), `${RULES_API}/${created.id}`) && res.request().method() === "PUT",
+      );
+      await shadowTrafficPage.promoteConfirmBtn.click();
+      const updated = await updatedResponse;
+      expect(updated.ok(), await updated.text()).toBe(true);
+      await expect(shadowTrafficPage.promoteDialog).not.toBeVisible();
+      await shadowTrafficPage.waitForSuccessToast(`Updated routing rule "${ruleName}"`);
+      page.off("request", onRequest);
+      expect(posted).toEqual([]);
+
+      // Still exactly one rule for the pair: the same one, now sending 25% to the candidate,
+      // with its priority, scope, condition and state kept.
+      const rules = await getCanaryRules(request, STRONG_CANDIDATE);
+      expect(rules).toHaveLength(1);
+      const [ramped] = rules;
+      expect(ramped.id).toBe(created.id);
+      expect(ramped).toMatchObject({
+        name: ruleName,
+        priority: original.priority,
+        scope: original.scope,
+        enabled: original.enabled,
+        cel_expression: original.cel_expression,
+      });
+      expect(ramped.description).toContain(canaryShareSentence(25, STRONG_CANDIDATE));
+      expect(targetWeights(ramped)).toEqual(
+        expect.arrayContaining([
+          { provider: "openai", model: "gpt-4o", weight: 0.75 },
+          { provider: "openai", model: "gpt-4o-mini", weight: 0.25 },
+        ]),
+      );
+      expect(ramped.targets).toHaveLength(2);
+    });
+
+    test("should give a second pair's canary the next free priority", async ({
+      shadowTrafficPage,
+      request,
+    }) => {
+      const summary = await getSummary(request);
+      const strong = findPair(summary, STRONG_CANDIDATE)!;
+      const weak = findPair(summary, WEAK_CANDIDATE)!;
+      await expectNoCanaryRule(request, STRONG_CANDIDATE);
+      await expectNoCanaryRule(request, WEAK_CANDIDATE);
+      const firstPriority = firstFreeCanaryPriority(await getRoutingRules(request));
+
+      await shadowTrafficPage.goto();
+      await shadowTrafficPage.openPromote(strong.experiment, STRONG_CANDIDATE);
+      await expect(shadowTrafficPage.previewPriority).toHaveText(`Priority ${firstPriority}`);
+      const first = await confirmCreate(shadowTrafficPage);
+      await shadowTrafficPage.waitForSuccessToast(
+        `Created routing rule "${canaryRuleName(STRONG_CANDIDATE)}"`,
+      );
+
+      // The first canary now holds that priority, so the second pair's rule takes the next free one
+      // rather than colliding with it.
+      const secondPriority = firstFreeCanaryPriority(await getRoutingRules(request));
+      expect(secondPriority).not.toBe(firstPriority);
+      await shadowTrafficPage.openPromote(weak.experiment, WEAK_CANDIDATE);
+      await expect(shadowTrafficPage.existingRuleAlert).toHaveCount(0);
+      await expect(shadowTrafficPage.previewName).toHaveText(canaryRuleName(WEAK_CANDIDATE));
+      await expect(shadowTrafficPage.previewPriority).toHaveText(`Priority ${secondPriority}`);
+      const second = await confirmCreate(shadowTrafficPage);
+      await expect(shadowTrafficPage.promoteError).toHaveCount(0);
+      await shadowTrafficPage.waitForSuccessToast(
+        `Created routing rule "${canaryRuleName(WEAK_CANDIDATE)}"`,
+      );
+
+      expect((await getRoutingRule(request, first.id)).priority).toBe(firstPriority);
+      expect((await getRoutingRule(request, second.id)).priority).toBe(secondPriority);
+    });
   });
 
   // Destroys every collected comparison, so it is declared last. ensureScorecardData
   // collects new traffic before the next run of the tests above.
   test.describe("Reset", () => {
-    test("should clear the counters and show the empty scorecard", async ({ shadowTrafficPage, request }) => {
+    test("should clear the counters and show the empty scorecard", async ({
+      shadowTrafficPage,
+      request,
+    }) => {
       const before = await getSummary(request);
       const pairCount = (before.pairs ?? []).length;
       expect(before.counters.sampled).toBeGreaterThan(0);
@@ -489,7 +782,13 @@ test.describe("Shadow Traffic", () => {
       await shadowTrafficPage.expectTileValue("dropped", "Dropped", "0");
 
       const after = await getSummary(request);
-      expect(after.counters).toMatchObject({ eligible: 0, sampled: 0, completed: 0, candidate_errors: 0, dropped: 0 });
+      expect(after.counters).toMatchObject({
+        eligible: 0,
+        sampled: 0,
+        completed: 0,
+        candidate_errors: 0,
+        dropped: 0,
+      });
       expect(after.pairs ?? []).toEqual([]);
 
       // The experiments keep running, and the empty state names them.

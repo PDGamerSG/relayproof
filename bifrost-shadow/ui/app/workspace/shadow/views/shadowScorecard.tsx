@@ -14,8 +14,8 @@ import {
 	isShadowVerdict,
 	shadowModelRefLabel,
 	shadowPairKey,
+	shadowPairTestIdSlug,
 	shadowSavingsTone,
-	shadowTestIdSlug,
 	shadowVerdictBadgeVariant,
 	type ShadowSavingsTone,
 } from "@/lib/utils/shadow";
@@ -97,10 +97,7 @@ function VerdictBadge({ pair }: { pair: ShadowPairSummary }) {
 	const { t } = useTranslation("models", { keyPrefix: "shadow.verdict" });
 	const label = isShadowVerdict(pair.verdict) ? t(pair.verdict) : pair.verdict;
 	const badge = (
-		<Badge
-			variant={shadowVerdictBadgeVariant(pair.verdict)}
-			data-testid={`shadow-verdict-${shadowTestIdSlug(shadowModelRefLabel(pair.candidate))}`}
-		>
+		<Badge variant={shadowVerdictBadgeVariant(pair.verdict)} data-testid={`shadow-verdict-${shadowPairTestIdSlug(pair)}`}>
 			{label}
 		</Badge>
 	);
@@ -137,7 +134,7 @@ function PairCard({ pair, minSamples, canPromote, onViewDisagreements, onPromote
 	const { t } = useTranslation("models", { keyPrefix: "shadow.scorecard" });
 	const candidateLabel = shadowModelRefLabel(pair.candidate);
 	const sourceLabel = shadowModelRefLabel(pair.source);
-	const slug = shadowTestIdSlug(candidateLabel);
+	const slug = shadowPairTestIdSlug(pair);
 	// A wildcard source covers several concrete primaries; name them so the operator knows what was compared.
 	const primaryModels = pair.primary_models ?? [];
 	const showPrimaryModels = primaryModels.length > 0 && !(primaryModels.length === 1 && primaryModels[0] === sourceLabel);

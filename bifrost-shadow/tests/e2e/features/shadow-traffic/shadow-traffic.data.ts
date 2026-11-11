@@ -85,6 +85,54 @@ export interface ShadowRecordsPage {
   total: number;
 }
 
+/** A routing rule as GET /api/routing/rules returns it (the fields this suite reads). */
+export interface RoutingRuleRecord {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  cel_expression: string;
+  scope: string;
+  scope_id?: string | null;
+  priority: number;
+  targets: { provider: string; model: string; weight: number }[];
+}
+
+/** Priority the gateway gives a canary rule when no priority is asked for. */
+export const CANARY_BASE_PRIORITY = 10;
+
+/**
+ * Name of the canary rule the gateway builds for a pair. It depends only on the pair, not on
+ * the share, so promoting the same pair again finds and ramps this rule.
+ */
+export function canaryRuleName(candidate: string, source: string = SHADOW_SOURCE): string {
+  return `Shadow canary: ${source} -> ${candidate}`;
+}
+
+/** The sentence of the canary rule's description that states its share. */
+export function canaryShareSentence(
+  percent: number,
+  candidate: string,
+  source: string = SHADOW_SOURCE,
+): string {
+  return `Sends ${percent}% of ${source} traffic to ${candidate}.`;
+}
+
+/**
+ * The priority a new canary gets: the lowest one from the default up that no global
+ * routing rule holds, since the store allows one rule per priority in a scope.
+ */
+export function firstFreeCanaryPriority(
+  rules: Pick<RoutingRuleRecord, "scope" | "priority">[],
+): number {
+  const taken = new Set(
+    rules.filter((rule) => rule.scope === "global").map((rule) => rule.priority),
+  );
+  let priority = CANARY_BASE_PRIORITY;
+  while (taken.has(priority)) priority++;
+  return priority;
+}
+
 /** "provider/model", the form the page and the records API use for a model reference. */
 export function modelLabel(ref: ShadowModelRef): string {
   return ref.provider ? `${ref.provider}/${ref.model}` : ref.model;
@@ -98,9 +146,26 @@ export function modelLabel(ref: ShadowModelRef): string {
  */
 export function createShadowTrafficPrompts(): string[] {
   const countries = [
-    "France", "Japan", "Australia", "Canada", "Brazil", "Turkey", "Switzerland",
-    "India", "South Africa", "New Zealand", "Nigeria", "Morocco", "Vietnam",
-    "Pakistan", "Kazakhstan", "Germany", "Italy", "Spain", "Egypt", "Kenya",
+    "France",
+    "Japan",
+    "Australia",
+    "Canada",
+    "Brazil",
+    "Turkey",
+    "Switzerland",
+    "India",
+    "South Africa",
+    "New Zealand",
+    "Nigeria",
+    "Morocco",
+    "Vietnam",
+    "Pakistan",
+    "Kazakhstan",
+    "Germany",
+    "Italy",
+    "Spain",
+    "Egypt",
+    "Kenya",
   ];
   const prompts = countries.map((country) => `What is the capital of ${country}? Answer briefly.`);
   for (let i = 0; i < 24; i++) {
