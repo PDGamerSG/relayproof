@@ -53,6 +53,15 @@ echo "==> replaying traffic"
 "$work/loadgen" -gateway "$GATEWAY" -n "$REQUESTS" -c "$CONCURRENCY"
 
 echo
+echo "==> checking that $CANDIDATE is ready"
+# Only a candidate whose agreement lower bound clears the threshold gets promoted.
+if ! "$work/loadgen" -gateway "$GATEWAY" -report -require-ready "$CANDIDATE" >/dev/null; then
+  echo "not promoting; collect more evidence first, for example REQUESTS=600 $0"
+  exit 1
+fi
+echo "$CANDIDATE is ready"
+
+echo
 echo "==> canary rule for $CANDIDATE at $(awk "BEGIN{print $WEIGHT*100}")%"
 q="experiment=$(printf %s "$EXPERIMENT" | sed 's/ /%20/g')&candidate=${CANDIDATE}&weight=${WEIGHT}"
 rule="$(api -f "$GATEWAY/api/shadow/canary-rule?$q")"

@@ -210,7 +210,7 @@ type profile struct {
 
 var profiles = map[string]profile{
 	"gpt-4o":       {latency: 900 * time.Millisecond, verbose: true},
-	"gpt-4o-mini":  {wrongPct: 4, latency: 350 * time.Millisecond},
+	"gpt-4o-mini":  {wrongPct: 2, latency: 350 * time.Millisecond},
 	"llama-3.1-8b": {wrongPct: 25, errorPct: 6, brokenJSONPct: 15, latency: 200 * time.Millisecond},
 }
 

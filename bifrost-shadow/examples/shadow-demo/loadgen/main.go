@@ -25,16 +25,17 @@ import (
 )
 
 type options struct {
-	gateway     string
-	model       string
-	requests    int
-	concurrency int
-	streamPct   int
-	shadowMode  string
-	virtualKey  string
-	seed        int64
-	wait        time.Duration
-	reportOnly  bool
+	gateway      string
+	model        string
+	requests     int
+	concurrency  int
+	streamPct    int
+	shadowMode   string
+	virtualKey   string
+	seed         int64
+	wait         time.Duration
+	reportOnly   bool
+	requireReady string
 }
 
 type result struct {
@@ -57,12 +58,20 @@ func main() {
 	flag.Int64Var(&o.seed, "seed", 7, "workload shuffle seed")
 	flag.DurationVar(&o.wait, "wait", 90*time.Second, "max time to wait for shadow comparisons to finish")
 	flag.BoolVar(&o.reportOnly, "report", false, "only print the current shadow summary")
+	flag.StringVar(&o.requireReady, "require-ready", "", "with -report: exit 2 unless this candidate (provider/model) has a ready verdict")
 	flag.StringVar(&setupToken, "setup-token", os.Getenv("BIFROST_SETUP_TOKEN"), "X-Bifrost-Setup-Token for /api calls before dashboard auth is configured")
 	flag.Parse()
 
 	if o.reportOnly {
-		if err := printSummary(o.gateway); err != nil {
+		pairs, err := printSummary(o.gateway)
+		if err != nil {
 			fail(err)
+		}
+		if o.requireReady != "" {
+			if err := checkReady(pairs, o.requireReady); err != nil {
+				fmt.Fprintln(os.Stderr, "loadgen:", err)
+				os.Exit(2)
+			}
 		}
 		return
 	}
@@ -151,7 +160,8 @@ func run(o options) error {
 	if err := waitForShadow(o.gateway, before, o.wait); err != nil {
 		fmt.Println("warning:", err)
 	}
-	return printSummary(o.gateway)
+	_, err := printSummary(o.gateway)
+	return err
 }
 
 var weatherTool = json.RawMessage(`[{"type":"function","function":{"name":"get_weather","description":"Current weather for a city","parameters":{"type":"object","properties":{"city":{"type":"string"},"unit":{"type":"string","enum":["celsius","fahrenheit"]}},"required":["city"]}}}]`)
@@ -283,7 +293,22 @@ type pair struct {
 	VerdictReason        string  `json:"verdict_reason"`
 }
 
-func printSummary(gateway string) error {
+// checkReady returns nil when candidate ("provider/model") has a ready verdict,
+// and otherwise an error carrying the plugin's reason.
+func checkReady(pairs []pair, candidate string) error {
+	for _, p := range pairs {
+		if p.Candidate.Provider+"/"+p.Candidate.Model != candidate {
+			continue
+		}
+		if p.Verdict == "ready" {
+			return nil
+		}
+		return fmt.Errorf("%s has verdict %q: %s", candidate, strings.ReplaceAll(p.Verdict, "_", " "), p.VerdictReason)
+	}
+	return fmt.Errorf("no shadow results for %s yet", candidate)
+}
+
+func printSummary(gateway string) ([]pair, error) {
 	var s struct {
 		SampleRate     float64  `json:"sample_rate"`
 		JudgeModel     string   `json:"judge_model"`
@@ -293,7 +318,7 @@ func printSummary(gateway string) error {
 		Pairs          []pair   `json:"pairs"`
 	}
 	if err := getJSON(strings.TrimRight(gateway, "/")+"/api/shadow/summary", &s); err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Printf("\nShadow scorecard (sample rate %.0f%%, judge %s, eval spend today $%.4f)\n\n", s.SampleRate*100, orDash(s.JudgeModel), s.SpendTodayUSD)
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
@@ -309,7 +334,7 @@ func printSummary(gateway string) error {
 	for _, p := range s.Pairs {
 		fmt.Printf("  %s/%s: %s\n", p.Candidate.Provider, p.Candidate.Model, p.VerdictReason)
 	}
-	return nil
+	return s.Pairs, nil
 }
 
 // setupToken authenticates /api calls on a gateway whose dashboard auth is not set up yet.
