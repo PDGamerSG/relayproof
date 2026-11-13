@@ -20,6 +20,9 @@ export function Hero() {
             against the model that answered, and tells you when a candidate is safe to switch to.
           </p>
           <div className="hero__actions">
+            <a className="btn btn--sun" href="live.html">
+              Try the live console
+            </a>
             <a className="btn" href="#start">
               Run the key-free demo
             </a>

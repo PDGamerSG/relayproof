@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/shadow/:path*", "destination": "https://relayproof-api.onrender.com/api/shadow/:path*" },
+    { "source": "/api/demo/:path*", "destination": "https://relayproof-api.onrender.com/api/demo/:path*" }
+  ]
+}

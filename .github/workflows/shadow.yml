@@ -3,9 +3,9 @@ name: bifrost-shadow
 on:
   push:
     branches: [main]
-    paths: ["bifrost-shadow/**", ".github/workflows/shadow.yml"]
+    paths: ["bifrost-shadow/**", ".github/workflows/shadow.yml", "render.yaml", ".dockerignore"]
   pull_request:
-    paths: ["bifrost-shadow/**", ".github/workflows/shadow.yml"]
+    paths: ["bifrost-shadow/**", ".github/workflows/shadow.yml", "render.yaml", ".dockerignore"]
   workflow_dispatch:
 
 concurrency:
@@ -56,3 +56,5 @@ jobs:
           node-version: "22"
       - name: Strict typecheck
         run: npx --yes -p typescript@5.6.3 tsc --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --noUnusedLocals --noUnusedParameters bifrost-shadow/api/client/shadowClient.ts
+      - name: The site's copy of the client matches
+        run: cmp bifrost-shadow/api/client/shadowClient.ts bifrost-shadow/site/src/live/shadowClient.ts

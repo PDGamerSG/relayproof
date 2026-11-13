@@ -59,6 +59,9 @@ export function Nav() {
         </nav>
 
         <div className="nav__end">
+          <a className="nav__source" href="live.html">
+            Live console
+          </a>
           <a className="nav__source" href={LINKS.repo}>
             Source
           </a>
@@ -84,6 +87,7 @@ export function Nav() {
             {item.label}
           </a>
         ))}
+        <a href="live.html">Live console</a>
         <a href={LINKS.repo}>Source on GitHub</a>
       </nav>
     </header>
