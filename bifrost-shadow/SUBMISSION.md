@@ -10,7 +10,8 @@ not exist yet; creating it needs the team's explicit go-ahead. Every number belo
 |---|---|
 | Project | Bifrost Shadow: shadow traffic evaluation for the Bifrost AI gateway |
 | Event | Geek Room Global AI Hackathon 2026 (HackCulture), Bifrost track |
-| Track | Problem Statement 04, "Build a Feature the Open-Source Gateway Is Missing" |
+| Category | AI Agents & Intelligent Systems (every problem statement of the event sits in this category) |
+| Theme to select | **Open-Source Bifrost Gateway** (Problem Statement 04, "Build a Feature the Open-Source Gateway Is Missing"). No Tavily integration, so leave the optional Tavily checkbox unticked |
 | Team | vulcan, two members. TODO: member names and roles as they should appear in the submission |
 | Base | `maximhq/bifrost@ed62e4b`, applied by one script (`scripts/setup.sh`) |
 | Prototype deadline | 15 November 2026, 11:59 PM as displayed in the event dashboard. Internal cutoff: 15 November, 6 PM IST |
@@ -84,15 +85,16 @@ subsystem.
 
 | Capability | Bifrost at `ed62e4b` | Bifrost Shadow |
 |---|---|---|
-| Routing rules with weighted targets | Exists | Used as the canary. The plugin builds the rule body; the existing API creates it |
+| Routing rules with weighted targets | Exists | Used as the canary. `POST /api/shadow/promote` writes the rule through the same store and engine reload as the routing-rules API |
 | Model catalog with prices | Exists | Prices candidate, judge and embedding calls (`CalculateCostForUsage`), with optional manual overrides |
 | Plugin hooks (LLM and HTTP transport) | Exist | The shadow plugin is a built-in plugin on these hooks |
 | Semantic cache | Exists | Runs before the shadow plugin; cache hits are not sampled or compared |
 | Internal sub-requests (`PrepareContextForInternalRequest`) | Exist, used by the semantic cache and the routing classifier | Used for every candidate, judge and embedding call |
 | Shadow or mirrored traffic | Not present | New: sampling, request snapshot, stream capture, non-blocking hand-off, bounded workers, daily budget |
-| Pairwise comparison against the served answer | Not present in the gateway | New: LLM judge with randomized order, embeddings, token F1, tool-call and JSON-shape matching |
-| Readiness verdict | Not present | New: 95% Wilson lower bound against `min_agreement`, error-rate gate |
-| Promotion to canary | Not present | New: one dialog from scorecard to routing rule |
+| Pairwise comparison against the served answer | Not present in the gateway | New: LLM judge with randomized order, exact matching, embeddings, tool-selection and JSON-structure gates, agent tool-call metrics |
+| Readiness verdict | Not present | New: 95% Wilson lower bound against `min_agreement`, error-rate and judge-health gates; failed evaluations never count as passes |
+| Promotion to canary | Not present | New: verdict-gated promotion with an audited override, one rule per source, CEL conflict check against existing rules, dry run |
+| Canary monitoring and rollback | Not present | New: live error rate and latency per target, automatic rollback with the triggering evidence in a rollout log |
 
 Mirroring traffic is not a new idea, and Maxim, the company behind Bifrost, offers a separate
 evaluation product that covers offline and production evaluation broadly. Bifrost Shadow is
@@ -109,9 +111,13 @@ are needed for the demo.
 # 1. Build (one time): clone upstream at ed62e4b, add the plugin, apply the patches, test, build
 bifrost-shadow/scripts/setup.sh                 # SKIP_UI=1 skips the dashboard build
 
-# 2. Run the key-free demo: mock upstream, gateway, 300 requests, scorecard, canary, split check
-BIFROST_BIN=../bifrost/tmp/bifrost-http ../bifrost/examples/shadow-demo/run.sh
+# 2. Run the key-free demo: scorecard, refused and accepted promotion, split check,
+#    simulated incident, automatic rollback (run from the repository root)
+BIFROST_BIN="$(pwd)/bifrost/tmp/bifrost-http" ./bifrost/examples/shadow-demo/run.sh
 ```
+
+`run.sh` took 1 min 41 s on macOS arm64 once built (`TESTING.md`, round 2). `dev.sh` in the same
+directory keeps a seeded gateway running for the separate frontend (`api/README.md`).
 
 The five-minute path assumes step 1 is already done. In `TESTING.md`, a clean `setup.sh` run
 with the dashboard took 846 s in a fresh container.
@@ -147,12 +153,12 @@ browser and go to **Models → Shadow Traffic**.
 
 | Time | Screen | What to show and say |
 |---|---|---|
-| 0:00-0:20 | Title or the scorecard page | The problem in one sentence: the cheaper model might be good enough, and today the only way to find out is to expose users. Shadow traffic answers it on real traffic with no user impact. |
-| 0:20-0:50 | Terminal A, `run.sh` output | A real Bifrost gateway in front of a deterministic mock, no keys. 300 requests, about half marked `x-bf-shadow: sampled`. The scorecard: gpt-4o-mini `READY`, llama-3.1-8b `NOT READY`. The script promotes only a ready candidate, creates the routing rule (HTTP 200), and checks the 10% split on follow-up traffic. |
-| 0:50-1:25 | Dashboard, scorecard | Counter tiles: sampled, compared, candidate errors, dropped, eval spend against the daily budget, judge model. One row per candidate: verdict and its reason, agreement with the 95% lower bound, error rate, judge scores, p50/p95 latency, savings. Both candidates are much cheaper; only one is safe. |
-| 1:25-2:00 | **View disagreements** on llama-3.1-8b | Failing pairs side by side with the judge's scores and reason, and the line saying which label (A or B) the candidate had. Switch the filter to "Candidate errors" to show the upstream `HTTP 503` records. |
-| 2:00-2:35 | **Promote to canary** on gpt-4o-mini, then **Routing Rules** | The default share is 10%. The preview shows the CEL expression and the 0.9 / 0.1 targets. **Create canary rule**, follow the toast to **Routing Rules**, and show the new rule: global scope, priority 10, enabled. |
-| 2:35-3:00 | Overhead table (README or slide) | About 100 ns and no allocations for an unsampled request, about 10 µs and 33 allocations for a sampled one; bounded queue, daily budget, opt-out header. Tested and written as an upstream pull request. One line on limits: chat completions only, per-node records. |
+| 0:00-0:20 | Title or the scorecard | The problem in one sentence: the cheaper model might be good enough, and today the only way to find out is to expose users. Shadow traffic answers it on real traffic with no user impact, and the gateway keeps watching after rollout. |
+| 0:20-0:55 | Terminal, `run.sh` scorecard | A real Bifrost gateway in front of a deterministic mock, no keys. 300 requests, about half sampled. gpt-4o-mini `READY` (lower bound 97.4%), llama-3.1-8b `NOT READY`. Both are about 97-99% cheaper; only one is safe. |
+| 0:55-1:30 | Frontend scorecard and disagreements | Agreement with its lower bound, judge scores, agent metrics (tool selection), the failing llama pairs side by side with the judge's reason. |
+| 1:30-2:05 | Promotion | Promoting llama is refused with its verdict (409). A dry run of gpt-4o-mini shows one rule, 90/10, no conflicting rules. Promote: 20 of 200 follow-up requests go to gpt-4o-mini, canary health `healthy`. |
+| 2:05-2:40 | Incident | Flip the mock's incident switch: gpt-4o-mini fails 60% of requests. Within seconds the canary guard rolls it back (live error rate 19.2%, lower bound 8.5% > 5%); 0 of the next 100 requests reach it. Show the rollout log with the `auto_rollback` event and its evidence. |
+| 2:40-3:00 | Overhead and tests | About 100 ns and no allocations for an unsampled request, 14-25 ns per response while a canary is live; 89 plugin tests and 20 gateway tests with the race detector; written as an upstream pull request. Limits: chat completions, per-node state. |
 
 ## Judging criteria talking points
 
@@ -160,11 +166,14 @@ The published criteria are innovation, technical execution, problem and potentia
 of AI, user experience, and scalability or potential. No weights were published.
 
 - **Innovation.** Takes traffic mirroring into model selection inside the gateway, and closes
-  the loop from evidence to rollout: scorecard, statistical gate, one-click weighted canary. The
-  verdict uses a confidence bound, not a raw percentage: 20 of 20 passes is `promising`, not
-  `ready`.
-- **Technical execution.** 64 plugin tests (repeated runs on Windows, also under CPU load, and
-  the race detector on Linux), 9 handler tests, 2 schema tests, 31 dashboard helper tests, a
+  the loop from evidence to rollout and back: scorecard, statistical gate, verdict-gated
+  canary, live health, automatic rollback. Every decision uses a confidence bound, not a raw
+  percentage: 20 of 20 passes is `promising`, not `ready`, and one failed request in 17 does
+  not roll a canary back.
+- **Technical execution.** 89 plugin tests (88.7% coverage) and 20 gateway handler tests, all
+  under the race detector, 2 schema tests, an OpenAPI contract checked field by field against a
+  running gateway, a typed client run end to end, CI on every push. Earlier rounds: repeated
+  runs on Windows, also under CPU load, 31 dashboard helper tests, a
   Playwright suite for the page, the dashboard typecheck and scoped i18n check, and dashboard
   builds on Windows and Linux. Bugs found by testing, by a code review pass and by the E2E
   suite are each recorded with their fix and regression test in `TESTING.md`. Eight recorded end-to-end
@@ -177,7 +186,12 @@ of AI, user experience, and scalability or potential. No weights were published.
 - **Use of AI.** An LLM judge scores each pair with the order of the answers randomized and its
   JSON reply parsed and mapped back; embeddings add a semantic signal; the AI's judgement is
   aggregated with statistics before anyone acts on it, and every judge reason is inspectable.
-- **User experience.** A page in Bifrost's own dashboard, in all 11 UI languages, with a
+  The feature is built for agent workloads: tool selection is a required gate (an agent executes
+  whatever tool the model picks), tool-call differences are reported by kind, and the canary
+  guard is an autonomous controller that acts on live evidence and logs why.
+- **User experience.** A typed API and client for the separate frontend (refusals come back with
+  the verdict and conflicting rules, so a UI can explain them), and a page in Bifrost's own
+  dashboard, in all 11 UI languages, with a
   not-enabled state, verdict reasons, a disagreement viewer that says which answer was the
   candidate, a promote dialog with a live rule preview and a warning for candidates that are not
   ready, and a reset that keeps the daily budget in force.
@@ -198,10 +212,12 @@ of AI, user experience, and scalability or potential. No weights were published.
   the primary".
 - Tool calls are compared, never executed. Multi-turn agents are evaluated one turn at a time.
 - The daily budget is only as accurate as the prices: a model with no catalog price and no
-  manual override is counted as free. The budget is checked before work starts, so jobs already
-  running can go slightly over it.
-- The API and dashboard allow promoting a candidate that is not `ready` (the dialog warns);
-  only the demo script enforces `ready`.
+  manual override is counted as free. Jobs reserve a moving-average cost, so the cap holds
+  within the error of that estimate.
+- `POST /api/shadow/promote` enforces `ready` (or a recorded override). The bundled dashboard
+  page predates it and still creates rules through the routing-rules API, warning for
+  candidates that are not ready.
+- Canary health and the rollout log are per gateway node.
 - All recorded end-to-end runs use the deterministic mock upstream. No run against real provider
   APIs is recorded in `TESTING.md`. TODO: record one small real-provider run before submission.
 - The request-path figures are microbenchmarks (one parallel benchmark covers contention on
@@ -227,8 +243,9 @@ of AI, user experience, and scalability or potential. No weights were published.
 - [ ] Upstream pull request. Draft in [`UPSTREAM_PR.md`](UPSTREAM_PR.md); not posted.
 - [ ] Leader checks the portal countdown and timezone, and inspects any existing submission
   record before replacing it.
-- [ ] Leader submits the form, then confirms the receipt. Disclose AI assistance where the form
-  asks for it.
+- [ ] Leader submits the form, then confirms the receipt. The event rules ask that the use of AI
+  tools be clearly mentioned in the submission: state that AI coding assistants were used in
+  development, alongside the LLM judge and embeddings the feature itself uses.
 
 ## Pitch deck outline
 
@@ -242,14 +259,16 @@ of AI, user experience, and scalability or potential. No weights were published.
    below, nothing below delays the client.
 5. **Deciding with statistics.** Pass rule per pair, then the 95% Wilson lower bound per
    candidate: 20 of 20 passes is `promising`, not `ready`.
-6. **Demo result.** gpt-4o-mini `READY` (99.4% agreement, lower bound 96.6%), llama-3.1-8b
-   `NOT READY` (63.0%, 4.3% errors), both on mock prices; six runs, same verdicts.
-7. **Promote to canary.** Scorecard to a 90/10 routing rule in one dialog; the rule appears on
-   the Routing Rules page and the split shows up in follow-up traffic.
-8. **Cost on the request path.** About 100 ns and no allocations unsampled, about 10 µs and 33
+6. **Demo result.** gpt-4o-mini `READY` (100% agreement, lower bound 97.4%), llama-3.1-8b
+   `NOT READY` (67.1%, 2.7% errors), both on mock prices; same verdicts on every run.
+7. **Promote to canary.** The weak candidate is refused with its verdict; the ready one gets a
+   90/10 rule after a dry run and a conflict check; the split shows up in follow-up traffic.
+8. **The gateway pulls it back.** A simulated provider incident: the canary guard rolls the
+   candidate back on confident evidence, 5 failed requests in, and logs the reason.
+9. **Cost on the request path.** About 100 ns and no allocations unsampled, about 10 µs and 33
    allocations sampled; bounded queue, daily budget, opt-out header.
-9. **Built like an upstream PR.** Plugin, API, page, schema, docs, 11 languages, tests and
+10. **Built like an upstream PR.** Plugin, API, page, schema, docs, 11 languages, tests and
    bugs found by testing, review and E2E each fixed with a regression test, on top of
    `ed62e4b` with one script.
-10. **Limits and next steps.** Chat completions only, per-node records, mock-only runs so far;
+11. **Limits and next steps.** Chat completions only, per-node records, mock-only runs so far;
     links to the repository and the video (TODO).
