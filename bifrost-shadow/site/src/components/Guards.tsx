@@ -1,21 +1,26 @@
 import { OVERHEAD } from "../data/demo";
 import "./Guards.css";
 
-/** In the order the plugin tries them: the first signal that applies decides the pair. */
+/** In the order the plugin applies them (decidePass in plugins/shadow/worker.go). */
 const SIGNALS = [
   {
-    name: "LLM judge",
-    rule: "Scores both answers out of 10, shown in a random order to cancel position bias. The candidate may trail the primary by one point and still pass.",
-    knob: "judge, quality_tolerance",
-  },
-  {
-    name: "Tool-call match",
-    rule: "When the primary called tools, the candidate must make the same calls with the same arguments. Calls are compared, never executed.",
+    name: "Tool selection",
+    rule: "When the primary called tools, the candidate must call the same ones. A different tool fails the pair whatever any other signal says. Calls are compared, never executed.",
     knob: "always on",
   },
   {
     name: "JSON structure",
-    rule: "In JSON mode the two answers must have the same shape. With embeddings on, similarity still decides.",
+    rule: "In JSON mode the candidate must return the same shape as the primary. A broken structure fails the pair.",
+    knob: "always on",
+  },
+  {
+    name: "LLM judge",
+    rule: "Scores both answers out of 10, shown in a random order to cancel position bias. The candidate may trail the primary by one point and still pass. A failed judge call leaves the pair unscored, never decided by a weaker signal.",
+    knob: "judge, quality_tolerance",
+  },
+  {
+    name: "Exact match",
+    rule: "Identical answers, or identical tool calls on a tool-only turn, pass without an evaluator. The same tools with different arguments fail.",
     knob: "always on",
   },
   {
@@ -25,8 +30,8 @@ const SIGNALS = [
   },
   {
     name: "Lexical similarity",
-    rule: "Token F1 of 0.6 or more, when nothing stronger is configured.",
-    knob: "lexical_threshold",
+    rule: "Token F1 of 0.6 or more, only if the operator opts in. Otherwise a pair with no stronger signal stays unscored and counts toward no verdict.",
+    knob: "quality_fallback: lexical",
   },
 ];
 
@@ -79,8 +84,8 @@ export function Guards() {
           <div className="head">
             <h2 className="h2">The strongest signal available decides each pair.</h2>
             <p className="lede">
-              Every pair is measured the same way. Which measurement gets the final say depends on what the request was and what you
-              have configured, in this order. A candidate error is always a failure.
+              Every pair is measured the same way. Two required checks come first; after them, the strongest quality signal you have
+              configured gets the final say, in this order. A candidate error is always a failure.
             </p>
           </div>
 

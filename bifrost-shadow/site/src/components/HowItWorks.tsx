@@ -24,7 +24,7 @@ const STEPS = [
   },
   {
     title: "Decide",
-    body: "The pair passes or fails on the strongest signal available: the judge, then tool calls, then JSON shape, then embeddings, then lexical overlap. A candidate error is a failure.",
+    body: "A different tool choice or a broken JSON shape fails the pair outright. Otherwise the strongest signal decides: the judge, then an exact match, then embeddings, then lexical overlap if you opted in. With no usable signal the pair stays unscored. A candidate error is a failure.",
   },
   {
     title: "Report",
