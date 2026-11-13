@@ -170,6 +170,33 @@ func TestCanaryGuardRollsBackWhenVerdictTurnsNotReady(t *testing.T) {
 	assert.Contains(t, rec.calls[0], "not_ready")
 }
 
+// A canary promoted over a not_ready verdict is guarded on live health only.
+func TestCanaryGuardRespectsAnOverride(t *testing.T) {
+	cfg := guardConfig()
+	cfg.Judge = &JudgeConfig{Provider: "openai", Model: judgeModel}
+	p := newTestPlugin(t, cfg)
+	rec := &rollbackRecorder{}
+	p.SetRollbackHook(rec.hook)
+	p.SetExecutors((&fakeClient{candidateText: "wrong", judgeReply: `{"score_a": 9, "score_b": 2, "winner": "A"}`}).chat, nil, nil)
+	p.randFloat = func() float64 { return 0.9 }
+	runPrimary(t, p, "override-1", "q", "right")
+	waitForRecords(t, p, 1)
+
+	exp := p.config.Experiments[0]
+	_, err := p.RecordRollout(RolloutEvent{Action: RolloutPromote, Experiment: exp.Name, Source: exp.Source, Candidate: exp.Candidates[0], Weight: 0.05, Override: true, Reason: "load test"})
+	require.NoError(t, err)
+	c := p.Rollouts().Canaries[0]
+	assert.True(t, c.Override)
+	assert.Equal(t, VerdictNotReady, c.Health.Verdict)
+	assert.Equal(t, CanaryWatching, c.Health.Status)
+	assert.Zero(t, p.checkCanaries())
+
+	serveLive(t, p, candidateModel, 20, 10, 300)
+	assert.Equal(t, 1, p.checkCanaries(), "live errors still roll it back")
+	require.Len(t, rec.calls, 1)
+	assert.Contains(t, rec.calls[0], "live error rate 50.0%")
+}
+
 func TestCanaryGuardOffOnlyReports(t *testing.T) {
 	p := newTestPlugin(t, baseConfig()) // no canary block: watch, never act
 	rec := &rollbackRecorder{}

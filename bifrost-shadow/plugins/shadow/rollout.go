@@ -125,14 +125,17 @@ type CanaryHealth struct {
 // Canary is an active canary: a candidate receiving a share of live traffic
 // through a routing rule created by promotion.
 type Canary struct {
-	Experiment string       `json:"experiment"`
-	Source     ModelRef     `json:"source"`
-	Candidate  ModelRef     `json:"candidate"`
-	Weight     float64      `json:"weight"`
-	RuleID     string       `json:"rule_id"`
-	RuleName   string       `json:"rule_name"`
-	Since      time.Time    `json:"since"`
-	Health     CanaryHealth `json:"health"`
+	Experiment string    `json:"experiment"`
+	Source     ModelRef  `json:"source"`
+	Candidate  ModelRef  `json:"candidate"`
+	Weight     float64   `json:"weight"`
+	RuleID     string    `json:"rule_id"`
+	RuleName   string    `json:"rule_name"`
+	Since      time.Time `json:"since"`
+	// Override marks a canary promoted without a ready verdict. The guard then
+	// watches only live health: the verdict was already known and overridden.
+	Override bool         `json:"override,omitempty"`
+	Health   CanaryHealth `json:"health"`
 }
 
 // Rollouts is the payload behind GET /api/shadow/rollouts.
@@ -340,7 +343,7 @@ func (b *rolloutBook) record(ev RolloutEvent) error {
 		if existing, ok := b.canaries[key]; ok {
 			// A ramp keeps the live statistics gathered so far.
 			existing.mu.Lock()
-			existing.Weight, existing.RuleID, existing.RuleName = ev.Weight, ev.RuleID, ev.RuleName
+			existing.Weight, existing.RuleID, existing.RuleName, existing.Override = ev.Weight, ev.RuleID, ev.RuleName, ev.Override
 			existing.mu.Unlock()
 		} else {
 			b.canaries[key] = &canaryState{Canary: Canary{
@@ -351,6 +354,7 @@ func (b *rolloutBook) record(ev RolloutEvent) error {
 				RuleID:     ev.RuleID,
 				RuleName:   ev.RuleName,
 				Since:      ev.At,
+				Override:   ev.Override,
 			}}
 		}
 	case RolloutRollback, RolloutAutoRollback:
@@ -466,7 +470,7 @@ func (p *Plugin) canaryView(c *canaryState, verdicts map[string]string) Canary {
 	view.Health = CanaryHealth{Source: c.source.health(), Candidate: c.candidate.health()}
 	c.mu.Unlock()
 	view.Health.Verdict = verdicts[c.key()]
-	view.Health.Status, view.Health.Reason = p.judgeCanary(&view.Health)
+	view.Health.Status, view.Health.Reason = p.judgeCanary(&view.Health, view.Override)
 	return view
 }
 
@@ -479,10 +483,11 @@ func (p *Plugin) canaryLimits() CanaryConfig {
 	return CanaryConfig{MinRequests: DefaultCanaryMinRequests, MaxErrorRate: p.config.Thresholds.MaxErrorRate, RollbackOnNotReady: &on}
 }
 
-// judgeCanary decides a canary's health from its live statistics.
-func (p *Plugin) judgeCanary(h *CanaryHealth) (string, string) {
+// judgeCanary decides a canary's health from its live statistics, and from the
+// shadow verdict unless the canary was promoted over that verdict.
+func (p *Plugin) judgeCanary(h *CanaryHealth, override bool) (string, string) {
 	limits := p.canaryLimits()
-	if limits.RollbackOnNotReady != nil && *limits.RollbackOnNotReady && h.Verdict == VerdictNotReady {
+	if !override && limits.RollbackOnNotReady != nil && *limits.RollbackOnNotReady && h.Verdict == VerdictNotReady {
 		return CanaryUnhealthy, "shadow verdict turned not_ready on continued evaluation"
 	}
 	if h.Candidate.Requests < int64(limits.MinRequests) {
