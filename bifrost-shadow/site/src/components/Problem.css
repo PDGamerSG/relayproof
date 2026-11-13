@@ -1,0 +1,114 @@
+/* Three ways to find out. Two lie flat on the page; the third stands up and casts a shadow. */
+
+.problem {
+  border-top: 1.5px solid var(--ink);
+}
+
+.ways {
+  --q: 232px;
+  position: relative;
+  display: grid;
+  isolation: isolate;
+}
+
+.ways__row {
+  display: grid;
+  grid-template-columns: var(--q) repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line-2);
+}
+.ways__row--head {
+  border-top: 0;
+}
+
+.ways__method {
+  padding: 26px 28px 22px;
+  font-size: var(--step-3);
+  font-stretch: 76%;
+  font-weight: 760;
+  line-height: 1.05;
+}
+.ways__method:not([data-ours]) {
+  color: var(--ink-2);
+}
+
+.ways__q {
+  padding: 22px 24px 22px 0;
+  font-size: var(--step-0);
+  font-weight: 620;
+  color: var(--ink-2);
+}
+
+.ways__a {
+  padding: 22px 28px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.ways__a:not([data-ours]) {
+  color: var(--ink-2);
+}
+.ways__a[data-ours] {
+  font-weight: 560;
+}
+
+/* The lit slab behind the third column */
+.ways__lift {
+  position: absolute;
+  z-index: -1;
+  top: -14px;
+  bottom: -18px;
+  right: 0;
+  width: calc((100% - var(--q)) / 3);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+  box-shadow: 12px 14px 0 rgb(var(--shade) / 0.16);
+}
+.ways__lift::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  border-radius: 8px 8px 0 0;
+  background: var(--sun);
+}
+
+@media (max-width: 900px) {
+  .ways {
+    gap: 22px;
+  }
+  .ways__row--head,
+  .ways__lift {
+    display: none;
+  }
+  .ways__row {
+    grid-template-columns: 1fr;
+    border-top: 1.5px solid var(--ink);
+  }
+  .ways__q {
+    padding: 18px 0 6px;
+    font-size: var(--step-2);
+    font-stretch: 84%;
+    font-weight: 720;
+    color: var(--ink);
+  }
+  .ways__a {
+    display: grid;
+    grid-template-columns: 128px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .ways__a::before {
+    content: attr(data-method);
+    font-size: var(--step-0);
+    font-weight: 620;
+  }
+  .ways__a[data-ours] {
+    margin: 4px -12px 0;
+    padding: 12px;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius-s);
+    background: var(--lit);
+    box-shadow: 5px 6px 0 rgb(var(--shade) / 0.16);
+  }
+}

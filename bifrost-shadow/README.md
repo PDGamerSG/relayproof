@@ -185,6 +185,7 @@ upstream files are patches against `ed62e4b`.
 | `patches/0004-dashboard-api.patch` | Cache tags and API client export |
 | `patches/0005-dashboard-page.patch` | Sidebar entry, canary form schema, strings in all 11 UI languages |
 | `scripts/setup.sh` | Clone, overlay, patch, test, build |
+| `site/` | Landing page with a live simulation, the demo scorecard and the quick start (`pnpm dev`); not copied into the Bifrost tree |
 
 ## Design notes
 

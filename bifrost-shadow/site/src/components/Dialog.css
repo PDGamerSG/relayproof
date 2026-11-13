@@ -1,0 +1,114 @@
+.dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+}
+.dialog::backdrop {
+  background: rgb(11 12 36 / 0.55);
+  animation: backdrop-in 240ms ease both;
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.dialog__panel {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid var(--ink);
+  background: var(--lit);
+  overflow: hidden;
+}
+
+.dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--line-2);
+}
+.dialog__title {
+  font-size: var(--step-3);
+  font-stretch: 78%;
+  font-weight: 760;
+  line-height: 1.1;
+}
+.dialog__sub {
+  margin-top: 6px;
+  font-size: var(--step-0);
+  color: var(--ink-2);
+}
+.dialog__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin: -4px -8px 0 0;
+  border-radius: var(--radius-s);
+  transition: background-color 140ms ease;
+}
+.dialog__close:hover {
+  background: rgb(15 16 48 / 0.08);
+}
+
+.dialog__body {
+  padding: 22px 24px 26px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Side sheet */
+
+.dialog--sheet {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(760px, 100vw);
+  height: 100dvh;
+  margin: 0;
+}
+.dialog--sheet .dialog__panel {
+  height: 100%;
+  border-width: 0 0 0 1.5px;
+  animation: sheet-slide 380ms var(--ease-out) both;
+}
+@keyframes sheet-slide {
+  from {
+    transform: translateX(48px);
+    opacity: 0;
+  }
+}
+
+/* Centered modal */
+
+.dialog--modal {
+  width: min(620px, 100vw - 24px);
+  margin: auto;
+}
+.dialog--modal .dialog__panel {
+  max-height: min(760px, 100dvh - 32px);
+  border-radius: var(--radius-l);
+  box-shadow: 12px 14px 0 rgb(11 12 36 / 0.35);
+  animation: modal-pop 300ms var(--ease-out) both;
+}
+@keyframes modal-pop {
+  from {
+    transform: translateY(14px) scale(0.975);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .dialog__head {
+    padding: 18px 18px 14px;
+  }
+  .dialog__body {
+    padding: 18px 18px 22px;
+  }
+}

@@ -1,0 +1,76 @@
+/*
+ * Standing type. Each line is drawn twice: once upright, once flipped about its
+ * baseline, sheared and faded, which is what a shadow on the ground looks like.
+ * --skew and --len are set per element by lib/scroll as the page moves.
+ */
+
+@property --rise {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+.cast {
+  --skew: 46deg;
+  --len: 0.7;
+  /* Distance from the top of a line box to the baseline, for Archivo at this line-height. */
+  --baseline: 0.787em;
+  isolation: isolate;
+}
+
+.cast__line {
+  display: block;
+  position: relative;
+  white-space: nowrap;
+}
+
+.cast__text {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  animation: cast-in 900ms var(--ease-out) calc(var(--i) * 110ms + 80ms) both;
+}
+
+.cast__shadow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  color: rgb(var(--shade) / 0.3);
+  transform-origin: 0 var(--baseline);
+  transform: skewX(var(--skew)) scaleY(calc(var(--len) * var(--rise) * -1));
+  filter: blur(1.4px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 4%, #000 96%);
+  mask-image: linear-gradient(to bottom, transparent 4%, #000 96%);
+  pointer-events: none;
+  user-select: none;
+  animation: cast-rise 1600ms var(--ease-out) calc(var(--i) * 110ms + 520ms) both;
+}
+
+.umbra .cast__shadow {
+  color: rgb(0 0 0 / 0.6);
+}
+
+@keyframes cast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.18em);
+  }
+}
+
+@keyframes cast-rise {
+  from {
+    --rise: 0;
+    opacity: 0;
+  }
+  to {
+    --rise: 1;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cast__text,
+  .cast__shadow {
+    animation: none;
+  }
+}

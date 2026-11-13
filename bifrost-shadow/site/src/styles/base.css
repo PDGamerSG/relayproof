@@ -1,0 +1,457 @@
+/*
+ * Bifrost Shadow site: tokens and base styles.
+ *
+ * The page has two grounds. "Daylight" sections cover what a caller sees: the
+ * request path and the outcome. "Umbra" sections cover the shadow path: the
+ * work that happens after the answer is sent. One warm colour (sun) marks what
+ * is sampled or acted on; shadows are a blue-violet, never grey.
+ */
+
+:root {
+  /* Daylight ground */
+  --daylight: #eff1f6;
+  --lit: #ffffff;
+  --ink: #0f1030;
+  --ink-2: #454867;
+  --ink-3: #6f7292;
+  --line: rgb(15 16 48 / 0.13);
+  --line-2: rgb(15 16 48 / 0.24);
+
+  /* Umbra ground */
+  --umbra: #0b0c24;
+  --umbra-2: #121435;
+  --umbra-3: #1a1d49;
+  --moon: #eceeff;
+  --moon-2: #a9add9;
+  --moon-3: #7377ad;
+  --line-dark: rgb(169 173 255 / 0.15);
+  --line-dark-2: rgb(169 173 255 / 0.28);
+
+  /* Shadow tint as an rgb triplet, so alpha can vary */
+  --shade: 38 43 140;
+  --lilac: #8f94ff;
+
+  /* Accent and verdict colours */
+  --sun: #ffc21a;
+  --sun-soft: #ffe08a;
+  --ready: #0c8f52;
+  --ready-on-dark: #3ddc91;
+  --fail: #d93a40;
+  --fail-on-dark: #ff7a7f;
+  --amber: #b86e00;
+  --amber-on-dark: #ffc21a;
+
+  /* Type */
+  --font: "Archivo Variable", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --step--1: 0.8125rem; /* 13 */
+  --step-0: 0.9375rem; /* 15 */
+  --step-1: 1.0625rem; /* 17, body */
+  --step-2: clamp(1.125rem, 1.02rem + 0.45vw, 1.3125rem); /* 18 to 21 */
+  --step-3: clamp(1.5rem, 1.1rem + 1.4vw, 2rem);
+  --step-4: clamp(2.25rem, 1.3rem + 4vw, 4.5rem);
+  --step-5: clamp(2.75rem, 0.2rem + 12vw, 11.25rem);
+
+  /* Space */
+  --gutter: clamp(20px, 4.4vw, 64px);
+  --section-y: clamp(88px, 11vw, 168px);
+  --wrap: 1296px;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 16px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--daylight);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--step-1);
+  line-height: 1.55;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--sun);
+  color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  font-variant-ligatures: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.umbra :focus-visible {
+  outline-color: var(--sun);
+}
+
+/* Layout */
+
+.wrap {
+  width: min(var(--wrap), 100% - 2 * var(--gutter));
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: var(--section-y);
+  position: relative;
+}
+
+.umbra {
+  background: var(--umbra);
+  color: var(--moon);
+}
+
+/* Type roles. Display is the condensed, heavy end of Archivo; text is the regular width. */
+
+.display {
+  font-stretch: 68%;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.012em;
+}
+
+.h2 {
+  font-size: var(--step-4);
+  font-stretch: 72%;
+  font-weight: 780;
+  line-height: 0.96;
+  letter-spacing: -0.01em;
+  max-width: 17ch;
+  text-wrap: balance;
+}
+
+.h3 {
+  font-size: var(--step-2);
+  font-weight: 650;
+  font-stretch: 92%;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+
+.lede {
+  font-size: var(--step-2);
+  line-height: 1.42;
+  color: var(--ink-2);
+  max-width: 34em;
+  text-wrap: pretty;
+}
+.umbra .lede {
+  color: var(--moon-2);
+}
+
+.small {
+  font-size: var(--step-0);
+  line-height: 1.5;
+}
+
+.muted {
+  color: var(--ink-2);
+}
+.umbra .muted {
+  color: var(--moon-2);
+}
+
+.num {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.model {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* Section heading block: heading left, lede right on wide screens */
+
+.head {
+  display: grid;
+  gap: 28px;
+  margin-bottom: clamp(44px, 6vw, 88px);
+}
+@media (min-width: 960px) {
+  .head {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 48px;
+    align-items: end;
+  }
+}
+
+/* Buttons. A button stands on the page, so it casts a short hard shadow and sinks when pressed. */
+
+.btn {
+  --btn-bg: var(--ink);
+  --btn-fg: var(--lit);
+  --btn-shadow: rgb(var(--shade) / 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--radius-s);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-weight: 620;
+  font-size: var(--step-0);
+  letter-spacing: 0.005em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 5px 5px 0 var(--btn-shadow);
+  transition:
+    transform 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out),
+    background-color 160ms ease;
+}
+.btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--btn-shadow);
+}
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 1px 1px 0 var(--btn-shadow);
+  transition-duration: 60ms;
+}
+.btn--sun {
+  --btn-bg: var(--sun);
+  --btn-fg: var(--ink);
+}
+.btn--ghost {
+  --btn-bg: var(--lit);
+  --btn-fg: var(--ink);
+  box-shadow:
+    inset 0 0 0 1.5px var(--ink),
+    5px 5px 0 var(--btn-shadow);
+}
+.btn--ghost:hover {
+  box-shadow:
+    inset 0 0 0 1.5px var(--ink),
+    7px 7px 0 var(--btn-shadow);
+}
+.btn--ghost:active {
+  box-shadow:
+    inset 0 0 0 1.5px var(--ink),
+    1px 1px 0 var(--btn-shadow);
+}
+.umbra .btn {
+  --btn-shadow: rgb(0 0 0 / 0.55);
+}
+.umbra .btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--moon);
+  box-shadow: inset 0 0 0 1.5px var(--line-dark-2);
+}
+.umbra .btn--ghost:hover {
+  box-shadow: inset 0 0 0 1.5px var(--moon-2);
+}
+.btn--small {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: var(--step--1);
+  box-shadow: 3px 3px 0 var(--btn-shadow);
+}
+.btn--small:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--btn-shadow);
+}
+.btn--small:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--btn-shadow);
+}
+.btn[disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Text link with a line that fills on hover */
+
+.link {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  padding-bottom: 2px;
+  transition: background-size 200ms var(--ease-out);
+}
+.link:hover {
+  background-size: 100% 2px;
+}
+
+/* Verdict chips */
+
+.verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px 0 9px;
+  border-radius: 999px;
+  font-size: var(--step--1);
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+}
+.verdict::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.verdict[data-verdict="ready"] {
+  background: rgb(12 143 82 / 0.12);
+  color: var(--ready);
+}
+.verdict[data-verdict="not_ready"] {
+  background: rgb(217 58 64 / 0.1);
+  color: var(--fail);
+}
+.verdict[data-verdict="promising"] {
+  background: rgb(255 194 26 / 0.26);
+  color: var(--amber);
+}
+.verdict[data-verdict="collecting"] {
+  background: rgb(15 16 48 / 0.07);
+  color: var(--ink-2);
+}
+.umbra .verdict[data-verdict="ready"] {
+  background: rgb(61 220 145 / 0.14);
+  color: var(--ready-on-dark);
+}
+.umbra .verdict[data-verdict="not_ready"] {
+  background: rgb(255 122 127 / 0.14);
+  color: var(--fail-on-dark);
+}
+.umbra .verdict[data-verdict="promising"] {
+  background: rgb(255 194 26 / 0.14);
+  color: var(--amber-on-dark);
+}
+.umbra .verdict[data-verdict="collecting"] {
+  background: rgb(169 173 255 / 0.12);
+  color: var(--moon-2);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Skip link: off screen until it takes focus */
+
+.skip {
+  position: fixed;
+  z-index: 100;
+  top: 12px;
+  left: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-s);
+  background: var(--sun);
+  color: var(--ink);
+  font-weight: 650;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip:focus-visible {
+  transform: none;
+}

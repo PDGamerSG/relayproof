@@ -1,0 +1,215 @@
+.signals {
+  border-top: 1.5px solid var(--ink);
+}
+
+/* The cascade steps down and to the right: each signal is the fallback for the one above it. */
+
+.cascade {
+  display: grid;
+  gap: 14px;
+}
+.cascade li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 15rem) minmax(0, 1fr) auto;
+  gap: 8px 24px;
+  align-items: baseline;
+  margin-left: calc(var(--i) * 4.5%);
+  padding: 20px 24px 22px 20px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+  box-shadow: 7px 8px 0 rgb(var(--shade) / calc(0.2 - var(--i) * 0.025));
+}
+.cascade__n {
+  font-size: 2rem;
+  font-stretch: 68%;
+  font-weight: 800;
+  line-height: 1;
+}
+.cascade li:first-child {
+  background: var(--ink);
+  color: var(--lit);
+}
+.cascade li:first-child .cascade__n {
+  color: var(--sun);
+}
+.cascade p {
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.cascade li:first-child p {
+  color: var(--moon-2);
+}
+.cascade__knob {
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.cascade li:first-child .cascade__knob {
+  color: var(--moon-3);
+}
+
+/* Ledger: a risk on the left, its limit on the right */
+
+.guards {
+  padding-top: 0;
+}
+
+.ledger {
+  border-top: 1.5px solid var(--ink);
+}
+.ledger__head,
+.ledger__row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 8px 48px;
+}
+.ledger__head {
+  padding-block: 12px;
+  font-size: var(--step--1);
+  font-weight: 620;
+  color: var(--ink-2);
+}
+.ledger__row {
+  padding-block: 22px;
+  border-top: 1px solid var(--line-2);
+  transition: background-color 180ms ease;
+}
+.ledger__row dt {
+  font-size: var(--step-2);
+  font-stretch: 86%;
+  font-weight: 680;
+  line-height: 1.22;
+  text-wrap: balance;
+}
+.ledger__row dd {
+  color: var(--ink-2);
+  max-width: 36em;
+  text-wrap: pretty;
+}
+.ledger code,
+.bench code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgb(15 16 48 / 0.07);
+  color: var(--ink);
+  font-size: 0.84em;
+  white-space: nowrap;
+}
+
+/* Benchmarks */
+
+.bench {
+  display: grid;
+  gap: 28px 48px;
+  margin-top: clamp(56px, 7vw, 96px);
+  padding: clamp(22px, 3vw, 36px);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-l);
+  background: var(--lit);
+  box-shadow: 16px 18px 0 rgb(var(--shade) / 0.14);
+}
+.bench figcaption p {
+  margin-top: 10px;
+  max-width: 30em;
+  color: var(--ink-2);
+}
+.bench table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step-0);
+}
+.bench thead th {
+  padding: 0 0 10px;
+  font-size: var(--step--1);
+  font-weight: 620;
+  color: var(--ink-2);
+  text-align: right;
+  white-space: nowrap;
+}
+.bench thead th:first-child {
+  text-align: left;
+}
+.bench thead th + th {
+  padding-left: 20px;
+}
+.bench tbody th,
+.bench tbody td {
+  padding: 11px 0 12px;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+.bench tbody th {
+  font-weight: 450;
+  text-align: left;
+}
+.bench tbody td {
+  padding-left: 20px;
+  font-size: 1.25rem;
+  font-stretch: 78%;
+  font-weight: 740;
+  line-height: 1.2;
+  text-align: right;
+}
+.bench__bar {
+  display: block;
+  min-width: 3px;
+  height: 5px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+.bench tr[data-sampled="true"] .bench__bar {
+  background: var(--sun);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.bench__note {
+  max-width: 60em;
+}
+
+@media (min-width: 960px) {
+  .bench {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  }
+  .bench__note {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .cascade li {
+    grid-template-columns: 36px minmax(0, 1fr);
+    margin-left: calc(var(--i) * 12px);
+    padding: 16px 18px 18px 14px;
+  }
+  .cascade li p,
+  .cascade__knob {
+    grid-column: 2;
+    white-space: normal;
+  }
+  .ledger__head {
+    display: none;
+  }
+  .ledger__row {
+    grid-template-columns: 1fr;
+  }
+  .bench {
+    box-shadow: 8px 10px 0 rgb(var(--shade) / 0.14);
+  }
+}
+
+@media (max-width: 560px) {
+  .cascade li {
+    gap: 6px 14px;
+  }
+  .bench tbody th {
+    font-size: var(--step--1);
+  }
+  .bench tbody td {
+    padding-left: 12px;
+    font-size: 1.05rem;
+  }
+  .bench thead th + th {
+    padding-left: 12px;
+  }
+}
