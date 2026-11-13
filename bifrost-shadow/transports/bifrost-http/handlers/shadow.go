@@ -324,6 +324,11 @@ func (h *ShadowHandler) rollback(ctx *fasthttp.RequestCtx) {
 		SendError(ctx, fasthttp.StatusNotFound, err.Error())
 		return
 	}
+	if plan == nil {
+		// The pair exists but no rule can be named for it (a wildcard source with no traffic yet).
+		SendError(ctx, fasthttp.StatusBadRequest, err.Error())
+		return
+	}
 	watched := false
 	if errors.Is(err, errShadowNoCanary) {
 		// No rule left to edit. A canary the plugin still watches (its rule was
@@ -444,6 +449,15 @@ func allShadowRecords(p ShadowReader, filter shadow.RecordFilter) []*shadow.Reco
 
 func fmtFloat(f float64) string { return strconv.FormatFloat(f, 'f', -1, 64) }
 
+// csvText neutralizes free text a spreadsheet would run as a formula: prompts and
+// answers come from end users and models, and the file is meant to be opened.
+func csvText(s string) string {
+	if s != "" && strings.ContainsRune("=+-@\t\r", rune(s[0])) {
+		return "'" + s
+	}
+	return s
+}
+
 func fmtOptFloat(f *float64) string {
 	if f == nil {
 		return ""
@@ -462,7 +476,7 @@ func writeScorecardsCSV(w *csv.Writer, pairs []shadow.PairSummary) {
 	})
 	for _, s := range pairs {
 		_ = w.Write([]string{
-			s.Experiment, s.Source.String(), s.Candidate.String(), s.Verdict, s.VerdictReason,
+			csvText(s.Experiment), s.Source.String(), s.Candidate.String(), s.Verdict, csvText(s.VerdictReason),
 			strconv.Itoa(s.Samples), strconv.Itoa(s.Scored), strconv.Itoa(s.Unscored), strconv.Itoa(s.Errors), strconv.Itoa(s.Passes), strconv.Itoa(s.Judged), strconv.Itoa(s.JudgeErrors),
 			fmtFloat(s.AgreementRate), fmtFloat(s.AgreementLowerBound), fmtFloat(s.ErrorRate), fmtFloat(s.JudgeErrorRate), fmtFloat(s.ExactMatchRate),
 			fmtFloat(s.AvgPrimaryScore), fmtFloat(s.AvgCandidateScore), strconv.Itoa(s.ToolTurns), fmtOptFloat(s.ToolNameMatchRate), fmtOptFloat(s.ToolCallMatchRate),
@@ -482,7 +496,7 @@ func writeRecordsCSV(w *csv.Writer, records []*shadow.Record) {
 	for _, r := range records {
 		var judgeP, judgeC, winner, reason string
 		if r.Judge != nil {
-			judgeP, judgeC, winner, reason = fmtFloat(r.Judge.PrimaryScore), fmtFloat(r.Judge.CandidateScore), r.Judge.Winner, r.Judge.Reason
+			judgeP, judgeC, winner, reason = fmtFloat(r.Judge.PrimaryScore), fmtFloat(r.Judge.CandidateScore), r.Judge.Winner, csvText(r.Judge.Reason)
 		}
 		var exact, lexical, semantic, toolDiff, jsonMatch string
 		if c := r.Comparison; c != nil {
@@ -492,10 +506,10 @@ func writeRecordsCSV(w *csv.Writer, records []*shadow.Record) {
 			}
 		}
 		_ = w.Write([]string{
-			r.ID, r.CreatedAt.UTC().Format(time.RFC3339Nano), r.RequestID, r.Experiment, r.Primary.String(), r.Candidate.String(), strconv.FormatBool(r.Stream),
-			strconv.FormatBool(r.Pass), r.PassBasis, r.CandidateError, judgeP, judgeC, winner, reason, r.JudgeError,
+			r.ID, r.CreatedAt.UTC().Format(time.RFC3339Nano), csvText(r.RequestID), csvText(r.Experiment), r.Primary.String(), r.Candidate.String(), strconv.FormatBool(r.Stream),
+			strconv.FormatBool(r.Pass), r.PassBasis, csvText(r.CandidateError), judgeP, judgeC, winner, reason, csvText(r.JudgeError),
 			exact, lexical, semantic, toolDiff, jsonMatch,
-			strconv.FormatInt(r.PrimaryLatencyMs, 10), strconv.FormatInt(r.CandidateLatencyMs, 10), fmtFloat(r.PrimaryCostUSD), fmtFloat(r.CandidateCostUSD), fmtFloat(r.EvalCostUSD), r.Prompt,
+			strconv.FormatInt(r.PrimaryLatencyMs, 10), strconv.FormatInt(r.CandidateLatencyMs, 10), fmtFloat(r.PrimaryCostUSD), fmtFloat(r.CandidateCostUSD), fmtFloat(r.EvalCostUSD), csvText(r.Prompt),
 		})
 	}
 }
