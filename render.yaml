@@ -27,8 +27,13 @@ services:
       # uses it; it is never sent to browsers.
       - key: BIFROST_SETUP_TOKEN
         generateValue: true
-      - key: TRAFFIC_EVERY
-        value: 1s
+      # Real Claude models. Set it in the dashboard (Environment); it never goes
+      # in this file. Without it the demo runs on the mock upstream.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Requests the demo may send to Claude per UTC day, all kinds together.
+      - key: DAILY_REQUESTS
+        value: "400"
       - key: CANARY_TTL
         value: 30m
       - key: INCIDENT_TTL

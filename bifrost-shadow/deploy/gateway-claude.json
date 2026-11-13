@@ -1,0 +1,58 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+  "client": {
+    "drop_excess_requests": false,
+    "enable_logging": false,
+    "enforce_auth_on_inference": false
+  },
+  "providers": {
+    "anthropic": {
+      "keys": [
+        {
+          "name": "anthropic",
+          "value": "env.ANTHROPIC_API_KEY",
+          "weight": 1,
+          "models": ["*"]
+        }
+      ],
+      "network_config": {
+        "base_url": "http://127.0.0.1:18081",
+        "default_request_timeout_in_seconds": 120
+      }
+    }
+  },
+  "plugins": [
+    {
+      "enabled": true,
+      "name": "shadow",
+      "config": {
+        "sample_rate": 1,
+        "allow_force_header": true,
+        "experiments": [
+          {
+            "name": "Opus to Sonnet and Haiku",
+            "source": { "provider": "anthropic", "model": "claude-opus-5-5" },
+            "candidates": [
+              { "provider": "anthropic", "model": "claude-sonnet-5-5" },
+              { "provider": "anthropic", "model": "claude-haiku-5-5" }
+            ]
+          }
+        ],
+        "judge": { "provider": "anthropic", "model": "claude-opus-5-5", "max_tokens": 2048, "effort": "low" },
+        "max_concurrency": 4,
+        "queue_size": 256,
+        "timeout_seconds": 90,
+        "daily_budget_usd": 5,
+        "max_records": 2000,
+        "persist_path": "shadow-records.jsonl",
+        "pricing": {
+          "anthropic/claude-opus-5-5": { "input_per_million": 4, "output_per_million": 20 },
+          "anthropic/claude-sonnet-5-5": { "input_per_million": 2, "output_per_million": 10 },
+          "anthropic/claude-haiku-5-5": { "input_per_million": 0.1, "output_per_million": 0.5 }
+        },
+        "thresholds": { "min_samples": 30 },
+        "canary": { "auto_rollback": true, "min_requests": 5 }
+      }
+    }
+  ]
+}
