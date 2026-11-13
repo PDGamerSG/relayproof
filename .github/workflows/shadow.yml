@@ -1,0 +1,58 @@
+name: bifrost-shadow
+
+on:
+  push:
+    branches: [main]
+    paths: ["bifrost-shadow/**", ".github/workflows/shadow.yml"]
+  pull_request:
+    paths: ["bifrost-shadow/**", ".github/workflows/shadow.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: shadow-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Plugin, gateway API and key-free demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.x"
+          cache: false
+
+      - name: Build Bifrost with the shadow plugin (clone, overlay, patches, tests, gateway)
+        run: SKIP_UI=1 bifrost-shadow/scripts/setup.sh
+
+      - name: Plugin tests with the race detector and coverage
+        working-directory: bifrost/plugins/shadow
+        run: go test -race -count=2 -cover ./...
+
+      - name: Gateway handler and schema tests with the race detector
+        working-directory: bifrost/transports
+        run: go test -race -count=2 -run 'Shadow|CELOverlap' ./bifrost-http/handlers/ ./bifrost-http/lib/
+
+      - name: Vet
+        run: |
+          (cd bifrost/plugins/shadow && go vet ./...)
+          (cd bifrost/transports && go vet ./bifrost-http/handlers/ ./bifrost-http/lib/ ./bifrost-http/server/)
+          (cd bifrost/examples/shadow-demo && GOWORK=off go vet ./... && GOWORK=off go test ./...)
+
+      - name: Key-free demo through a real gateway (promotion, canary guard, rollback)
+        run: BIFROST_BIN="$PWD/bifrost/tmp/bifrost-http" ./bifrost/examples/shadow-demo/run.sh
+
+  client:
+    name: TypeScript client
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Strict typecheck
+        run: npx --yes -p typescript@5.6.3 tsc --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --noUnusedLocals --noUnusedParameters bifrost-shadow/api/client/shadowClient.ts
