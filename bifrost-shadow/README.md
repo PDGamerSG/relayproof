@@ -3,12 +3,13 @@
 Shadow traffic evaluation for the [Bifrost](https://github.com/maximhq/bifrost) AI gateway.
 
 > Prove a cheaper model is good enough on your real production traffic before you switch,
-> then roll it out to a slice of users with one click.
+> roll it out to a slice of users, and let the gateway pull it back on its own if it misbehaves.
 
-Built for the Geek Room Global AI Hackathon 2026, Bifrost track, PS04 (contribute a missing
-feature to the open-source gateway). Everything here is written as an upstream contribution:
-a built-in plugin, a gateway API, a dashboard page, schema, docs and tests, applied to
-`maximhq/bifrost@ed62e4b` by one script.
+Built for the Geek Room Global AI Hackathon 2026 (HackCulture), category **AI Agents &
+Intelligent Systems**, theme **Open-Source Bifrost Gateway** (PS04: extend the gateway with a
+practical feature through supported extension points). Everything here is written as an
+upstream contribution: a built-in plugin, a gateway API, a dashboard page, schema, docs and
+tests, applied to `maximhq/bifrost@ed62e4b` by one script.
 
 ## The problem
 
@@ -33,19 +34,37 @@ client ──► Bifrost ──► primary model ──► answer to client (unc
                                                          │
                        scorecard ◄── records ◄───────────┘
                            │
-                           └─ "Promote to canary" ──► weighted routing rule (90/10)
+                           └─ POST /api/shadow/promote ──► weighted routing rule (90/10)
+                                 (verdict gate, conflict check)        │
+                                                                        ▼
+                                            canary guard: live error rate and latency per target
+                                            ──► automatic rollback when the candidate misbehaves
 ```
 
 - **Mirror** a sample of chat completions (streaming included) to any number of candidates per
   source model. Unsampled requests pay about 100 ns and no allocations; the primary answer
   never waits for shadow work.
-- **Compare** every pair with an LLM judge (position-randomized), embedding similarity, token
-  F1, tool-call and JSON-structure matching, finish reasons, latency and cost.
+- **Compare** every pair with an LLM judge (position-randomized), exact matching, embedding
+  similarity, tool-call and JSON-structure checks, finish reasons, latency and cost.
+- **Gate on what agents depend on**: a candidate that selects a different tool, or breaks the
+  JSON structure the application parses, fails whatever the judge says. Scorecards carry agent
+  metrics: tool-name match rate and missing, extra or changed tool calls.
 - **Decide** with statistics, not anecdotes: a candidate is `ready` only when the 95% Wilson
-  lower bound of its agreement rate clears the threshold and its error rate is within budget.
+  lower bound of its agreement rate clears the threshold, its error rate is within budget and the
+  judge is healthy. A failed judge call leaves a pair unscored instead of passing it on weaker
+  evidence.
 - **Inspect** every disagreement side by side with the judge's reason.
-- **Promote** a ready candidate to a weighted canary routing rule from the dashboard or API.
-- **Stay safe**: bounded queue and workers, daily budget, per-request opt-out header (the
+- **Promote** on the server: `POST /api/shadow/promote` refuses a candidate that is not ready
+  (unless an override reason is recorded), merges candidates for one source into a single
+  weighted rule, and checks every other routing rule's CEL so the canary cannot be silently
+  shadowed. A dry run shows the plan first.
+- **Guard the canary**: live requests are split by the model that served them; when the
+  candidate's error rate (95% lower bound), latency or shadow verdict crosses a limit, the
+  gateway rolls it back by itself and logs why. Every promotion and rollback is kept with the
+  evidence it rested on.
+- **Export** scorecards and records as CSV or JSON for review.
+- **Stay safe**: bounded queue and workers, a daily budget that holds across reloads and
+  restarts and reserves the cost of running jobs, per-request opt-out header (the
   force header is off unless the operator allows it), virtual-key allow-list, payload storage
   switch. Shadow calls are internal requests: no plugin recursion, no billing to the caller's
   virtual key, and no MCP tools run on them.
@@ -56,17 +75,27 @@ client ──► Bifrost ──► primary model ──► answer to client (unc
 replays 300 mixed requests (QA, arithmetic, JSON mode, tool calls, writing; 25% streamed):
 
 ```
-CANDIDATE            SAMPLES  AGREE  LOWER95  ERRORS  JUDGE (P/C)  P50 (P/C)     SAVINGS  $/1M REQ  VERDICT
-openai/gpt-4o-mini   162      99.4%  96.6%    0.0%    9.0 / 9.0    918 / 339 ms  97.2%    $294      READY
-openai/llama-3.1-8b  162      63.0%  55.3%    4.3%    9.0 / 6.6    900 / 195 ms  99.3%    $300      NOT READY
+CANDIDATE            SAMPLES  AGREE   LOWER95  ERRORS  JUDGE (P/C)  P50 (P/C)     SAVINGS  $/1M REQ  VERDICT
+openai/gpt-4o-mini   146      100.0%  97.4%    0.0%    9.0 / 9.0    883 / 342 ms  97.2%    $301      READY
+openai/llama-3.1-8b  146      67.1%   59.1%    2.7%    9.0 / 6.8    883 / 201 ms  99.3%    $307      NOT READY
 ```
 
-Sampling is random, so numbers move between runs; in six consecutive runs `gpt-4o-mini` was
-`ready` every time (lower bound 95.9-97.7%) and `llama-3.1-8b` never was.
+Both candidates are much cheaper; only one is safe. The script then runs a full rollout
+through the gateway API:
 
-Both candidates are much cheaper; only one is safe. The script checks that `gpt-4o-mini` is
-`ready`, promotes it to a 10% canary through the routing-rules API, and checks the split on
-follow-up traffic.
+```
+promote llama-3.1-8b         HTTP 409: not_ready - agreement 67.1% is below 90%
+promote gpt-4o-mini (10%)    HTTP 200: create, agreement 100.0% (95% lower bound 97.4%)
+split check                  gpt-4o-mini served 20 of 200 requests (expected 20)
+canary health                healthy: live error rate 0.0% over 20 requests
+provider incident            gpt-4o-mini fails 60% of requests (mock upstream switch)
+canary guard                 rolled back: live error rate 19.2% (95% lower bound 8.5%) exceeds 5.0%
+after rollback               gpt-4o-mini served 0 of 100 requests, 0 failed
+```
+
+Sampling is random, so numbers move between runs; the verdicts do not. Five user requests
+failed during the simulated incident before the guard acted. The whole script takes under two
+minutes.
 
 ## Dashboard
 
@@ -90,13 +119,22 @@ from the mock upstream.
 
 ## Quick start
 
+From the repository root:
+
 ```bash
-# Clone upstream at the pinned commit, add the plugin, apply patches, build UI + gateway
+# Clone upstream at the pinned commit into ./bifrost, add the plugin, apply patches, build
 bifrost-shadow/scripts/setup.sh                 # SKIP_UI=1 to skip the dashboard build
 
-# Run the key-free demo
-BIFROST_BIN=../bifrost/tmp/bifrost-http ../bifrost/examples/shadow-demo/run.sh
+# Run the key-free demo (the binary path must be absolute: run.sh changes directory)
+BIFROST_BIN="$(pwd)/bifrost/tmp/bifrost-http" ./bifrost/examples/shadow-demo/run.sh
+
+# Or keep a seeded gateway running for frontend work (Ctrl-C to stop)
+BIFROST_BIN="$(pwd)/bifrost/tmp/bifrost-http" ./bifrost/examples/shadow-demo/dev.sh
 ```
+
+A frontend connects to the gateway's `/api/shadow/*` routes: see [`api/README.md`](api/README.md)
+for auth, CORS, the [OpenAPI spec](api/openapi.yaml) and a typed
+[TypeScript client](api/client/shadowClient.ts).
 
 Requirements: git, Go 1.27+, a C compiler (SQLite config store), and for the dashboard the
 Node version in Bifrost's `ui/.nvmrc` (26 at the pinned commit).
@@ -115,7 +153,9 @@ Minimal `config.json` for real providers:
         "candidates": [{ "provider": "openai", "model": "gpt-4o-mini" }]
       }],
       "judge": { "provider": "openai", "model": "gpt-4o" },
-      "daily_budget_usd": 20
+      "daily_budget_usd": 20,
+      "persist_path": "shadow.jsonl",
+      "canary": { "auto_rollback": true }
     }
   }]
 }
@@ -130,14 +170,16 @@ upstream files are patches against `ed62e4b`.
 
 | Path | What |
 |---|---|
-| `plugins/shadow/` | The plugin (Go module `github.com/maximhq/bifrost/plugins/shadow`): sampling, capture, workers, comparison, judge, store, scorecards, canary rules |
+| `plugins/shadow/` | The plugin (Go module `github.com/maximhq/bifrost/plugins/shadow`): sampling, capture, workers, comparison, judge, store, scorecards, spend ledger (`ledger.go`), canary guard and rollout log (`rollout.go`) |
 | `transports/bifrost-http/handlers/shadow.go` | `/api/shadow/*` HTTP API |
-| `examples/shadow-demo/` | Mock upstream, load generator, gateway config, `run.sh` |
+| `transports/bifrost-http/handlers/shadow_rollout.go` | Server-side promotion and rollback: verdict gate, rule merge, CEL conflict check |
+| `examples/shadow-demo/` | Mock upstream (with an incident switch), load generator, gateway config, `run.sh`, `dev.sh` |
+| `api/` | Frontend contract: OpenAPI spec, typed TypeScript client, connection guide; not copied into the Bifrost tree |
 | `docs/features/shadow-traffic.mdx` | Feature documentation |
 | `ui/app/workspace/shadow/` | Dashboard page: counters, scorecard, disagreements sheet, promote dialog |
 | `ui/lib/` | RTK Query client (`shadowApi.ts`), types, formatting helpers and their vitest cases |
 | `tests/e2e/features/shadow-traffic/` | Playwright suite for the dashboard page: page object, data factories, specs |
-| `patches/0001-register-shadow-plugin.patch` | Built-in plugin registration, executor and pricing wiring, routes |
+| `patches/0001-register-shadow-plugin.patch` | Built-in plugin registration, executor, pricing and rollback wiring, routes |
 | `patches/0002-config-schema.patch` | `config.schema.json` entry and schema tests |
 | `patches/0003-docs-nav.patch` | Docs navigation |
 | `patches/0004-dashboard-api.patch` | Cache tags and API client export |
@@ -157,7 +199,10 @@ upstream files are patches against `ed62e4b`.
 - **Pricing.** Costs come from the model catalog (`CalculateCostForUsage`), with optional manual
   overrides for self-hosted models.
 - **Readiness.** Agreement uses a Wilson score interval, so 20/20 passes (lower bound 84%) is
-  `promising`, not `ready`.
+  `promising`, not `ready`. The canary guard uses the same interval on live error rates.
+- **Promotion.** One routing rule per source model holds every candidate's share, because the
+  routing engine stops at the first matching rule. Other rules are checked by partially
+  evaluating their CEL with only the provider and model known.
 
 ## Overhead
 
@@ -174,9 +219,15 @@ upstream files are patches against `ed62e4b`.
 | The plugin's own work per streamed chunk | 0.4 | 0 |
 | Sampled request (snapshot + hand-off) | 9,600 | 33 |
 
+With a canary live, `PostLLMHook` adds 14 ns (another model) or 25 ns (a counted response), no
+allocations (macOS arm64, 10 cores).
+
 ## Limitations
 
 - Chat completions only; the Responses API, embeddings, images and audio are not mirrored.
-- Records are per gateway node and in memory (optionally appended to a JSONL file).
+- Records, spend, canary health and the rollout log are per gateway node (optionally persisted
+  beside `persist_path`); promoted routing rules are shared through the config store.
 - Candidates are compared with the primary, not with ground truth.
 - Tool calls are compared, never executed; multi-turn agents are evaluated one turn at a time.
+- The bundled dashboard page (`ui/`) predates server-side promotion and still creates rules
+  through the routing-rules API; the new endpoints are for the separate frontend.

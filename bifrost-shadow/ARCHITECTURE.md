@@ -73,6 +73,7 @@ cache (`patches/0001`), so a cache hit short-circuits before the request is samp
 | JSONL file (optional) | none | One line per record | `2 × max_records` lines: past that the file is rewritten (temp file and rename) with the newest `max_records` records | Compaction or reset. At startup only the last `max_records` lines stay in the ring buffer |
 | Traffic counters | experiment index | Count and first timestamp as atomics in a cache-line-padded slot, so eligible requests never take a lock | One per experiment | Reset |
 | Spend | none | Spend ledger: today's total, in-flight reservations, cost estimate; process-wide per persist path | `<persist_path>.spend.json`, rewritten atomically after each job | Rolls over at UTC midnight. Reset, reloads and restarts keep it, so none of them lifts the budget |
+| Rollout book | experiment + candidate | Active canaries (rule, weight, since; per-target counts and the last 512 latencies) and the rollout log | 500 events; one canary per pair; `<persist_path>.rollouts.json` without live statistics | A rollback (manual or automatic) ends a canary; reset keeps both |
 
 No stream-sized data is stored in `BifrostContext`; the context carries only the
 `x-bf-shadow` mode. This follows the `AGENTS.md` rule for per-request state.
@@ -133,36 +134,79 @@ recent `max_records` comparisons.
 
 ## How promotion works
 
-1. **Build the rule.** `GET /api/shadow/canary-rule?experiment=…&candidate=provider/model&weight=w`
-   (`BuildCanaryRule` in `api.go`) returns a body for the existing routing-rules API. `w` must be
-   between 0.0001 and 1 (NaN is rejected) and defaults to 0.1. The rule matches the source model with a CEL expression such
-   as `provider == "openai" && model == "gpt-4o"`, and has two weighted targets: the source at
-   `1 - w` and the candidate at `w` (only the candidate when `w` is 1). It is enabled, global in
-   scope, priority 10 unless `priority` is passed, and named `Shadow canary: <source> ->
-   <candidate>`. For a wildcard source, the most frequently
-   observed primary model for that pair is used, because a rule needs a concrete model; with no
-   observed traffic yet the call returns 400. An unknown experiment or candidate returns 404.
-2. **Create it.** The plugin never writes routing rules itself. The dashboard's **Promote to
-   canary** dialog previews the body, then creates it with the existing
-   `POST /api/routing/rules` (the UI's routing-rules mutation) and links to the **Routing Rules**
-   page. It reads the existing rules first: a new rule gets the first free global priority, and
-   when the pair already has a canary rule the dialog updates that rule's share with
-   `PUT /api/routing/rules/{rule_id}` instead of creating a second one. `examples/shadow-demo/run.sh` does the same with `curl`, and its error message notes
-   that this API needs the config store and the governance plugin.
-3. **Readiness is advisory in the product.** The API and the dialog accept any candidate; the
-   dialog shows a caution with the verdict reason when the candidate is not `ready`.
-   `run.sh` is stricter: it promotes only after `loadgen -report -require-ready` confirms a
-   `ready` verdict.
-4. **After promotion.** The gateway's routing rules apply the new rule to later requests. The
-   experiment keeps running on the share of traffic still served by the primary, so the
-   scorecard stays current. To roll back, lower the weight or disable the rule on the Routing
-   Rules page.
+Promotion runs on the server (`promoteShadowCandidate` in
+`transports/bifrost-http/handlers/shadow_rollout.go`), serialized by one mutex so two
+promotions cannot both read and rewrite the same rule.
+
+1. **Gate.** `PairScorecard` returns the pair's current scorecard. A verdict other than `ready`
+   is refused with `409` (`verdict`, `verdict_reason`, `evidence`) unless the request carries an
+   `override_reason`.
+2. **Plan.** `BuildCanaryRule` (`api.go`) gives the source, the candidate and the CEL expression
+   (`provider == "openai" && model == "gpt-4o"`). For a wildcard source the most frequently
+   observed primary model is used; with no traffic yet the call fails with `400`.
+3. **Merge.** Existing rules are read from the config store. A global rule whose name starts
+   with `Shadow canary: <source> ->` and whose expression is the plan's is the source's canary
+   rule: the candidate's share is set in it (added or changed), other candidates keep theirs, and
+   the source gets `1 - Σ shares`. Shares above 100% are refused. Weights are rounded to four
+   decimals and sum to exactly 1. Otherwise a new rule is created with the first free global
+   priority from 10, or the requested one. One rule per source matters: the routing engine stops
+   at the first matching terminal rule, so a second rule for the same source would never serve
+   traffic (this was finding 2 of the project review, reproduced on a real gateway: 87/13/0).
+4. **Conflict check.** Every other enabled rule's CEL is partially evaluated (`celOverlap`, cel-go
+   with `OptPartialEval`) with `provider`, `model` and both chat request types known and every
+   request-scoped variable unknown. `overlapYes` means it matches every chat request for the
+   source; `overlapMaybe` means it depends on headers, keys, teams, budgets or complexity. A
+   global, non-chain rule that is `overlapYes` and runs first (lower priority number) refuses the
+   promotion (`409`, `conflicts`). Scoped rules, `overlapMaybe` rules that run first, and rules
+   that run after the canary are returned as `warnings`.
+5. **Write.** The rule is validated with the routing-rules API's own checks
+   (`rules.ValidateCELExpression`, `validateRoutingTargets`), saved to the config store and
+   reloaded into the routing engine (`ReloadRoutingRule`), so it serves the next request. The
+   promotion is audited and recorded in the rollout log with the scorecard as evidence.
+   `dry_run` stops before the write and returns the plan.
+
+**Rollback** (`rollbackShadowCanary`) removes the candidate's target from the source's canary
+rule and gives its share back to the source; a rule left with only the source is deleted. The
+HTTP route records a `rollback` event; a canary whose rule was already removed by hand is
+closed with `action: none`.
+
+## Canary guard
+
+Promoted candidates are watched on live traffic (`rollout.go`):
+
+- **Observation.** `PostLLMHook` first loads an atomic pointer to the list of active canaries
+  (nil when there are none: one atomic load). For each response or error it reads
+  `RoutingInfo.RequestedModel` (what the caller asked for, before routing rules) and
+  `RoutingInfo.Model` (what served it). A request for a canary's source model is counted
+  against the candidate or the source target: requests, errors and a ring of the last 512
+  latencies. Streams count once, at the final chunk. 14 ns for a response to another model,
+  25 ns for a counted one, no allocations.
+- **Health** (`judgeCanary`): `watching` below `min_requests` candidate requests; `unhealthy` when
+  the 95% Wilson lower bound of the candidate's error rate is above the limit (the limit is
+  `canary.max_error_rate`, raised to the source's own error rate when the source fails as much),
+  when candidate p95 latency exceeds `max_latency_ratio` × the source's p95, or (unless the canary
+  was promoted with an override) when the pair's shadow verdict has turned `not_ready`;
+  otherwise `healthy`. Using the lower bound keeps one failed request in a handful from rolling
+  back a healthy candidate.
+- **Action.** A goroutine checks every 5 s. With `canary.auto_rollback` on, an unhealthy canary is
+  rolled back through a `RollbackFunc` the gateway wires (`NewShadowRollbackHook`, the same code
+  as the rollback route), at most once at a time per canary, and an `auto_rollback` event with
+  the triggering health is recorded.
+- **State.** The rollout log (last 500 events) and the active canaries live in a `rolloutBook`
+  shared per process and persist path, like the spend ledger, so a settings update or reload
+  keeps watching. With `persist_path` they are written atomically to
+  `<persist_path>.rollouts.json` after each event; live statistics restart with the process.
 
 ## Wiring into the gateway
 
 `patches/0001` adds the plugin to the built-in list and, on bootstrap and on every plugin reload,
 calls `SetExecutors` with the client's `ChatCompletionRequest` and `EmbeddingRequest` and a price
-function backed by the model catalog. The HTTP handler resolves the current plugin instance on
-every API call, so enabling or reloading the plugin through `/api/plugins` takes effect without
-a restart. A reload starts a fresh instance; stored records survive it only when `persist_path`
-is set. On shutdown, `Cleanup` stops the workers and waits up to 5 seconds for in-flight calls.
+function backed by the model catalog, and `SetRollbackHook` with the canary guard's rollback.
+Promotion, rollback and the guard write routing rules through `NewShadowRoutingRules`: the config
+store first, then the routing engine's in-memory rules (`ReloadRoutingRule`/`RemoveRoutingRule`,
+the same calls the routing-rules API makes). Without a config store that is nil and promotion
+answers `503`. The HTTP handler resolves the current plugin instance on every API call, so
+enabling or reloading the plugin through `/api/plugins` takes effect without a restart. A reload
+starts a fresh instance; stored records survive it only when `persist_path` is set, while the
+spend ledger and the rollout book are shared with the new instance. On shutdown, `Cleanup` stops
+the workers and waits up to 5 seconds for in-flight calls.
