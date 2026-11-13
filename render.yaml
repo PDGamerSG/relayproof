@@ -6,9 +6,10 @@ services:
   - type: web
     name: relayproof-api
     runtime: docker
-    # free: no card needed, 512 MB, sleeps after 15 idle minutes. Switch to
-    # standard (2 GB, always on) once a payment method is on file.
-    plan: free
+    # starter: the smallest always-on plan (512 MB, 0.5 CPU). The demo uses
+    # about 230 MB. The free plan's 0.1 CPU is too slow for the gateway to boot
+    # within Render's start window, and it sleeps when idle.
+    plan: starter
     region: virginia
     dockerfilePath: ./bifrost-shadow/deploy/Dockerfile
     dockerContext: .
@@ -32,6 +33,6 @@ services:
         value: 30m
       - key: INCIDENT_TTL
         value: 3m
-      # Keeps the Go processes inside the free plan's 512 MB.
+      # Keeps the Go processes inside the plan's 512 MB.
       - key: GOMEMLIMIT
         value: 320MiB

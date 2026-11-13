@@ -18,7 +18,9 @@ mockupstream -addr 127.0.0.1:18080 &
 (cd "$WORK_DIR" && exec bifrost-http -app-dir . -port 8080 -host 127.0.0.1) &
 frontdoor -addr ":$PORT" -gateway "$gateway" -mock http://127.0.0.1:18080 &
 
-for _ in $(seq 1 120); do
+# Bifrost runs its store migrations and loads the model catalog on boot; on a
+# small instance that takes a few minutes.
+for _ in $(seq 1 "${BOOT_TIMEOUT:-300}"); do
   curl -sf "$gateway/health" >/dev/null && break
   sleep 1
 done
