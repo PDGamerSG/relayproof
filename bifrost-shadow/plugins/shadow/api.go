@@ -126,7 +126,17 @@ type CanaryRule struct {
 	Targets       []RoutingTarget `json:"targets"`
 	Scope         string          `json:"scope"`
 	Priority      int             `json:"priority"`
+
+	// Source and Candidate are the concrete models the rule routes between. They
+	// are not part of the routing-rules body.
+	Source    ModelRef `json:"-"`
+	Candidate ModelRef `json:"-"`
 }
+
+// CanaryRuleNamePrefix starts the name of every routing rule the shadow plugin
+// creates, followed by the source model; promotion uses it to find and update
+// an existing canary for a source instead of adding a second, unreachable rule.
+const CanaryRuleNamePrefix = "Shadow canary: "
 
 // ErrUnknownPair is returned when no experiment/candidate pair matches a canary request.
 var ErrUnknownPair = errors.New("shadow: unknown experiment or candidate")
@@ -216,7 +226,9 @@ func (p *Plugin) BuildCanaryRule(experiment, candidate string, weight float64, p
 		targets = append([]RoutingTarget{{Provider: string(source.Provider), Model: source.Model, Weight: round4(1 - share)}}, targets...)
 	}
 	return &CanaryRule{
-		Name:          fmt.Sprintf("Shadow canary: %s -> %s", source.String(), cand.String()),
+		Source:        source,
+		Candidate:     *cand,
+		Name:          fmt.Sprintf("%s%s -> %s", CanaryRuleNamePrefix, source.String(), cand.String()),
 		Description:   fmt.Sprintf("Created from shadow experiment %q. Sends %g%% of %s traffic to %s.", experiment, round4(share*100), source.String(), cand.String()),
 		Enabled:       true,
 		CelExpression: cel,
@@ -252,6 +264,9 @@ func (p *Plugin) mostCommonPrimary(experiment, candidate string) (ModelRef, bool
 	})
 	return refs[keys[0]], true
 }
+
+// Round4 rounds a traffic share to the four decimals routing rules use.
+func Round4(f float64) float64 { return round4(f) }
 
 func round4(f float64) float64 {
 	return float64(int64(f*10000+0.5)) / 10000

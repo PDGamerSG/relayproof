@@ -185,6 +185,10 @@ type Plugin struct {
 	// ledger holds today's spend; it is shared with later instances of the plugin
 	// (see spendLedger), so reloading the plugin never lifts the daily budget.
 	ledger *spendLedger
+	// rollouts holds the rollout log and active canaries, shared the same way.
+	rollouts       *rolloutBook
+	rollbackHook   atomic.Pointer[RollbackFunc]
+	canaryInterval time.Duration
 
 	trafficSlots []trafficSlot // one per config.Experiments entry, same order
 	// trafficMu serializes the rare rollover of a traffic slot to a new window.
@@ -215,6 +219,11 @@ func Init(ctx context.Context, config *Config, logger schemas.Logger) (*Plugin, 
 		day := time.Now().UTC().Format(time.DateOnly)
 		ledger.seed(day, todaysRecordSpend(st.snapshot(), day))
 	}
+	book, err := bookFor(config.PersistPath)
+	if err != nil {
+		_ = st.close()
+		return nil, err
+	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -223,16 +232,18 @@ func Init(ctx context.Context, config *Config, logger schemas.Logger) (*Plugin, 
 	// for reloads is a short-lived API request.
 	workerCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	p := &Plugin{
-		config:       config,
-		logger:       logger,
-		store:        st,
-		ledger:       ledger,
-		queue:        make(chan *job, config.QueueSize),
-		ctx:          workerCtx,
-		cancel:       cancel,
-		trafficSlots: make([]trafficSlot, len(config.Experiments)),
-		randFloat:    rand.Float64,
-		now:          time.Now,
+		config:         config,
+		logger:         logger,
+		store:          st,
+		ledger:         ledger,
+		rollouts:       book,
+		canaryInterval: DefaultCanaryCheckInterval,
+		queue:          make(chan *job, config.QueueSize),
+		ctx:            workerCtx,
+		cancel:         cancel,
+		trafficSlots:   make([]trafficSlot, len(config.Experiments)),
+		randFloat:      rand.Float64,
+		now:            time.Now,
 	}
 	p.storeRecord = st.add
 	p.startedAt.Store(p.now().UnixNano())
@@ -243,8 +254,9 @@ func Init(ctx context.Context, config *Config, logger schemas.Logger) (*Plugin, 
 		p.wg.Add(1)
 		go p.worker()
 	}
-	p.wg.Add(1)
+	p.wg.Add(2)
 	go p.janitor()
+	go p.canaryGuard()
 	return p, nil
 }
 
@@ -444,6 +456,7 @@ func (p *Plugin) owns(ctx *schemas.BifrostContext, c *capture) bool {
 // PostLLMHook collects the primary answer (accumulating stream chunks) and,
 // once it is complete, enqueues one shadow job per candidate.
 func (p *Plugin) PostLLMHook(ctx *schemas.BifrostContext, resp *schemas.BifrostResponse, bifrostErr *schemas.BifrostError) (*schemas.BifrostResponse, *schemas.BifrostError, error) {
+	p.observeCanaries(ctx, resp, bifrostErr)
 	if p.active.Load() == 0 {
 		return resp, bifrostErr, nil
 	}

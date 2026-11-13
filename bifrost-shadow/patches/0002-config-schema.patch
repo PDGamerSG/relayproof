@@ -1,5 +1,5 @@
 diff --git a/transports/bifrost-http/lib/validator_test.go b/transports/bifrost-http/lib/validator_test.go
-index dd064d346..5f0a07657 100644
+index dd064d346..c83e7d914 100644
 --- a/transports/bifrost-http/lib/validator_test.go
 +++ b/transports/bifrost-http/lib/validator_test.go
 @@ -17,6 +17,7 @@ import (
@@ -10,7 +10,7 @@ index dd064d346..5f0a07657 100644
  	"github.com/santhosh-tekuri/jsonschema/v6"
  )
  
-@@ -279,6 +280,133 @@ func TestValidateConfigSchema_WarpSectionCoversEverySetting(t *testing.T) {
+@@ -279,6 +280,136 @@ func TestValidateConfigSchema_WarpSectionCoversEverySetting(t *testing.T) {
  	}
  }
  
@@ -39,7 +39,8 @@ index dd064d346..5f0a07657 100644
 +		"thresholds": {"min_samples": 50, "min_agreement": 0.95, "max_error_rate": 0.02,
 +			"quality_tolerance": 0.5, "lexical_threshold": 0.5, "semantic_threshold": 0.9,
 +			"max_judge_error_rate": 0.2},
-+		"quality_fallback": "lexical"
++		"quality_fallback": "lexical",
++		"canary": {"auto_rollback": true, "min_requests": 50, "max_error_rate": 0.02, "max_latency_ratio": 2.5, "rollback_on_not_ready": false}
 +	}`
 +	if err := ValidateConfigSchema(shadowPluginConfig(valid), schemaData); err != nil {
 +		t.Fatalf("expected valid shadow config to pass, got: %v", err)
@@ -63,6 +64,7 @@ index dd064d346..5f0a07657 100644
 +		"agreement above 1":     `{"thresholds": {"min_agreement": 2}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +		"force header not bool": `{"allow_force_header": "yes", "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +		"unknown fallback":      `{"quality_fallback": "structural", "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"canary typo":           `{"canary": {"auto_rolback": true}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +	}
 +	for name, config := range invalid {
 +		if err := ValidateConfigSchema(shadowPluginConfig(config), schemaData); err == nil {
@@ -139,13 +141,14 @@ index dd064d346..5f0a07657 100644
 +	checkFields("shadow.Thresholds", reflect.TypeOf(shadow.Thresholds{}), declared["thresholds"].Properties)
 +	checkFields("shadow.JudgeConfig", reflect.TypeOf(shadow.JudgeConfig{}), declared["judge"].Properties)
 +	checkFields("shadow.EmbeddingConfig", reflect.TypeOf(shadow.EmbeddingConfig{}), declared["embedding"].Properties)
++	checkFields("shadow.CanaryConfig", reflect.TypeOf(shadow.CanaryConfig{}), declared["canary"].Properties)
 +}
 +
  func TestValidateConfigSchema_EmptyObject(t *testing.T) {
  	// Empty object should be valid (all properties are optional)
  	emptyConfig := `{}`
 diff --git a/transports/config.schema.json b/transports/config.schema.json
-index 69fd51a02..d4df68d28 100644
+index 69fd51a02..8865c6ca7 100644
 --- a/transports/config.schema.json
 +++ b/transports/config.schema.json
 @@ -4248,7 +4248,7 @@
@@ -157,7 +160,7 @@ index 69fd51a02..d4df68d28 100644
            },
            "config": {
              "type": "object",
-@@ -5423,6 +5423,281 @@
+@@ -5423,6 +5423,316 @@
                  }
                }
              }
@@ -421,6 +424,41 @@ index 69fd51a02..d4df68d28 100644
 +                          "maximum": 1,
 +                          "default": 0.1,
 +                          "description": "Largest share of judge calls that may fail before a candidate's verdict is withheld"
++                        }
++                      },
++                      "additionalProperties": false
++                    },
++                    "canary": {
++                      "type": "object",
++                      "description": "Canary guard: watches promoted candidates on live traffic and, with auto_rollback, removes an unhealthy one from its routing rule",
++                      "properties": {
++                        "auto_rollback": {
++                          "type": "boolean",
++                          "default": false,
++                          "description": "Remove a candidate from its canary rule when a guard limit is breached"
++                        },
++                        "min_requests": {
++                          "type": "integer",
++                          "minimum": 0,
++                          "default": 20,
++                          "description": "Live candidate requests needed before health is judged"
++                        },
++                        "max_error_rate": {
++                          "type": "number",
++                          "minimum": 0,
++                          "maximum": 1,
++                          "description": "Live error rate the candidate may reach (default: thresholds.max_error_rate); never below the source's own error rate"
++                        },
++                        "max_latency_ratio": {
++                          "type": "number",
++                          "minimum": 0,
++                          "default": 0,
++                          "description": "Limit on candidate p95 latency as a multiple of the source's p95; 0 turns the check off"
++                        },
++                        "rollback_on_not_ready": {
++                          "type": "boolean",
++                          "default": true,
++                          "description": "Also roll back when continued shadow evaluation turns the candidate's verdict to not_ready"
 +                        }
 +                      },
 +                      "additionalProperties": false

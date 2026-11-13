@@ -218,6 +218,8 @@ type Config struct {
 	// QualityFallback scores pairs no stronger signal could score: "none" (default,
 	// the pair stays unscored) or "lexical" (token overlap).
 	QualityFallback string `json:"quality_fallback,omitempty"`
+	// Canary configures the guard that watches promoted candidates on live traffic.
+	Canary *CanaryConfig `json:"canary,omitempty"`
 }
 
 // storePayloads reports whether prompts and answers are retained.
@@ -312,6 +314,11 @@ func (c *Config) normalize() error {
 	}
 	if t.MinAgreement > 1 || t.MaxErrorRate > 1 || t.LexicalThreshold > 1 || t.SemanticThreshold > 1 || t.MaxJudgeErrorRate > 1 {
 		return errors.New("shadow: threshold ratios must be <= 1")
+	}
+	if c.Canary != nil {
+		if err := c.Canary.normalize(t); err != nil {
+			return err
+		}
 	}
 	switch strings.ToLower(strings.TrimSpace(c.QualityFallback)) {
 	case "", QualityFallbackNone:

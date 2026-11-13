@@ -12,11 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// resetLedgers forgets every process-wide ledger, so a test starts with no spend.
+// resetLedgers forgets every process-wide spend ledger and rollout book, so a
+// test starts with no spend and no canaries.
 func resetLedgers() {
 	ledgersMu.Lock()
 	ledgers = map[string]*spendLedger{}
 	ledgersMu.Unlock()
+	booksMu.Lock()
+	books = map[string]*rolloutBook{}
+	booksMu.Unlock()
 }
 
 // Regression for the review finding "restarting or reloading the plugin lifts
