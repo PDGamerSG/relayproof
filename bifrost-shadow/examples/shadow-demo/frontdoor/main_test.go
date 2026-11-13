@@ -47,6 +47,7 @@ type fakeBackend struct {
 	chats     int
 	rollbacks []map[string]string
 	since     time.Time
+	resets    int
 }
 
 func (f *fakeBackend) handler() http.Handler {
@@ -77,6 +78,14 @@ func (f *fakeBackend) handler() http.Handler {
 		f.rollbacks = append(f.rollbacks, body)
 		f.mu.Unlock()
 		_, _ = io.WriteString(w, `{"action":"delete"}`)
+	})
+	mux.HandleFunc("DELETE /api/shadow/records", func(w http.ResponseWriter, r *http.Request) {
+		f.mu.Lock()
+		if r.Header.Get("X-Bifrost-Setup-Token") == "secret-token" {
+			f.resets++
+		}
+		f.mu.Unlock()
+		_, _ = io.WriteString(w, `{"message":"cleared"}`)
 	})
 	mux.HandleFunc("/admin/incident", func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
@@ -262,5 +271,48 @@ func TestPostLimitPerAddress(t *testing.T) {
 	}
 	if !l.allow("a", now.Add(time.Minute)) {
 		t.Error("call in a new window refused")
+	}
+}
+
+func TestScoresResetAfterTheLastIncidentEnds(t *testing.T) {
+	f := &fakeBackend{}
+	d, srv := newTestDoor(t, f, options{resetAfter: 20 * time.Millisecond, reseed: 6})
+
+	post := func(body string) {
+		resp, err := http.Post(srv.URL+"/api/demo/incident", "application/json", strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s: status %d", body, resp.StatusCode)
+		}
+	}
+	post(`{"model":"gpt-4o-mini","error_pct":60}`)
+	post(`{"model":"llama-3.1-8b","error_pct":60}`)
+	post(`{"model":"gpt-4o-mini","error_pct":0}`)
+	time.Sleep(80 * time.Millisecond)
+	f.mu.Lock()
+	early := f.resets
+	f.mu.Unlock()
+	if early != 0 {
+		t.Fatal("scores reset while another incident was still running")
+	}
+	post(`{"model":"llama-3.1-8b","error_pct":0}`)
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		f.mu.Lock()
+		done := f.resets == 1 && f.chats == 6
+		f.mu.Unlock()
+		if done && !d.reseeding.Load() {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.resets != 1 || f.chats != 6 {
+		t.Fatalf("resets %d, replayed chats %d; want 1 and 6", f.resets, f.chats)
 	}
 }

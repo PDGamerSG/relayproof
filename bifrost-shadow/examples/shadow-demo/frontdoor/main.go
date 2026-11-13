@@ -57,6 +57,8 @@ type options struct {
 	canaryTTL    time.Duration
 	burstMax     int
 	postsPerMin  int
+	resetAfter   time.Duration
+	reseed       int
 }
 
 func main() {
@@ -75,6 +77,8 @@ func main() {
 	flag.DurationVar(&o.canaryTTL, "canary-ttl", envDuration("CANARY_TTL", 30*time.Minute), "canaries live longer than this are rolled back (0 keeps them)")
 	flag.IntVar(&o.burstMax, "burst-max", 60, "largest traffic burst one call may ask for")
 	flag.IntVar(&o.postsPerMin, "posts-per-minute", 30, "POST calls allowed per client address per minute")
+	flag.DurationVar(&o.resetAfter, "reset-after-incident", envDuration("RESET_AFTER_INCIDENT", 20*time.Second), "after the last incident ends, wait this long, clear the scorecards and replay traffic (0 keeps them)")
+	flag.IntVar(&o.reseed, "reseed", envInt("SEED", 300), "requests replayed after a reset")
 	flag.Parse()
 	if o.setupToken == "" {
 		log.Fatal("frontdoor: BIFROST_SETUP_TOKEN (or -setup-token) is required")
@@ -109,6 +113,13 @@ func main() {
 	}
 }
 
+func envInt(name string, def int) int {
+	if v, err := strconv.Atoi(os.Getenv(name)); err == nil && v >= 0 {
+		return v
+	}
+	return def
+}
+
 func envDuration(name string, def time.Duration) time.Duration {
 	v := os.Getenv(name)
 	if v == "" {
@@ -137,9 +148,12 @@ type door struct {
 	liveFailed atomic.Int64
 	burstBusy  atomic.Bool
 	burstSent  atomic.Int64
+	reseeding  atomic.Bool
 
-	mu        sync.Mutex
-	incidents map[string]incident
+	mu         sync.Mutex
+	incidents  map[string]incident
+	resetTimer *time.Timer
+	lastReset  time.Time
 }
 
 type incident struct {
@@ -268,6 +282,8 @@ type demoStatus struct {
 	BurstRunning       bool       `json:"burst_running"`
 	BurstSent          int64      `json:"burst_sent"`
 	BurstMax           int        `json:"burst_max"`
+	Reseeding          bool       `json:"reseeding"`
+	LastReset          *time.Time `json:"last_reset,omitempty"`
 	Incidents          []incident `json:"incidents"`
 	IncidentModels     []string   `json:"incident_models"`
 	IncidentTTLSeconds int64      `json:"incident_ttl_seconds"`
@@ -280,6 +296,11 @@ func (d *door) status(w http.ResponseWriter, _ *http.Request) {
 	for _, inc := range d.incidents {
 		incs = append(incs, inc)
 	}
+	var lastReset *time.Time
+	if !d.lastReset.IsZero() {
+		t := d.lastReset.UTC()
+		lastReset = &t
+	}
 	d.mu.Unlock()
 	writeJSON(w, http.StatusOK, demoStatus{
 		StartedAt:          d.started.UTC(),
@@ -290,6 +311,8 @@ func (d *door) status(w http.ResponseWriter, _ *http.Request) {
 		BurstRunning:       d.burstBusy.Load(),
 		BurstSent:          d.burstSent.Load(),
 		BurstMax:           d.o.burstMax,
+		Reseeding:          d.reseeding.Load(),
+		LastReset:          lastReset,
 		Incidents:          incs,
 		IncidentModels:     []string{"gpt-4o-mini", "llama-3.1-8b"},
 		IncidentTTLSeconds: int64(d.o.incidentTTL.Seconds()),
@@ -333,12 +356,23 @@ func (d *door) applyIncident(ctx context.Context, model string, pct int) error {
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if old, ok := d.incidents[model]; ok && old.timer != nil {
+	old, had := d.incidents[model]
+	if had && old.timer != nil {
 		old.timer.Stop()
+	}
+	if d.resetTimer != nil {
+		d.resetTimer.Stop()
+		d.resetTimer = nil
 	}
 	if pct == 0 {
 		delete(d.incidents, model)
 		log.Printf("frontdoor: incident on %s cleared", model)
+		// The incident's failures stay in the candidate's scorecard and would keep
+		// it from being ready for the next visitor: once the last incident is over,
+		// start the scorecards again from a fresh replay.
+		if had && len(d.incidents) == 0 && d.o.resetAfter > 0 {
+			d.resetTimer = time.AfterFunc(d.o.resetAfter, d.resetScores)
+		}
 		return nil
 	}
 	now := time.Now()
@@ -382,6 +416,59 @@ type burstRequest struct {
 	N int `json:"n"`
 }
 
+// resetScores clears records and counters (spend, canaries and the rollout
+// log are kept) and replays o.reseed requests, so every candidate has a verdict
+// again within a minute or two.
+func (d *door) resetScores() {
+	if !d.reseeding.CompareAndSwap(false, true) {
+		return
+	}
+	defer d.reseeding.Store(false)
+	// Public bursts wait while the replay runs.
+	for !d.burstBusy.CompareAndSwap(false, true) {
+		time.Sleep(time.Second)
+	}
+	defer d.burstBusy.Store(false)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	if err := d.gatewayJSON(ctx, http.MethodDelete, "/api/shadow/records", nil, nil); err != nil {
+		log.Printf("frontdoor: reset: %v", err)
+		return
+	}
+	d.mu.Lock()
+	d.lastReset = time.Now()
+	d.mu.Unlock()
+	log.Printf("frontdoor: scorecards cleared after the incident; replaying %d requests", d.o.reseed)
+	d.sendMany(ctx, d.o.reseed, 8, nil)
+}
+
+// sendMany sends n dataset requests through the gateway, conc at a time.
+func (d *door) sendMany(ctx context.Context, n, conc int, sent *atomic.Int64) {
+	jobs := make(chan dataset.Item)
+	var wg sync.WaitGroup
+	for range conc {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for item := range jobs {
+				_ = d.send(ctx, item, rand.IntN(4) == 0)
+				if sent != nil {
+					sent.Add(1)
+				}
+			}
+		}()
+	}
+	items := dataset.Items()
+	for range n {
+		select {
+		case jobs <- items[rand.IntN(len(items))]:
+		case <-ctx.Done():
+		}
+	}
+	close(jobs)
+	wg.Wait()
+}
+
 // burst serves POST /api/demo/traffic {"n": 40}: n requests through the
 // gateway, four at a time, in the background. One burst runs at a time.
 func (d *door) burst(w http.ResponseWriter, r *http.Request) {
@@ -402,24 +489,7 @@ func (d *door) burst(w http.ResponseWriter, r *http.Request) {
 	}
 	go func(n int) {
 		defer d.burstBusy.Store(false)
-		jobs := make(chan dataset.Item)
-		var wg sync.WaitGroup
-		for range 4 {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				for item := range jobs {
-					_ = d.send(context.Background(), item, rand.IntN(4) == 0)
-					d.burstSent.Add(1)
-				}
-			}()
-		}
-		items := dataset.Items()
-		for range n {
-			jobs <- items[rand.IntN(len(items))]
-		}
-		close(jobs)
-		wg.Wait()
+		d.sendMany(context.Background(), n, 4, &d.burstSent)
 	}(req.N)
 	writeJSON(w, http.StatusAccepted, map[string]any{"queued": req.N})
 }
