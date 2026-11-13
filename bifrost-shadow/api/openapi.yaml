@@ -1,0 +1,701 @@
+openapi: 3.1.0
+info:
+  title: Bifrost Shadow API
+  version: 0.2.0
+  summary: Shadow traffic evaluation, gated promotion and canary rollouts for the Bifrost AI gateway.
+  description: |
+    Every route is served by the Bifrost gateway itself (default `http://localhost:8080`) once the
+    `shadow` plugin is enabled. When the plugin is not loaded every route answers `404` with a
+    message saying so.
+
+    Authentication follows the rest of the Bifrost management API: with dashboard auth enabled,
+    send the session cookie from `POST /api/session/login` (browser, `credentials: "include"`) or
+    `Authorization: Basic <base64(user:password)>`. Without dashboard auth but with a config
+    store, send `X-Bifrost-Setup-Token`. See `api/README.md` for CORS and local development.
+
+    Errors use Bifrost's error body (`ErrorResponse`). `POST /api/shadow/promote` adds structured
+    fields to its `409` responses so a UI can explain the refusal.
+servers:
+  - url: http://localhost:8080
+    description: Local gateway
+tags:
+  - name: Scorecards
+    description: Counters, per-candidate scorecards and readiness verdicts
+  - name: Records
+    description: Individual shadow comparisons
+  - name: Rollouts
+    description: Gated promotion to a canary, rollback, live canary health
+  - name: Export
+security:
+  - {}
+  - setupToken: []
+  - basicAuth: []
+  - sessionCookie: []
+paths:
+  /api/shadow/summary:
+    get:
+      tags: [Scorecards]
+      operationId: getSummary
+      summary: Counters, spend, configuration and one scorecard per experiment/candidate pair
+      description: Cheap enough to poll every few seconds. Scorecards cover the records in the ring buffer.
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Summary" }
+        "404": { $ref: "#/components/responses/PluginNotEnabled" }
+  /api/shadow/records:
+    get:
+      tags: [Records]
+      operationId: listRecords
+      summary: Stored comparisons, newest first
+      parameters:
+        - { $ref: "#/components/parameters/Experiment" }
+        - { $ref: "#/components/parameters/Candidate" }
+        - { $ref: "#/components/parameters/Outcome" }
+        - name: limit
+          in: query
+          description: Page size; 0 or absent means 50, values above 500 are clamped to 500.
+          schema: { type: integer, minimum: 0, default: 50, maximum: 500 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        "200":
+          description: One page of records and the total number matching the filter
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [records, total]
+                properties:
+                  records:
+                    type: array
+                    items: { $ref: "#/components/schemas/Record" }
+                  total: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/PluginNotEnabled" }
+    delete:
+      tags: [Records]
+      operationId: resetRecords
+      summary: Clear records and counters and restart the collection window
+      description: Audited. Today's spend, the rollout log and active canaries are kept, so a reset never lifts the daily budget.
+      responses:
+        "200":
+          description: Cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, examples: ["shadow records cleared"] }
+        "404": { $ref: "#/components/responses/PluginNotEnabled" }
+        "500": { $ref: "#/components/responses/ServerError" }
+  /api/shadow/records/{id}:
+    get:
+      tags: [Records]
+      operationId: getRecord
+      summary: One comparison
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Record" }
+        "404":
+          description: Plugin not enabled, or no record with this ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /api/shadow/promote:
+    post:
+      tags: [Rollouts]
+      operationId: promote
+      summary: Give a candidate a share of its source model's live traffic
+      description: |
+        Writes the canary routing rule on the server (audited, recorded in the rollout log with the
+        scorecard as evidence):
+
+        - A candidate whose verdict is not `ready` is refused (`409`, `kind: not_ready`) unless
+          `override_reason` is given.
+        - If a shadow canary rule already routes the same source, the candidate is merged into it
+          (or its weight changed). One rule per source keeps every candidate reachable: the routing
+          engine stops at the first matching rule.
+        - Every other enabled rule's CEL expression is partially evaluated for a request to the
+          source model. A global rule that matches every such request and runs first refuses the
+          promotion (`409`, `kind: conflict`); rules that may match some requests, scoped rules,
+          and rules the canary will now shadow come back as `warnings`.
+        - `dry_run: true` returns the plan and writes nothing.
+
+        Needs the config store (it holds routing rules); without it the route answers `503`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PromoteRequest" }
+            examples:
+              ready:
+                value: { experiment: "gpt-4o cost-down", candidate: "openai/gpt-4o-mini", weight: 0.1 }
+              override:
+                value: { experiment: "gpt-4o cost-down", candidate: "openai/llama-3.1-8b", weight: 0.05, override_reason: "load test of the self-hosted model" }
+      responses:
+        "200":
+          description: Promotion done (or planned, for a dry run)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Promotion" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404":
+          description: Plugin not enabled, or unknown experiment/candidate pair
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: |
+            Refused. Either the candidate is not ready (`NotReadyRefusal`), an earlier rule would
+            shadow the canary (`ConflictRefusal`), or the requested priority is taken (`ErrorResponse`).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: "#/components/schemas/NotReadyRefusal" }
+                  - { $ref: "#/components/schemas/ConflictRefusal" }
+                  - { $ref: "#/components/schemas/ErrorResponse" }
+        "500": { $ref: "#/components/responses/ServerError" }
+        "503": { $ref: "#/components/responses/NoConfigStore" }
+  /api/shadow/rollback:
+    post:
+      tags: [Rollouts]
+      operationId: rollback
+      summary: Take a candidate out of its canary rule
+      description: |
+        The source takes the candidate's share back; a rule left with only the source is deleted.
+        Audited and recorded in the rollout log. If the rule was already removed by hand but the
+        canary is still watched, the canary is closed with `action: none`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RollbackRequest" }
+      responses:
+        "200":
+          description: Rolled back
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RollbackResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404":
+          description: Plugin not enabled, unknown pair, or no canary routes this candidate
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500": { $ref: "#/components/responses/ServerError" }
+        "503": { $ref: "#/components/responses/NoConfigStore" }
+  /api/shadow/rollouts:
+    get:
+      tags: [Rollouts]
+      operationId: getRollouts
+      summary: Active canaries with live health, and the rollout log (newest first)
+      responses:
+        "200":
+          description: Rollouts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Rollouts" }
+        "404": { $ref: "#/components/responses/PluginNotEnabled" }
+  /api/shadow/canary-rule:
+    get:
+      tags: [Rollouts]
+      operationId: getCanaryRule
+      summary: Preview a routing-rule body for POST /api/routing/rules
+      description: Builds the rule only; it does not check readiness, existing rules or conflicts. Prefer `POST /api/shadow/promote` with `dry_run`.
+      parameters:
+        - { $ref: "#/components/parameters/ExperimentRequired" }
+        - { $ref: "#/components/parameters/CandidateRequired" }
+        - name: weight
+          in: query
+          schema: { type: number, minimum: 0.0001, maximum: 1, default: 0.1 }
+        - name: priority
+          in: query
+          schema: { type: integer, minimum: 0, default: 10 }
+      responses:
+        "200":
+          description: Rule body
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CanaryRule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404":
+          description: Plugin not enabled, or unknown pair
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /api/shadow/export:
+    get:
+      tags: [Export]
+      operationId: export
+      summary: Download scorecards and records
+      description: |
+        `format=json` (default): summary, every stored record matching the filter, and rollouts.
+        `format=csv`: one table, `kind=scorecards` (default) or `kind=records`. The record filters
+        apply; paging does not. Sent with `Content-Disposition: attachment`.
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, csv], default: json }
+        - name: kind
+          in: query
+          description: CSV only.
+          schema: { type: string, enum: [scorecards, records], default: scorecards }
+        - { $ref: "#/components/parameters/Experiment" }
+        - { $ref: "#/components/parameters/Candidate" }
+        - { $ref: "#/components/parameters/Outcome" }
+      responses:
+        "200":
+          description: Export file
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Export" }
+            text/csv:
+              schema: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/PluginNotEnabled" }
+
+components:
+  securitySchemes:
+    setupToken:
+      type: apiKey
+      in: header
+      name: X-Bifrost-Setup-Token
+      description: Before dashboard auth is configured, when the gateway has a config store.
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Dashboard admin username and password.
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: token
+      description: Set by POST /api/session/login; browsers send it with credentials included.
+  parameters:
+    Experiment:
+      name: experiment
+      in: query
+      description: Experiment name, exact.
+      schema: { type: string }
+    Candidate:
+      name: candidate
+      in: query
+      description: Candidate as provider/model, exact.
+      schema: { type: string, examples: ["openai/gpt-4o-mini"] }
+    ExperimentRequired:
+      name: experiment
+      in: query
+      required: true
+      schema: { type: string }
+    CandidateRequired:
+      name: candidate
+      in: query
+      required: true
+      schema: { type: string }
+    Outcome:
+      name: outcome
+      in: query
+      schema: { type: string, enum: [all, pass, fail, error], default: all }
+  responses:
+    PluginNotEnabled:
+      description: The shadow plugin is not loaded
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    BadRequest:
+      description: Invalid parameter or body
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    ServerError:
+      description: Store or routing engine failure
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NoConfigStore:
+      description: The gateway runs without a config store, so there are no routing rules to write
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+  schemas:
+    ErrorResponse:
+      type: object
+      description: Bifrost's error body.
+      additionalProperties: true
+      properties:
+        is_bifrost_error: { type: boolean }
+        status_code: { type: integer }
+        error:
+          type: object
+          additionalProperties: true
+          properties:
+            message: { type: string }
+        extra_fields: { type: object, additionalProperties: true }
+    ModelRef:
+      type: object
+      required: [model]
+      properties:
+        provider: { type: string, description: "Empty matches any provider (sources only)." }
+        model: { type: string, description: '"*" matches any model (sources only).' }
+    Verdict:
+      type: string
+      enum: [collecting, promising, ready, not_ready]
+      description: |
+        collecting: fewer than min_samples scored comparisons (candidate errors count, unscored pairs do not).
+        not_ready: error rate, judge error rate or agreement out of bounds.
+        promising: agreement meets min_agreement but its 95% lower bound does not yet.
+        ready: the 95% Wilson lower bound of agreement meets min_agreement.
+    PassBasis:
+      type: string
+      enum: [tool_selection, json_schema, judge, exact, tool_arguments, semantic, lexical, unscored]
+      description: |
+        Signal that decided a pair. tool_selection and json_schema are required gates (fail).
+        unscored means no usable quality signal (for example the judge call failed); such a pair
+        is not evidence either way. Records written by older versions may carry "structural".
+    Counters:
+      type: object
+      properties:
+        eligible: { type: integer, description: Requests that matched an experiment }
+        sampled: { type: integer }
+        enqueued: { type: integer }
+        dropped: { type: integer, description: Jobs dropped because the queue was full }
+        budget_skipped: { type: integer }
+        completed: { type: integer }
+        candidate_errors: { type: integer }
+        in_flight: { type: integer }
+        queue_depth: { type: integer }
+    Thresholds:
+      type: object
+      properties:
+        min_samples: { type: integer }
+        min_agreement: { type: number }
+        max_error_rate: { type: number }
+        quality_tolerance: { type: number }
+        lexical_threshold: { type: number }
+        semantic_threshold: { type: number }
+        max_judge_error_rate: { type: number }
+    Experiment:
+      type: object
+      properties:
+        name: { type: string }
+        source: { $ref: "#/components/schemas/ModelRef" }
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/ModelRef" }
+        sample_rate: { type: number }
+    LatencyStats:
+      type: object
+      properties:
+        p50_ms: { type: number }
+        p95_ms: { type: number }
+    PairSummary:
+      type: object
+      description: Scorecard for one candidate within one experiment.
+      properties:
+        experiment: { type: string }
+        source: { $ref: "#/components/schemas/ModelRef" }
+        candidate: { $ref: "#/components/schemas/ModelRef" }
+        primary_models:
+          type: [array, "null"]
+          items: { type: string }
+        samples: { type: integer, description: All comparisons including candidate errors }
+        completed: { type: integer, description: Comparisons where the candidate answered }
+        errors: { type: integer }
+        passes: { type: integer }
+        judged: { type: integer }
+        scored: { type: integer, description: Completed comparisons some quality signal decided }
+        unscored: { type: integer }
+        judge_errors: { type: integer }
+        judge_error_rate: { type: number }
+        pass_basis_counts:
+          type: object
+          additionalProperties: { type: integer }
+          description: Keyed by PassBasis.
+        error_rate: { type: number }
+        agreement_rate: { type: number, description: passes / (scored + errors) }
+        agreement_lower_bound: { type: number, description: 95% Wilson lower bound of agreement }
+        exact_match_rate: { type: number }
+        finish_reason_match_rate: { type: number }
+        tool_turns: { type: integer, description: Comparisons where either side called a tool }
+        tool_name_match_rate: { type: number, description: Same tools selected, on tool turns }
+        tool_diffs:
+          type: object
+          description: Tool-call mismatches by kind.
+          properties:
+            missing: { type: integer }
+            extra: { type: integer }
+            different_tool: { type: integer }
+            different_args: { type: integer }
+        judge_candidate_wins: { type: integer }
+        judge_ties: { type: integer }
+        judge_candidate_losses: { type: integer }
+        avg_primary_score: { type: number }
+        avg_candidate_score: { type: number }
+        avg_lexical_similarity: { type: number }
+        avg_semantic_similarity: { type: number }
+        tool_call_match_rate: { type: number }
+        json_match_rate: { type: number }
+        primary_latency: { $ref: "#/components/schemas/LatencyStats" }
+        candidate_latency: { $ref: "#/components/schemas/LatencyStats" }
+        avg_primary_cost_usd: { type: number }
+        avg_candidate_cost_usd: { type: number }
+        savings_pct: { type: number, description: Negative when the candidate is pricier }
+        savings_per_million_usd: { type: number }
+        projected_monthly_savings_usd: { type: number }
+        eval_spend_usd: { type: number }
+        shadow_spend_usd: { type: number }
+        verdict: { $ref: "#/components/schemas/Verdict" }
+        verdict_reason: { type: string }
+        first_seen: { type: string, format: date-time }
+        last_seen: { type: string, format: date-time }
+    Summary:
+      type: object
+      properties:
+        started_at: { type: string, format: date-time }
+        sample_rate: { type: number }
+        judge_model: { type: string }
+        embedding_model: { type: string }
+        quality_fallback: { type: string, enum: [none, lexical] }
+        auto_rollback: { type: boolean }
+        active_canaries: { type: integer }
+        daily_budget_usd: { type: number, description: 0 means unlimited }
+        spend_today_usd: { type: number }
+        spend_reserved_usd: { type: number, description: Expected cost of jobs still running }
+        budget_exhausted: { type: boolean }
+        counters: { $ref: "#/components/schemas/Counters" }
+        thresholds: { $ref: "#/components/schemas/Thresholds" }
+        experiments:
+          type: array
+          items: { $ref: "#/components/schemas/Experiment" }
+        pairs:
+          type: array
+          items: { $ref: "#/components/schemas/PairSummary" }
+    ToolCall:
+      type: object
+      properties:
+        name: { type: string }
+        arguments: { type: string, description: JSON text as the model produced it }
+    Answer:
+      type: object
+      properties:
+        text: { type: string }
+        tool_calls:
+          type: array
+          items: { $ref: "#/components/schemas/ToolCall" }
+        finish_reason: { type: string }
+    Comparison:
+      type: object
+      properties:
+        lexical_similarity: { type: number }
+        semantic_similarity: { type: number }
+        length_ratio: { type: number }
+        tool_calls_match: { type: boolean }
+        tool_names_match: { type: boolean }
+        tool_call_diff: { type: string, enum: [missing, extra, different_tool, different_args] }
+        json_match: { type: boolean }
+        json_values_match: { type: boolean }
+        exact_match: { type: boolean }
+        finish_reason_match: { type: boolean }
+    JudgeVerdict:
+      type: object
+      properties:
+        primary_score: { type: number }
+        candidate_score: { type: number }
+        winner: { type: string, enum: [primary, candidate, tie] }
+        reason: { type: string }
+        candidate_shown_first: { type: boolean }
+    Record:
+      type: object
+      properties:
+        id: { type: string }
+        request_id: { type: string }
+        experiment: { type: string }
+        created_at: { type: string, format: date-time }
+        stream: { type: boolean }
+        primary: { $ref: "#/components/schemas/ModelRef" }
+        candidate: { $ref: "#/components/schemas/ModelRef" }
+        prompt: { type: string, description: Last user turn, truncated; absent with store_payloads false }
+        primary_answer: { $ref: "#/components/schemas/Answer" }
+        candidate_answer: { $ref: "#/components/schemas/Answer" }
+        primary_latency_ms: { type: integer }
+        candidate_latency_ms: { type: integer }
+        primary_input_tokens: { type: integer }
+        primary_output_tokens: { type: integer }
+        candidate_input_tokens: { type: integer }
+        candidate_output_tokens: { type: integer }
+        primary_cost_usd: { type: number }
+        candidate_cost_usd: { type: number }
+        eval_cost_usd: { type: number }
+        candidate_error: { type: string }
+        comparison: { $ref: "#/components/schemas/Comparison" }
+        judge: { $ref: "#/components/schemas/JudgeVerdict" }
+        judge_error: { type: string }
+        pass: { type: boolean }
+        pass_basis: { $ref: "#/components/schemas/PassBasis" }
+    RoutingTarget:
+      type: object
+      properties:
+        provider: { type: string }
+        model: { type: string }
+        weight: { type: number }
+    CanaryRule:
+      type: object
+      description: Body for POST /api/routing/rules.
+      properties:
+        name: { type: string }
+        description: { type: string }
+        enabled: { type: boolean }
+        cel_expression: { type: string }
+        targets:
+          type: array
+          items: { $ref: "#/components/schemas/RoutingTarget" }
+        scope: { type: string }
+        priority: { type: integer }
+    RoutingRule:
+      type: object
+      description: A routing rule as stored by the routing-rules API (fallbacks and query omitted here).
+      additionalProperties: true
+      properties:
+        id: { type: string }
+        config_hash: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        name: { type: string }
+        description: { type: string }
+        enabled: { type: boolean }
+        cel_expression: { type: string }
+        targets:
+          type: array
+          items: { $ref: "#/components/schemas/RoutingTarget" }
+        scope: { type: string }
+        scope_id: { type: [string, "null"] }
+        chain_rule: { type: boolean }
+        priority: { type: integer }
+    PromoteRequest:
+      type: object
+      required: [experiment, candidate]
+      properties:
+        experiment: { type: string }
+        candidate: { type: string, description: provider/model }
+        weight: { type: number, minimum: 0.0001, maximum: 1, default: 0.1, description: Candidate's share of source traffic }
+        priority: { type: integer, minimum: 0, description: "New rules only. Default: first free global priority from 10." }
+        override_reason: { type: string, description: Required to promote a candidate that is not ready; recorded in the log }
+        dry_run: { type: boolean, default: false }
+    Promotion:
+      type: object
+      properties:
+        action: { type: string, enum: [create, update] }
+        dry_run: { type: boolean }
+        rule: { $ref: "#/components/schemas/RoutingRule" }
+        warnings:
+          type: array
+          items: { type: string }
+        evidence: { $ref: "#/components/schemas/PairSummary" }
+        event: { $ref: "#/components/schemas/RolloutEvent" }
+    NotReadyRefusal:
+      type: object
+      properties:
+        error: { type: string }
+        verdict: { $ref: "#/components/schemas/Verdict" }
+        verdict_reason: { type: string }
+        evidence: { $ref: "#/components/schemas/PairSummary" }
+    ConflictRefusal:
+      type: object
+      properties:
+        error: { type: string }
+        conflicts:
+          type: array
+          items: { type: string }
+        warnings:
+          type: array
+          items: { type: string }
+        rule: { $ref: "#/components/schemas/RoutingRule" }
+    RollbackRequest:
+      type: object
+      required: [experiment, candidate]
+      properties:
+        experiment: { type: string }
+        candidate: { type: string }
+        reason: { type: string }
+    RollbackResult:
+      type: object
+      properties:
+        action: { type: string, enum: [update, delete, none] }
+        rule: { $ref: "#/components/schemas/RoutingRule" }
+        event: { $ref: "#/components/schemas/RolloutEvent" }
+    TargetHealth:
+      type: object
+      properties:
+        requests: { type: integer }
+        errors: { type: integer }
+        error_rate: { type: number }
+        p50_ms: { type: number }
+        p95_ms: { type: number }
+    CanaryHealth:
+      type: object
+      properties:
+        status: { type: string, enum: [watching, healthy, unhealthy] }
+        reason: { type: string }
+        source: { $ref: "#/components/schemas/TargetHealth" }
+        candidate: { $ref: "#/components/schemas/TargetHealth" }
+        verdict: { $ref: "#/components/schemas/Verdict" }
+    Canary:
+      type: object
+      properties:
+        experiment: { type: string }
+        source: { $ref: "#/components/schemas/ModelRef" }
+        candidate: { $ref: "#/components/schemas/ModelRef" }
+        weight: { type: number }
+        rule_id: { type: string }
+        rule_name: { type: string }
+        since: { type: string, format: date-time }
+        override: { type: boolean, description: Promoted without a ready verdict; guarded on live health only }
+        health: { $ref: "#/components/schemas/CanaryHealth" }
+    RolloutEvent:
+      type: object
+      properties:
+        id: { type: string }
+        at: { type: string, format: date-time }
+        action: { type: string, enum: [promote, rollback, auto_rollback] }
+        experiment: { type: string }
+        source: { $ref: "#/components/schemas/ModelRef" }
+        candidate: { $ref: "#/components/schemas/ModelRef" }
+        weight: { type: number, description: Candidate's share after the action; 0 after a rollback }
+        rule_id: { type: string }
+        rule_name: { type: string }
+        override: { type: boolean, description: Promoted without a ready verdict }
+        reason: { type: string }
+        actor: { type: string, enum: [api, canary_guard] }
+        evidence: { $ref: "#/components/schemas/PairSummary" }
+        health: { $ref: "#/components/schemas/CanaryHealth" }
+    Rollouts:
+      type: object
+      properties:
+        auto_rollback: { type: boolean }
+        canaries:
+          type: array
+          items: { $ref: "#/components/schemas/Canary" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/RolloutEvent" }
+    Export:
+      type: object
+      properties:
+        exported_at: { type: string, format: date-time }
+        summary: { $ref: "#/components/schemas/Summary" }
+        records:
+          type: array
+          items: { $ref: "#/components/schemas/Record" }
+        rollouts: { $ref: "#/components/schemas/Rollouts" }
