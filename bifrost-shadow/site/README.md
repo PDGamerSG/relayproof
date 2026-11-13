@@ -1,4 +1,4 @@
-# Bifrost Shadow site
+# RelayProof site
 
 The project's landing page: what shadow traffic is, a live simulation of the request and shadow
 paths, the demo scorecard, the readiness maths, the guards, and the quick start.

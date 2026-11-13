@@ -71,7 +71,7 @@ export function Closing() {
           <div className="foot__about">
             <p className="foot__brand">
               <Mark size={24} />
-              Bifrost Shadow
+              RelayProof
             </p>
             <p>
               Shadow traffic evaluation for the Bifrost AI gateway: a built-in plugin, a gateway API, a dashboard page, schema, docs

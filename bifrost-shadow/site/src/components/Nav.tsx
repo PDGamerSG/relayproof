@@ -47,7 +47,7 @@ export function Nav() {
       <div className="nav__bar">
         <a className="nav__brand" href="#top" onClick={() => setOpen(false)}>
           <Mark />
-          <span>Bifrost Shadow</span>
+          <span>RelayProof</span>
         </a>
 
         <nav className="nav__links" aria-label="Sections">

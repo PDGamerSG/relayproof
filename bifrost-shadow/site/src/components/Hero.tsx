@@ -12,7 +12,7 @@ export function Hero() {
 
         <div className="hero__below">
           <p className="lede hero__lede">
-            Bifrost Shadow is a plugin for the{" "}
+            RelayProof is a plugin for the{" "}
             <a className="link" href={LINKS.bifrost}>
               Bifrost AI gateway
             </a>
