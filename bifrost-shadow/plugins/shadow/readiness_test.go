@@ -238,6 +238,20 @@ func TestExactMatchIgnoresCaseAndWhitespace(t *testing.T) {
 	assert.True(t, cmp.ExactMatch, "equal JSON values in a different key order and spelling")
 }
 
+// AllRecords reads one snapshot: no limit, no paging.
+func TestAllRecords(t *testing.T) {
+	p := newTestPlugin(t, baseConfig())
+	p.SetExecutors((&fakeClient{candidateText: "x"}).chat, nil, nil)
+	for i := 0; i < 3; i++ {
+		runPrimary(t, p, fmt.Sprintf("all-%d", i), "hi", "x")
+		waitForRecords(t, p, i+1)
+	}
+	all := p.AllRecords(RecordFilter{Limit: 1, Offset: 2})
+	require.Len(t, all, 3)
+	assert.Equal(t, "all-2", all[0].RequestID, "newest first")
+	assert.Empty(t, p.AllRecords(RecordFilter{Outcome: "error"}))
+}
+
 func TestQualityFallbackConfig(t *testing.T) {
 	parse := func(raw string) error {
 		var c Config

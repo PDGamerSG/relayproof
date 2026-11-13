@@ -136,7 +136,8 @@ func (p *Plugin) runJob(j *job) {
 		done()
 		return
 	}
-	candAnswer := answerFromChatResponse(resp)
+	// Account the call before anything else can fail: the provider has billed it,
+	// and a panic further down must not drop its cost from the daily budget.
 	rec.CandidateLatencyMs = wall
 	if resp != nil {
 		if resp.ExtraFields.Latency > 0 {
@@ -148,6 +149,7 @@ func (p *Plugin) runJob(j *job) {
 		}
 		rec.CandidateCostUSD = p.cost(resp.Usage, j.candidate.Provider, j.candidate.Model, schemas.ChatCompletionRequest)
 	}
+	candAnswer := answerFromChatResponse(resp)
 
 	cmp := compareAnswers(j.answer, candAnswer)
 	rec.Comparison = &cmp
@@ -230,8 +232,9 @@ const (
 // unless a judge accepted them.
 //
 // A judge that was asked and failed leaves the pair unscored rather than letting
-// a weaker signal stand in for it, so evaluator failures can never add up to a
-// "ready" verdict; scorecards report the judge error rate instead.
+// a weaker signal (embeddings, overlap) stand in for it, so evaluator failures can
+// never add up to a "ready" verdict; scorecards report the judge error rate
+// instead. An exact match still passes: it needs no evaluator.
 func (p *Plugin) decidePass(cmp *Comparison, verdict *JudgeVerdict, judgeFailed bool) (bool, string) {
 	if cmp == nil {
 		return false, BasisUnscored

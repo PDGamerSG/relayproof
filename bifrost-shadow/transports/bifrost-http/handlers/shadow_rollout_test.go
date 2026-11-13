@@ -422,7 +422,7 @@ func TestShadowRollbackHookUsedByCanaryGuard(t *testing.T) {
 		_, _, err := p.PostLLMHook(schemas.NewBifrostContext(context.Background(), schemas.NoDeadline), nil, &schemas.BifrostError{
 			StatusCode: &status,
 			Error:      &schemas.ErrorField{Message: "boom"},
-			ExtraFields: schemas.BifrostErrorExtraFields{RoutingInfo: schemas.RoutingInfo{
+			ExtraFields: schemas.BifrostErrorExtraFields{RequestType: schemas.ChatCompletionRequest, RoutingInfo: schemas.RoutingInfo{
 				Provider: "openai", Model: "gpt-4o-mini", RequestedProvider: "openai", RequestedModel: "gpt-4o",
 			}},
 		})
@@ -440,16 +440,17 @@ func TestCELOverlap(t *testing.T) {
 		``:                  overlapYes,
 		`true`:              overlapYes,
 		`model == "gpt-4o"`: overlapYes,
-		`provider == "openai" && model == "gpt-4o"`: overlapYes,
-		`model.startsWith("gpt-4")`:                 overlapYes,
-		`model == "gpt-4o-mini"`:                    overlapNone,
-		`provider == "anthropic"`:                   overlapNone,
-		`request_type == "embedding"`:               overlapNone,
-		`request_type == "chat_completion_stream"`:  overlapYes,
-		`headers["x-tenant"] == "acme"`:             overlapMaybe,
-		`budget_used > 80.0 && model == "gpt-4o"`:   overlapMaybe,
-		`budget_used > 80.0 && model == "other"`:    overlapNone,
-		`this is not cel`:                           overlapMaybe,
+		`provider == "openai" && model == "gpt-4o"`:  overlapYes,
+		`model.startsWith("gpt-4")`:                  overlapYes,
+		`model == "gpt-4o-mini"`:                     overlapNone,
+		`provider == "anthropic"`:                    overlapNone,
+		`request_type == "embedding"`:                overlapNone,
+		`request_type == "chat_completion_stream"`:   overlapMaybe,
+		`request_type.startsWith("chat_completion")`: overlapYes,
+		`headers["x-tenant"] == "acme"`:              overlapMaybe,
+		`budget_used > 80.0 && model == "gpt-4o"`:    overlapMaybe,
+		`budget_used > 80.0 && model == "other"`:     overlapNone,
+		`this is not cel`:                            overlapMaybe,
 	}
 	for expr, want := range cases {
 		assert.Equal(t, want, celOverlap(expr, gpt4o), expr)
@@ -475,7 +476,7 @@ func TestShadowRolloutsAndExport(t *testing.T) {
 	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode())
 	assert.Contains(t, string(ctx.Response.Header.Peek("Content-Disposition")), "shadow-export-")
 	body = decode(t, ctx)
-	assert.Len(t, body["records"], 80, "every record, past the 500-per-page API limit if needed")
+	assert.Len(t, body["records"], 80, "every record, not one page")
 	assert.NotNil(t, body["summary"])
 	assert.NotNil(t, body["rollouts"])
 

@@ -22,6 +22,7 @@ func liveResponse(requested, served string, latency int64) *schemas.BifrostRespo
 func liveError(requested, served string) *schemas.BifrostError {
 	status := 503
 	return &schemas.BifrostError{StatusCode: &status, Error: &schemas.ErrorField{Message: "overloaded"}, ExtraFields: schemas.BifrostErrorExtraFields{
+		RequestType: schemas.ChatCompletionRequest,
 		RoutingInfo: schemas.RoutingInfo{Provider: "openai", Model: served, RequestedProvider: "openai", RequestedModel: requested},
 	}}
 }
@@ -57,17 +58,32 @@ func promote(t *testing.T, p *Plugin, weight float64) RolloutEvent {
 	return ev
 }
 
+// rollbackRecorder is a RollbackFunc that follows the gateway's contract:
+// check current, "edit the rule", then call done.
 type rollbackRecorder struct {
-	mu    sync.Mutex
-	calls []string
-	err   error
+	mu     sync.Mutex
+	calls  []string
+	err    error
+	before func() // runs before the current check, as a concurrent operator action would
 }
 
-func (r *rollbackRecorder) hook(_ context.Context, experiment, candidate, reason string) error {
+func (r *rollbackRecorder) hook(_ context.Context, experiment, candidate, reason string, current func() bool, done func() error) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.before != nil {
+		r.before()
+	}
+	if current != nil && !current() {
+		return ErrCanaryChanged
+	}
 	r.calls = append(r.calls, experiment+"|"+candidate+"|"+reason)
-	return r.err
+	if r.err != nil {
+		return r.err
+	}
+	if done != nil {
+		return done()
+	}
+	return nil
 }
 
 func guardConfig() *Config {
@@ -136,6 +152,59 @@ func TestCanaryGuardIgnoresASingleUnluckyFailure(t *testing.T) {
 	assert.Equal(t, CanaryHealthy, h.Status, h.Reason)
 	assert.Zero(t, p.checkCanaries())
 	assert.Empty(t, rec.calls)
+}
+
+// An operator who ramps or re-promotes a canary between the guard's judgement
+// and its rollback wins: the guard leaves the changed canary alone.
+func TestCanaryGuardSkipsACanaryChangedMeanwhile(t *testing.T) {
+	p := newTestPlugin(t, guardConfig())
+	promote(t, p, 0.1)
+	rec := &rollbackRecorder{before: func() { promote(t, p, 0.2) }}
+	p.SetRollbackHook(rec.hook)
+	serveLive(t, p, candidateModel, 20, 15, 300)
+	assert.Zero(t, p.checkCanaries())
+	assert.Empty(t, rec.calls, "the rule was not touched")
+	r := p.Rollouts()
+	require.Len(t, r.Canaries, 1, "still watched")
+	assert.Equal(t, 0.2, r.Canaries[0].Weight)
+	for _, e := range r.Events {
+		assert.NotEqual(t, RolloutAutoRollback, e.Action)
+	}
+
+	rec.before = nil // next pass: judged again, rolled back
+	assert.Equal(t, 1, p.checkCanaries())
+	assert.Empty(t, p.Rollouts().Canaries)
+}
+
+// Only chat traffic counts: a failed embedding call for the source model's name
+// is not a canary error.
+func TestCanaryIgnoresNonChatFailures(t *testing.T) {
+	p := newTestPlugin(t, guardConfig())
+	promote(t, p, 0.5)
+	bErr := liveError(primaryModel, candidateModel)
+	bErr.ExtraFields.RequestType = schemas.EmbeddingRequest
+	for i := 0; i < 20; i++ {
+		_, _, err := p.PostLLMHook(requestCtx(""), nil, bErr)
+		require.NoError(t, err)
+	}
+	h := p.Rollouts().Canaries[0].Health
+	assert.Zero(t, h.Candidate.Requests)
+	assert.Equal(t, CanaryWatching, h.Status)
+}
+
+func TestCanaryMaxErrorRateZeroIsKept(t *testing.T) {
+	cfg := guardConfig()
+	zero := 0.0
+	cfg.Canary.MaxErrorRate = &zero
+	p := newTestPlugin(t, cfg)
+	assert.Equal(t, 0.0, *p.config.Canary.MaxErrorRate)
+	promote(t, p, 0.5)
+	serveLive(t, p, candidateModel, 40, 1, 300)
+	assert.Equal(t, CanaryUnhealthy, p.Rollouts().Canaries[0].Health.Status, "zero tolerance: any confident error rate is too much")
+
+	unset := guardConfig()
+	require.NoError(t, unset.normalize())
+	assert.Equal(t, DefaultMaxErrorRate, *unset.Canary.MaxErrorRate)
 }
 
 func TestCanaryGuardLatencyLimit(t *testing.T) {

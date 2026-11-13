@@ -93,6 +93,15 @@ func (p *Plugin) Records(f RecordFilter) ([]*Record, int) {
 	return p.store.list(f)
 }
 
+// AllRecords returns every stored comparison matching the filter (limit and
+// offset ignored), newest first, from one snapshot of the store, so an export
+// neither repeats nor skips records while new ones arrive.
+func (p *Plugin) AllRecords(f RecordFilter) []*Record {
+	f.Limit, f.Offset = 0, 0
+	records, _ := p.store.list(f)
+	return records
+}
+
 // Record returns one comparison by ID, or nil.
 func (p *Plugin) Record(id string) *Record { return p.store.get(id) }
 

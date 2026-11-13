@@ -24,6 +24,7 @@ import (
 type ShadowReader interface {
 	Summary() shadow.Summary
 	Records(f shadow.RecordFilter) ([]*shadow.Record, int)
+	AllRecords(f shadow.RecordFilter) []*shadow.Record
 	Record(id string) *shadow.Record
 	Reset() error
 	BuildCanaryRule(experiment, candidate string, weight float64, priority ...int) (*shadow.CanaryRule, error)
@@ -404,7 +405,7 @@ func (h *ShadowHandler) export(ctx *fasthttp.RequestCtx) {
 		SendJSON(ctx, map[string]any{
 			"exported_at": time.Now().UTC(),
 			"summary":     p.Summary(),
-			"records":     allShadowRecords(p, filter),
+			"records":     p.AllRecords(filter),
 			"rollouts":    p.Rollouts(),
 		})
 	case "csv":
@@ -415,7 +416,7 @@ func (h *ShadowHandler) export(ctx *fasthttp.RequestCtx) {
 			writeScorecardsCSV(w, p.Summary().Pairs)
 			kind = "scorecards"
 		case "records":
-			writeRecordsCSV(w, allShadowRecords(p, filter))
+			writeRecordsCSV(w, p.AllRecords(filter))
 		default:
 			SendError(ctx, fasthttp.StatusBadRequest, "kind must be scorecards or records")
 			return
@@ -430,20 +431,6 @@ func (h *ShadowHandler) export(ctx *fasthttp.RequestCtx) {
 		ctx.SetBody(buf.Bytes())
 	default:
 		SendError(ctx, fasthttp.StatusBadRequest, "format must be json or csv")
-	}
-}
-
-// allShadowRecords pages through every stored record matching filter, newest first.
-func allShadowRecords(p ShadowReader, filter shadow.RecordFilter) []*shadow.Record {
-	out := []*shadow.Record{}
-	filter.Limit = shadow.MaxRecordsLimit
-	for {
-		page, total := p.Records(filter)
-		out = append(out, page...)
-		filter.Offset += len(page)
-		if len(page) == 0 || filter.Offset >= total {
-			return out
-		}
 	}
 }
 

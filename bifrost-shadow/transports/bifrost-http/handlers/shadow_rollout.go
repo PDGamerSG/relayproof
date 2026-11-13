@@ -69,11 +69,14 @@ func (c *configStoreRoutingRules) UpdateRoutingRule(ctx context.Context, rule *c
 	return c.reloader.ReloadRoutingRule(ctx, rule.ID)
 }
 
+// DeleteRoutingRule takes the rule out of the routing engine before the store:
+// a rollback has to stop traffic first. If the store delete then fails, the
+// rule is still listed, so a retried rollback finds it and deletes it again.
 func (c *configStoreRoutingRules) DeleteRoutingRule(ctx context.Context, id string) error {
-	if err := c.store.DeleteRoutingRule(ctx, id); err != nil {
+	if err := c.reloader.RemoveRoutingRule(ctx, id); err != nil {
 		return err
 	}
-	return c.reloader.RemoveRoutingRule(ctx, id)
+	return c.store.DeleteRoutingRule(ctx, id)
 }
 
 // shadowRolloutMu serializes promotions and rollbacks, which read, merge and
@@ -151,7 +154,9 @@ func celOverlap(expr string, source shadow.ModelRef) ruleOverlap {
 	for _, v := range requestScopedCELVars {
 		patterns = append(patterns, cel.AttributePattern(v))
 	}
-	result := overlapNone
+	// Every chat request means both request types: a rule that matches only
+	// streamed requests may catch some of the source's traffic, not all of it.
+	matches := 0
 	for _, rt := range []string{"chat_completion", "chat_completion_stream"} {
 		act, err := cel.PartialVars(map[string]any{
 			"provider":     string(source.Provider),
@@ -164,12 +169,18 @@ func celOverlap(expr string, source shadow.ModelRef) ruleOverlap {
 		out, _, err := prg.Eval(act)
 		switch {
 		case err != nil || types.IsUnknown(out):
-			result = max(result, overlapMaybe)
+			return overlapMaybe
 		case out.Value() == true:
-			result = overlapYes
+			matches++
 		}
 	}
-	return result
+	switch matches {
+	case 2:
+		return overlapYes
+	case 1:
+		return overlapMaybe
+	}
+	return overlapNone
 }
 
 // isCanaryRuleFor reports whether rule is a shadow canary for source: global,
@@ -505,19 +516,28 @@ func rollbackShadowCanary(ctx context.Context, p ShadowReader, store ShadowRouti
 }
 
 // NewShadowRollbackHook returns the function the plugin's canary guard calls to
-// roll back an unhealthy canary. The guard records the rollout event itself.
+// roll back an unhealthy canary. It holds the promotion lock throughout: the
+// guard's current check, the rule edit and the guard's done callback (which
+// records the auto_rollback event) cannot interleave with a promotion.
 func NewShadowRollbackHook(p ShadowReader, store ShadowRoutingRules) shadow.RollbackFunc {
 	if p == nil || store == nil {
 		return nil
 	}
-	return func(ctx context.Context, experiment, candidate, _ string) error {
+	return func(ctx context.Context, experiment, candidate, _ string, current func() bool, done func() error) error {
 		shadowRolloutMu.Lock()
 		defer shadowRolloutMu.Unlock()
-		_, _, err := rollbackShadowCanary(ctx, p, store, experiment, candidate)
-		if errors.Is(err, errShadowNoCanary) {
-			// The rule is already gone (removed by hand): nothing left to undo.
-			return nil
+		if current != nil && !current() {
+			return shadow.ErrCanaryChanged
 		}
-		return err
+		_, _, err := rollbackShadowCanary(ctx, p, store, experiment, candidate)
+		if err != nil && !errors.Is(err, errShadowNoCanary) {
+			return err
+		}
+		// errShadowNoCanary: the rule is already gone (removed by hand), so only
+		// the watch is left to close.
+		if done != nil {
+			return done()
+		}
+		return nil
 	}
 }

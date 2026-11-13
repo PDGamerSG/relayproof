@@ -189,7 +189,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/RollbackResult" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400":
+          description: Invalid body, or a wildcard source with no observed traffic yet (no rule can be named)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
         "404":
           description: Plugin not enabled, unknown pair, or no canary routes this candidate
           content:
@@ -244,7 +248,9 @@ paths:
       description: |
         `format=json` (default): summary, every stored record matching the filter, and rollouts.
         `format=csv`: one table, `kind=scorecards` (default) or `kind=records`. The record filters
-        apply; paging does not. Sent with `Content-Disposition: attachment`.
+        apply; paging does not. Sent with `Content-Disposition: attachment`. In CSV, free-text cells
+        (prompts, reasons, errors) that start with `=`, `+`, `-`, `@`, a tab or a carriage return are
+        prefixed with `'` so a spreadsheet does not run them as formulas.
       parameters:
         - name: format
           in: query

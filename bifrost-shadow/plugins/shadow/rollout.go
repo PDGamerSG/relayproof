@@ -48,11 +48,11 @@ type CanaryConfig struct {
 	// MinRequests is the number of live candidate requests needed before health is judged.
 	MinRequests int `json:"min_requests,omitempty"`
 	// MaxErrorRate is the live error rate the candidate may reach (default:
-	// thresholds.max_error_rate). The guard fires when the 95% Wilson lower bound
-	// of the candidate's live error rate passes it, so a single failure among a
-	// few requests does not roll a canary back. The limit is never below the
-	// source model's own error rate on the same traffic.
-	MaxErrorRate float64 `json:"max_error_rate,omitempty"`
+	// thresholds.max_error_rate; an explicit 0 is kept). The guard fires when the
+	// 95% Wilson lower bound of the candidate's live error rate passes it, so a
+	// single failure among a few requests does not roll a canary back. The limit
+	// is never below the source model's own error rate on the same traffic.
+	MaxErrorRate *float64 `json:"max_error_rate,omitempty"`
 	// MaxLatencyRatio limits candidate p95 latency to this multiple of the source's p95 (0 = off).
 	MaxLatencyRatio float64 `json:"max_latency_ratio,omitempty"`
 	// RollbackOnNotReady also rolls back when continued shadow evaluation turns the
@@ -61,14 +61,15 @@ type CanaryConfig struct {
 }
 
 func (c *CanaryConfig) normalize(t *Thresholds) error {
-	if c.MinRequests < 0 || c.MaxErrorRate < 0 || c.MaxErrorRate > 1 || c.MaxLatencyRatio < 0 {
+	if c.MinRequests < 0 || c.MaxLatencyRatio < 0 || (c.MaxErrorRate != nil && (*c.MaxErrorRate < 0 || *c.MaxErrorRate > 1)) {
 		return errors.New("shadow: canary limits must be non-negative and max_error_rate at most 1")
 	}
 	if c.MinRequests == 0 {
 		c.MinRequests = DefaultCanaryMinRequests
 	}
-	if c.MaxErrorRate == 0 {
-		c.MaxErrorRate = t.MaxErrorRate
+	if c.MaxErrorRate == nil {
+		rate := t.MaxErrorRate
+		c.MaxErrorRate = &rate
 	}
 	if c.RollbackOnNotReady == nil {
 		on := true
@@ -146,8 +147,17 @@ type Rollouts struct {
 }
 
 // RollbackFunc removes a candidate from its canary routing rule. The gateway
-// wires it (it owns the routing rules); the canary guard calls it.
-type RollbackFunc func(ctx context.Context, experiment, candidate, reason string) error
+// wires it (it owns the routing rules); the canary guard calls it. The gateway
+// serializes it with promotions: under that one lock it calls current first
+// and, if current reports false (the canary changed since the guard judged it,
+// for example an operator ramped or re-promoted it), returns ErrCanaryChanged
+// without touching the rule; otherwise it edits the rule and then calls done,
+// so the rollout log changes in the same critical section as the rule.
+type RollbackFunc func(ctx context.Context, experiment, candidate, reason string, current func() bool, done func() error) error
+
+// ErrCanaryChanged is returned by a RollbackFunc that found the canary changed
+// since it was judged; the guard judges it again on its next pass.
+var ErrCanaryChanged = errors.New("shadow: canary changed since it was judged")
 
 // targetStats accumulates live traffic for one canary target.
 type targetStats struct {
@@ -480,7 +490,8 @@ func (p *Plugin) canaryLimits() CanaryConfig {
 		return *p.config.Canary
 	}
 	on := true
-	return CanaryConfig{MinRequests: DefaultCanaryMinRequests, MaxErrorRate: p.config.Thresholds.MaxErrorRate, RollbackOnNotReady: &on}
+	rate := p.config.Thresholds.MaxErrorRate
+	return CanaryConfig{MinRequests: DefaultCanaryMinRequests, MaxErrorRate: &rate, RollbackOnNotReady: &on}
 }
 
 // judgeCanary decides a canary's health from its live statistics, and from the
@@ -493,7 +504,7 @@ func (p *Plugin) judgeCanary(h *CanaryHealth, override bool) (string, string) {
 	if h.Candidate.Requests < int64(limits.MinRequests) {
 		return CanaryWatching, fmt.Sprintf("%d of %d live candidate requests observed", h.Candidate.Requests, limits.MinRequests)
 	}
-	maxErr := limits.MaxErrorRate
+	maxErr := *limits.MaxErrorRate
 	if h.Source.Requests >= int64(limits.MinRequests) && h.Source.ErrorRate > maxErr {
 		// Never blame the candidate for an outage the source shares.
 		maxErr = h.Source.ErrorRate
@@ -522,6 +533,9 @@ func (p *Plugin) observeCanaries(ctx *schemas.BifrostContext, resp *schemas.Bifr
 	failed := bifrostErr != nil
 	switch {
 	case failed:
+		if rt := bifrostErr.ExtraFields.RequestType; rt != schemas.ChatCompletionRequest && rt != schemas.ChatCompletionStreamRequest {
+			return // a failed embedding or Responses call is not canary chat traffic
+		}
 		info = bifrostErr.ExtraFields.RoutingInfo
 	case resp != nil && resp.ChatResponse != nil:
 		if resp.ChatResponse.ExtraFields.RequestType == schemas.ChatCompletionStreamRequest && !bifrost.IsFinalChunk(ctx) {
@@ -586,27 +600,41 @@ func (p *Plugin) checkCanaries() int {
 			continue
 		}
 		reason := "canary guard: " + view.Health.Reason
+		health := view.Health
+		current := func() bool {
+			// Same canary (a rollback and re-promotion makes a new one) at the
+			// same weight and override state as when it was judged.
+			if p.rollouts.lookup(view.Experiment, view.Candidate.String()) != c {
+				return false
+			}
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			return c.Weight == view.Weight && c.Override == view.Override
+		}
+		done := func() error {
+			_, err := p.RecordRollout(RolloutEvent{
+				Action:     RolloutAutoRollback,
+				Experiment: view.Experiment,
+				Source:     view.Source,
+				Candidate:  view.Candidate,
+				RuleID:     view.RuleID,
+				RuleName:   view.RuleName,
+				Reason:     reason,
+				Actor:      "canary_guard",
+				Health:     &health,
+			})
+			return err
+		}
 		ctx, cancel := context.WithTimeout(p.ctx, 30*time.Second)
-		err := (*hookPtr)(ctx, view.Experiment, view.Candidate.String(), reason)
+		err := (*hookPtr)(ctx, view.Experiment, view.Candidate.String(), reason, current, done)
 		cancel()
 		if err != nil {
 			c.rollingBack.Store(false)
+			if errors.Is(err, ErrCanaryChanged) {
+				continue
+			}
 			p.logger.Warn("shadow: automatic rollback of %s failed: %v", view.Candidate, err)
 			continue
-		}
-		health := view.Health
-		if _, err := p.RecordRollout(RolloutEvent{
-			Action:     RolloutAutoRollback,
-			Experiment: view.Experiment,
-			Source:     view.Source,
-			Candidate:  view.Candidate,
-			RuleID:     view.RuleID,
-			RuleName:   view.RuleName,
-			Reason:     reason,
-			Actor:      "canary_guard",
-			Health:     &health,
-		}); err != nil {
-			p.logger.Warn("shadow: %v", err)
 		}
 		p.logger.Info("shadow: rolled back canary %s -> %s: %s", view.Source, view.Candidate, view.Health.Reason)
 		rolled++

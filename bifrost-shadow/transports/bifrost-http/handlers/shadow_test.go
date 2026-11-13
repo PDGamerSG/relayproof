@@ -32,6 +32,11 @@ func (f *fakeShadow) Records(filter shadow.RecordFilter) ([]*shadow.Record, int)
 	return f.records, len(f.records)
 }
 
+func (f *fakeShadow) AllRecords(filter shadow.RecordFilter) []*shadow.Record {
+	f.lastFilter = filter
+	return f.records
+}
+
 func (f *fakeShadow) Record(id string) *shadow.Record {
 	for _, r := range f.records {
 		if r.ID == id {
