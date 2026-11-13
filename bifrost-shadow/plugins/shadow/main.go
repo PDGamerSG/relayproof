@@ -182,9 +182,9 @@ type Plugin struct {
 	candidateErrs atomic.Int64
 	inFlight      atomic.Int64
 
-	spendMu  sync.Mutex
-	spendDay string
-	spentUSD float64
+	// ledger holds today's spend; it is shared with later instances of the plugin
+	// (see spendLedger), so reloading the plugin never lifts the daily budget.
+	ledger *spendLedger
 
 	trafficSlots []trafficSlot // one per config.Experiments entry, same order
 	// trafficMu serializes the rare rollover of a traffic slot to a new window.
@@ -205,6 +205,16 @@ func Init(ctx context.Context, config *Config, logger schemas.Logger) (*Plugin, 
 	if err != nil {
 		return nil, err
 	}
+	ledger, created, err := ledgerFor(config.PersistPath)
+	if err != nil {
+		_ = st.close()
+		return nil, err
+	}
+	if created && !ledger.loaded && config.PersistPath != "" {
+		// Records persisted before the ledger existed still count against today.
+		day := time.Now().UTC().Format(time.DateOnly)
+		ledger.seed(day, todaysRecordSpend(st.snapshot(), day))
+	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -216,6 +226,7 @@ func Init(ctx context.Context, config *Config, logger schemas.Logger) (*Plugin, 
 		config:       config,
 		logger:       logger,
 		store:        st,
+		ledger:       ledger,
 		queue:        make(chan *job, config.QueueSize),
 		ctx:          workerCtx,
 		cancel:       cancel,
@@ -718,41 +729,25 @@ func (p *Plugin) trafficRate(experiment string) float64 {
 
 // --- budget ---
 
-func (p *Plugin) today() string { return p.now().UTC().Format("2006-01-02") }
+func (p *Plugin) today() string { return p.now().UTC().Format(time.DateOnly) }
 
-// budgetExhausted reports whether today's shadow spend reached the daily budget.
+// budgetExhausted reports whether today's spent plus in-flight shadow spend
+// reached the daily budget.
 func (p *Plugin) budgetExhausted() bool {
-	if p.config.DailyBudgetUSD <= 0 {
-		return false
-	}
-	p.spendMu.Lock()
-	defer p.spendMu.Unlock()
-	if p.spendDay != p.today() {
-		return false
-	}
-	return p.spentUSD >= p.config.DailyBudgetUSD
+	return p.ledger.exhausted(p.today(), p.config.DailyBudgetUSD)
 }
 
+// addSpend records what a finished job cost.
 func (p *Plugin) addSpend(usd float64) {
-	if usd <= 0 {
-		return
+	if err := p.ledger.add(p.today(), usd); err != nil {
+		p.logger.Warn("shadow: %v", err)
 	}
-	p.spendMu.Lock()
-	defer p.spendMu.Unlock()
-	if day := p.today(); p.spendDay != day {
-		p.spendDay = day
-		p.spentUSD = 0
-	}
-	p.spentUSD += usd
 }
 
+// spendToday returns today's settled shadow spend.
 func (p *Plugin) spendToday() float64 {
-	p.spendMu.Lock()
-	defer p.spendMu.Unlock()
-	if p.spendDay != p.today() {
-		return 0
-	}
-	return p.spentUSD
+	spent, _ := p.ledger.totals(p.today())
+	return spent
 }
 
 // cost prices usage, preferring configured overrides over the catalog.

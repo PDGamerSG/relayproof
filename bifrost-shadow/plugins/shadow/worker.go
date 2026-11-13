@@ -92,10 +92,14 @@ func (p *Plugin) runJob(j *job) {
 		rec.PrimaryAnswer = &primary
 	}
 
-	if p.budgetExhausted() {
+	// Reserve the expected cost of this job before any call is made, so jobs
+	// running at the same time cannot all slip under the daily budget at once.
+	reservation, ok := p.ledger.reserve(p.today(), p.config.DailyBudgetUSD)
+	if !ok {
 		p.budgetSkipped.Add(1)
 		return
 	}
+	defer p.ledger.release(reservation)
 
 	ex := p.execs.Load()
 	if ex == nil || ex.chat == nil {

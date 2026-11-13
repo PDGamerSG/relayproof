@@ -170,7 +170,7 @@ Every provider named in `experiments`, `judge` and `embedding` must be configure
 | `max_concurrency` | `4` | Shadow workers. |
 | `queue_size` | `256` | Pending jobs. A full queue drops new jobs; see `counters.dropped`. |
 | `timeout_seconds` | `60` | Timeout for each candidate, judge and embedding call. |
-| `daily_budget_usd` | `0` (unlimited) | Cap on shadow, judge and embedding spend per UTC day. When it is reached, sampling stops until the next day. |
+| `daily_budget_usd` | `0` (unlimited) | Cap on shadow, judge and embedding spend per UTC day. Each job reserves its expected cost before it starts, so running jobs count against the cap. When no further job fits, sampling stops until the next day. The day's total survives plugin reloads and settings updates, and with `persist_path` also restarts (it is kept in `<persist_path>.spend.json`). |
 | `virtual_keys` | all | Only mirror requests made with these virtual keys (ID, name or value). |
 | `max_records` | `5000` | Comparisons kept in memory. |
 | `store_payloads` | `true` | Keep prompts and answers for the disagreement viewer. Set `false` to keep only scores. |
@@ -233,7 +233,7 @@ All routes answer `404` with a message when the plugin is not enabled.
 
 ## Cost, privacy and overhead
 
-- **Spend.** Each sampled request costs one candidate call per candidate, plus a judge call and an embedding call when they are configured. Bound it with `sample_rate`, `judge.sample_rate` and `daily_budget_usd`. The summary reports `spend_today_usd`, and every record carries its own costs.
+- **Spend.** Each sampled request costs one candidate call per candidate, plus a judge call and an embedding call when they are configured. Bound it with `sample_rate`, `judge.sample_rate` and `daily_budget_usd`. The summary reports `spend_today_usd` and `spend_reserved_usd` (running jobs), and every record carries its own costs.
 - **Internal calls.** Candidate, judge and embedding calls run as internal requests: they skip plugins, governance and logging, and are not billed to virtual keys. MCP is switched off for them, so no MCP tool or agent loop runs on a shadow call. Their cost is tracked by the shadow plugin only, including embedding calls whose vectors could not be compared.
 - **Payloads.** With `store_payloads: true` the plugin keeps the last user turn and both answers (truncated to `max_payload_chars`) in memory and, if set, in `persist_path`. Use `store_payloads: false`, `virtual_keys`, or `x-bf-shadow: off` to keep sensitive traffic out.
 - **Memory.** Bounded by `max_records` records (a few KB each with payloads) and `queue_size` pending snapshots. Captures whose response never completes are swept after 10 minutes.

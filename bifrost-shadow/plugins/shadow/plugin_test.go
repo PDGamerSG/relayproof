@@ -47,6 +47,8 @@ func baseConfig() *Config {
 
 func newTestPlugin(t *testing.T, cfg *Config) *Plugin {
 	t.Helper()
+	// Ledgers are process-wide so they survive plugin reloads; tests start clean.
+	resetLedgers()
 	p, err := Init(context.Background(), cfg, testLogger)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = p.Cleanup() })
@@ -594,14 +596,14 @@ func TestShadowDailyBudgetStopsSampling(t *testing.T) {
 
 	runPrimary(t, p, "b-1", "hi", "x")
 	waitForRecords(t, p, 1)
-	runPrimary(t, p, "b-2", "hi", "x")
-	waitForRecords(t, p, 2)
+	// $0.00025 spent of $0.0003: another job of the same cost would pass the cap.
 	assert.True(t, p.budgetExhausted())
-	runPrimary(t, p, "b-3", "hi", "x")
+	runPrimary(t, p, "b-2", "hi", "x")
 	time.Sleep(50 * time.Millisecond)
-	assert.Equal(t, 2, p.store.len(), "no shadow calls once the budget is spent")
+	assert.Equal(t, 1, p.store.len(), "no shadow calls once the budget has no room for one")
 	assert.Equal(t, int64(1), p.budgetSkipped.Load())
 	assert.True(t, p.Summary().BudgetExhausted)
+	assert.InDelta(t, 0.00025, p.Summary().SpendTodayUSD, 1e-12, "the cap is never passed")
 
 	// The budget resets on a new UTC day.
 	p.now = func() time.Time { return time.Now().Add(24 * time.Hour) }

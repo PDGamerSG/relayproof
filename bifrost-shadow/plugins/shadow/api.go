@@ -10,31 +10,36 @@ import (
 
 // Summary is the payload behind GET /api/shadow/summary.
 type Summary struct {
-	StartedAt       time.Time     `json:"started_at"`
-	SampleRate      float64       `json:"sample_rate"`
-	JudgeModel      string        `json:"judge_model,omitempty"`
-	EmbeddingModel  string        `json:"embedding_model,omitempty"`
-	DailyBudgetUSD  float64       `json:"daily_budget_usd"`
-	SpendTodayUSD   float64       `json:"spend_today_usd"`
-	BudgetExhausted bool          `json:"budget_exhausted"`
-	Counters        Counters      `json:"counters"`
-	Thresholds      Thresholds    `json:"thresholds"`
-	Experiments     []Experiment  `json:"experiments"`
-	Pairs           []PairSummary `json:"pairs"`
+	StartedAt      time.Time `json:"started_at"`
+	SampleRate     float64   `json:"sample_rate"`
+	JudgeModel     string    `json:"judge_model,omitempty"`
+	EmbeddingModel string    `json:"embedding_model,omitempty"`
+	DailyBudgetUSD float64   `json:"daily_budget_usd"`
+	SpendTodayUSD  float64   `json:"spend_today_usd"`
+	// SpendReservedUSD is the expected cost of shadow jobs still running; it
+	// counts against the budget until they finish.
+	SpendReservedUSD float64       `json:"spend_reserved_usd"`
+	BudgetExhausted  bool          `json:"budget_exhausted"`
+	Counters         Counters      `json:"counters"`
+	Thresholds       Thresholds    `json:"thresholds"`
+	Experiments      []Experiment  `json:"experiments"`
+	Pairs            []PairSummary `json:"pairs"`
 }
 
 // Summary returns counters and per-candidate scorecards.
 func (p *Plugin) Summary() Summary {
+	spent, reserved := p.ledger.totals(p.today())
 	s := Summary{
-		StartedAt:       time.Unix(0, p.startedAt.Load()),
-		SampleRate:      p.config.SampleRate,
-		DailyBudgetUSD:  p.config.DailyBudgetUSD,
-		SpendTodayUSD:   p.spendToday(),
-		BudgetExhausted: p.budgetExhausted(),
-		Counters:        p.counters(),
-		Thresholds:      p.config.Thresholds,
-		Experiments:     p.config.Experiments,
-		Pairs:           summarize(p.store.snapshot(), p.config, p.trafficRate),
+		StartedAt:        time.Unix(0, p.startedAt.Load()),
+		SampleRate:       p.config.SampleRate,
+		DailyBudgetUSD:   p.config.DailyBudgetUSD,
+		SpendTodayUSD:    spent,
+		SpendReservedUSD: reserved,
+		BudgetExhausted:  p.budgetExhausted(),
+		Counters:         p.counters(),
+		Thresholds:       p.config.Thresholds,
+		Experiments:      p.config.Experiments,
+		Pairs:            summarize(p.store.snapshot(), p.config, p.trafficRate),
 	}
 	if p.config.Judge != nil {
 		s.JudgeModel = string(p.config.Judge.Provider) + "/" + p.config.Judge.Model
@@ -81,8 +86,8 @@ func (p *Plugin) Records(f RecordFilter) ([]*Record, int) {
 func (p *Plugin) Record(id string) *Record { return p.store.get(id) }
 
 // Reset clears stored comparisons, counters and traffic observations, and
-// restarts the collection window. Today's spend is kept so that clearing
-// results never lifts the daily budget.
+// restarts the collection window. Today's spend lives in the spend ledger and
+// is kept, so clearing results never lifts the daily budget.
 func (p *Plugin) Reset() error {
 	p.startedAt.Store(p.now().UnixNano())
 	p.eligible.Store(0)
