@@ -72,8 +72,12 @@ export function ConnectPanel({ conn, onConnect }: { conn: Connection; onConnect:
     } else if (state === "plugin_disabled") {
       setError("Signed in, but the shadow plugin is not enabled on that gateway.");
     } else {
+      const local = /^http:\/\/(localhost|127\.|\[::1\])/i.test(origin) && !/^(localhost|127\.|\[::1\])/i.test(window.location.hostname);
       setError(
-        `Could not reach ${origin}. Check that it is running, that the address is right, and that its config lists ${window.location.origin} in client.allowed_origins.`,
+        `Could not reach ${origin}. Check that it is running, that the address is right, and that its config lists ${window.location.origin} in client.allowed_origins.` +
+          (local
+            ? " For a gateway on this machine, the browser may also block a public page from calling localhost: allow local network access when it asks, or run this console locally (pnpm dev)."
+            : ""),
       );
     }
   };
