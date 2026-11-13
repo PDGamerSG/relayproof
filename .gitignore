@@ -24,3 +24,6 @@ __pycache__/
 relayproof/data/
 relayproof/artifacts/
 relayproof/bin/
+
+# Local Bifrost build tree created by bifrost-shadow/scripts/setup.sh
+/bifrost/
