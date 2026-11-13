@@ -1,0 +1,32 @@
+# Render Blueprint for the hosted RelayProof demo backend: one Docker web
+# service running Bifrost with the shadow plugin, the mock upstream and the
+# public front door (bifrost-shadow/deploy). The site on Vercel proxies
+# /api/shadow/* and /api/demo/* to it.
+services:
+  - type: web
+    name: relayproof-api
+    runtime: docker
+    plan: standard
+    region: virginia
+    dockerfilePath: ./bifrost-shadow/deploy/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - bifrost-shadow/**
+        - render.yaml
+        - .dockerignore
+      ignoredPaths:
+        - bifrost-shadow/site/**
+    envVars:
+      # The gateway's setup token. Only the front door inside the container
+      # uses it; it is never sent to browsers.
+      - key: BIFROST_SETUP_TOKEN
+        generateValue: true
+      - key: TRAFFIC_EVERY
+        value: 1s
+      - key: CANARY_TTL
+        value: 30m
+      - key: INCIDENT_TTL
+        value: 3m

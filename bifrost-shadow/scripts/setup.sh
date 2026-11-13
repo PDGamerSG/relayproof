@@ -6,6 +6,7 @@
 #
 # target-dir   where to clone Bifrost (default: ../bifrost next to bifrost-shadow)
 # SKIP_UI=1    skip the dashboard build and embed a placeholder page instead
+# SKIP_TESTS=1 skip the plugin and handler tests (container builds; CI runs them)
 # BIFROST_REF  upstream commit to build on (default: the pinned one below)
 #
 # Needs git, Go 1.27+, a C compiler (the SQLite config store uses cgo), and
@@ -73,9 +74,13 @@ else
   (cd ui && npm ci --no-audit --no-fund && npm run build)
 fi
 
-step "Testing the shadow plugin and its HTTP handler"
-(cd plugins/shadow && go test ./...)
-(cd transports && go test -run 'Shadow|CELOverlap' ./bifrost-http/handlers/ ./bifrost-http/lib/)
+if [ "${SKIP_TESTS:-0}" = "1" ]; then
+  step "Skipping the tests (SKIP_TESTS=1)"
+else
+  step "Testing the shadow plugin and its HTTP handler"
+  (cd plugins/shadow && go test ./...)
+  (cd transports && go test -run 'Shadow|CELOverlap' ./bifrost-http/handlers/ ./bifrost-http/lib/)
+fi
 
 step "Building the gateway"
 mkdir -p tmp

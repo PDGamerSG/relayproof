@@ -1,0 +1,60 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+  "client": {
+    "drop_excess_requests": false,
+    "enable_logging": false,
+    "enforce_auth_on_inference": false
+  },
+  "providers": {
+    "openai": {
+      "keys": [
+        {
+          "name": "mock-upstream",
+          "value": "sk-mock-upstream-placeholder",
+          "weight": 1,
+          "models": ["*"]
+        }
+      ],
+      "network_config": {
+        "base_url": "http://127.0.0.1:18080",
+        "default_request_timeout_in_seconds": 60
+      }
+    }
+  },
+  "plugins": [
+    {
+      "enabled": true,
+      "name": "shadow",
+      "config": {
+        "sample_rate": 0.5,
+        "experiments": [
+          {
+            "name": "gpt-4o cost-down",
+            "source": { "provider": "openai", "model": "gpt-4o" },
+            "candidates": [
+              { "provider": "openai", "model": "gpt-4o-mini" },
+              { "provider": "openai", "model": "llama-3.1-8b" }
+            ]
+          }
+        ],
+        "judge": { "provider": "openai", "model": "judge-1" },
+        "embedding": { "provider": "openai", "model": "text-embedding-3-small" },
+        "max_concurrency": 8,
+        "queue_size": 512,
+        "timeout_seconds": 30,
+        "daily_budget_usd": 50,
+        "max_records": 5000,
+        "persist_path": "shadow-records.jsonl",
+        "pricing": {
+          "openai/gpt-4o": { "input_per_million": 2.5, "output_per_million": 10 },
+          "openai/gpt-4o-mini": { "input_per_million": 0.15, "output_per_million": 0.6 },
+          "openai/llama-3.1-8b": { "input_per_million": 0.05, "output_per_million": 0.08 },
+          "openai/judge-1": { "input_per_million": 0.15, "output_per_million": 0.6 },
+          "openai/text-embedding-3-small": { "input_per_million": 0.02, "output_per_million": 0 }
+        },
+        "thresholds": { "min_samples": 30 },
+        "canary": { "auto_rollback": true, "min_requests": 10 }
+      }
+    }
+  ]
+}

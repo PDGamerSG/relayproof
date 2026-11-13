@@ -1,0 +1,5 @@
+# Only bifrost-shadow/ (minus the site) is needed to build the demo image.
+*
+!bifrost-shadow/
+bifrost-shadow/site/
+bifrost-shadow/**/node_modules/
