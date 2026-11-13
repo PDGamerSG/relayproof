@@ -10,8 +10,8 @@ after the last code change of the round.
 
 | Suite | Command | Result |
 |---|---|---|
-| Plugin (89 top-level tests) | `cd plugins/shadow && go test -race -count=2 -cover ./...` | pass, 88.7% statement coverage |
-| Gateway handlers (20 tests) | `cd transports && go test -race -count=2 -run 'Shadow\|CELOverlap' ./bifrost-http/handlers/` | pass |
+| Plugin (93 top-level tests) | `cd plugins/shadow && go test -race -count=2 -cover ./...` | pass, 89.0% statement coverage |
+| Gateway handlers (21 tests) | `cd transports && go test -race -count=2 -run 'Shadow\|CELOverlap' ./bifrost-http/handlers/` | pass |
 | Config schema (2 tests) | same command, `./bifrost-http/lib/` | pass (the coverage test now also checks `CanaryConfig`) |
 | Vet | `go vet` on the plugin, `handlers`, `lib`, `server`; demo `GOWORK=off go vet ./... && go test ./...` | clean, pass |
 | TypeScript client | `tsc --noEmit --strict --noUnusedLocals --noUnusedParameters api/client/shadowClient.ts` | clean |
@@ -63,6 +63,16 @@ spread is large (round 2 at 10% was the slowest run), so treat the figures as on
 measurement. A deployment with remote providers spends this background work waiting on the
 network rather than on local CPU.
 
+Known and not fixed: on a plugin reload the gateway starts the new instance before cleaning up
+the old one, so for a moment two record stores hold the same `persist_path`. If the old one
+compacts the file in that window, records it appends afterwards go to the replaced file. This
+predates this round (the stores have always been per instance); the spend ledger and rollout
+book are shared and not affected.
+
+After the review fixes: plugin and gateway suites pass with `-race`, and `run.sh` passed again on
+the rebuilt gateway (rolled back at a live error rate of 19.0%, lower bound 7.7%). CI on GitHub
+(Linux) passed every step, including the full demo.
+
 Benchmarks added this round (`-count=3`, macOS arm64): `PostLLMHookCanaryOtherModel` 14 ns,
 `PostLLMHookCanarySourceModel` 25 ns, both 0 allocations; `PostLLMHookNoCapture` stays 2.2 ns.
 
@@ -76,6 +86,12 @@ Fixed this round:
 | Project review, finding 4 | Quick start pointed at the wrong directory and a relative binary path | README uses paths from the repository root and an absolute `BIFROST_BIN` |
 | First demo run | The canary guard rolled back after 1 failure in 17 candidate requests (5.9% raw against 5%) | The guard uses the 95% Wilson lower bound of the live error rate. `TestCanaryGuardIgnoresASingleUnluckyFailure` |
 | API contract check | A candidate promoted with an override reason (not ready by definition) was rolled back by the verdict rule within one guard tick | Override canaries are guarded on live health only. `TestCanaryGuardRespectsAnOverride` |
+| Independent code review | The guard judged a canary, then rolled it back and recorded the event outside the promotion lock: a ramp or re-promotion in between could be undone on stale evidence or left live but unwatched | Check, rule edit and record run under one lock; a changed canary is skipped (`ErrCanaryChanged`). `TestCanaryGuardSkipsACanaryChangedMeanwhile` |
+| Independent code review | Rollback deleted the stored rule before removing it from the routing engine; if the engine call failed, a retry found no rule and reported success while traffic still flowed | Engine first, then the store |
+| Independent code review | A rule matching only streamed chat requests counted as matching every request and refused promotion | Both request types must match for a refusal; one is a warning. `TestCELOverlap` |
+| Independent code review | Failed embedding or Responses calls for the source model's name counted as canary errors | Only chat request types count. `TestCanaryIgnoresNonChatFailures` |
+| Independent code review | A panic while scoring dropped the already-billed candidate cost from the budget | Cost is recorded right after the call |
+| Independent code review | `canary.max_error_rate: 0` was replaced by the default; export paging could repeat or skip records while new ones arrived | Pointer field keeps 0 (`TestCanaryMaxErrorRateZeroIsKept`); export reads one snapshot (`TestAllRecords`) |
 
 ## Unit and component tests
 
