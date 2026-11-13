@@ -35,11 +35,33 @@ canary guard               rolled back: live error rate 19.2% (95% lower bound 8
 after rollback             gpt-4o-mini served 0 of 100 requests, 0 failed
 ```
 
+The gateway binary from the clean-room build passed the same `run.sh`: gpt-4o-mini ready (lower
+bound 97.7%), llama-3.1-8b refused with `409` (65.6%), 19 of 200 requests on the canary, rolled
+back during the incident at a live error rate of 21.4% (lower bound 10.2%), 0 of 100 afterwards.
+
 Multi-candidate promotion on the real gateway (the review's routing reproduction, now fixed):
 promoting `gpt-4o-mini` at 50% and then `llama-3.1-8b` at 20% (with an override reason) left one
 routing rule, `Shadow canary: openai/gpt-4o -> openai/gpt-4o-mini, openai/llama-3.1-8b`, with
 targets gpt-4o-mini 0.5, gpt-4o 0.3, llama-3.1-8b 0.2. Before, the second rule was created and
 never served a request.
+
+**Gateway-level latency, plugin off and on.** The review asked for a measurement beyond
+microbenchmarks. Same machine, mock upstream at zero latency (so the gateway's own cost shows),
+request logging off, 3,000 requests at 32 concurrent, 25% streamed, after a 300-request warm-up,
+fresh gateway per run, two alternating rounds:
+
+| Configuration | Throughput (round 1 / 2) | Client p50 | Client p95 |
+|---|---|---|---|
+| Plugin off | 6,881 / 6,652 req/s | 4 / 4 ms | 10 / 11 ms |
+| Plugin on, sample rate 10% | 5,986 / 4,446 req/s | 4 / 6 ms | 12 / 17 ms |
+| Plugin on, sample rate 100% (most jobs dropped by the full queue) | 5,836 / 5,063 req/s | 4 / 5 ms | 12 / 14 ms |
+
+This is an upper bound on the cost, not the request-path cost alone: the sampled requests'
+candidate, judge and embedding calls (four extra upstream calls each) ran through the same
+gateway, against the same mock, on the same 10 cores as the load generator. Round-to-round
+spread is large (round 2 at 10% was the slowest run), so treat the figures as one laptop's
+measurement. A deployment with remote providers spends this background work waiting on the
+network rather than on local CPU.
 
 Benchmarks added this round (`-count=3`, macOS arm64): `PostLLMHookCanaryOtherModel` 14 ns,
 `PostLLMHookCanarySourceModel` 25 ns, both 0 allocations; `PostLLMHookNoCapture` stays 2.2 ns.
