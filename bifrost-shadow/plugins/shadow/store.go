@@ -53,13 +53,21 @@ type Record struct {
 
 	// Pass reports whether the candidate answer is an acceptable substitute.
 	Pass bool `json:"pass"`
-	// PassBasis names the signal that decided Pass: judge, semantic, structural or lexical.
+	// PassBasis names the signal that decided Pass (see the Basis* constants).
+	// BasisUnscored means no usable signal: such a record is not evidence either way.
 	PassBasis string `json:"pass_basis,omitempty"`
 }
 
 // pairKey groups records by experiment and candidate.
 func (r *Record) pairKey() string {
 	return r.Experiment + "\x00" + r.Candidate.String()
+}
+
+// scored reports whether the record is evidence about the candidate's quality:
+// the candidate answered and some signal decided Pass. Records written before
+// pass bases existed count as scored.
+func (r *Record) scored() bool {
+	return r.CandidateError == "" && r.PassBasis != BasisUnscored
 }
 
 // RecordFilter selects records for listing.
@@ -473,10 +481,27 @@ type PairSummary struct {
 	Errors    int `json:"errors"`
 	Passes    int `json:"passes"`
 	Judged    int `json:"judged"`
+	// Scored counts completed comparisons that some quality signal decided;
+	// Unscored the rest. Agreement is measured over Scored + Errors only.
+	Scored   int `json:"scored"`
+	Unscored int `json:"unscored"`
+	// JudgeErrors counts judge calls that failed or returned an unusable verdict.
+	JudgeErrors    int     `json:"judge_errors"`
+	JudgeErrorRate float64 `json:"judge_error_rate"`
+	// PassBasisCounts shows which signal decided how many comparisons.
+	PassBasisCounts map[string]int `json:"pass_basis_counts"`
 
 	ErrorRate           float64 `json:"error_rate"`
 	AgreementRate       float64 `json:"agreement_rate"`
 	AgreementLowerBound float64 `json:"agreement_lower_bound"`
+	ExactMatchRate      float64 `json:"exact_match_rate"`
+	FinishReasonMatch   float64 `json:"finish_reason_match_rate"`
+
+	// Agent metrics: how the candidate's tool use compares on turns where either
+	// side called a tool. ToolDiffs counts mismatches by kind (see ToolDiff*).
+	ToolTurns         int            `json:"tool_turns"`
+	ToolNameMatchRate *float64       `json:"tool_name_match_rate,omitempty"`
+	ToolDiffs         map[string]int `json:"tool_diffs,omitempty"`
 
 	JudgeWins         int     `json:"judge_candidate_wins"`
 	JudgeTies         int     `json:"judge_ties"`
@@ -524,6 +549,9 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 		semN           int
 		toolMatch      int
 		toolN          int
+		toolNameMatch  int
+		exact          int
+		finishMatch    int
 		jsonMatch      int
 		jsonN          int
 		pScore, cScore float64
@@ -538,6 +566,7 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 		a, ok := pairs[key]
 		if !ok {
 			a = &acc{models: map[string]struct{}{}}
+			a.sum.PassBasisCounts = map[string]int{}
 			a.sum.Experiment = r.Experiment
 			a.sum.Candidate = r.Candidate
 			a.sum.FirstSeen = r.CreatedAt
@@ -565,8 +594,19 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 			continue
 		}
 		s.Completed++
-		if r.Pass {
-			s.Passes++
+		if r.JudgeError != "" {
+			s.JudgeErrors++
+		}
+		if r.PassBasis != "" {
+			s.PassBasisCounts[r.PassBasis]++
+		}
+		if r.scored() {
+			s.Scored++
+			if r.Pass {
+				s.Passes++
+			}
+		} else {
+			s.Unscored++
 		}
 		a.primaryLat = append(a.primaryLat, float64(r.PrimaryLatencyMs))
 		a.candidateLat = append(a.candidateLat, float64(r.CandidateLatencyMs))
@@ -578,10 +618,25 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 				a.semSum += *r.Comparison.SemanticSimilarity
 				a.semN++
 			}
+			if r.Comparison.ExactMatch {
+				a.exact++
+			}
+			if r.Comparison.FinishReasonMatch {
+				a.finishMatch++
+			}
 			if r.Comparison.ToolCallsMatch != nil {
 				a.toolN++
 				if *r.Comparison.ToolCallsMatch {
 					a.toolMatch++
+				}
+				if r.Comparison.ToolNamesMatch == nil || *r.Comparison.ToolNamesMatch {
+					a.toolNameMatch++
+				}
+				if d := r.Comparison.ToolCallDiff; d != "" {
+					if s.ToolDiffs == nil {
+						s.ToolDiffs = map[string]int{}
+					}
+					s.ToolDiffs[d]++
 				}
 			}
 			if r.Comparison.JSONMatch != nil {
@@ -617,11 +672,19 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 		if s.Samples > 0 {
 			s.ErrorRate = float64(s.Errors) / float64(s.Samples)
 		}
+		if judgeAttempts := s.Judged + s.JudgeErrors; judgeAttempts > 0 {
+			s.JudgeErrorRate = float64(s.JudgeErrors) / float64(judgeAttempts)
+		}
+		// Errors count against agreement: a candidate that fails is not a
+		// substitute. Unscored comparisons are not evidence either way.
+		if evidence := s.Scored + s.Errors; evidence > 0 {
+			s.AgreementRate = float64(s.Passes) / float64(evidence)
+			s.AgreementLowerBound = wilsonLowerBound(s.Passes, evidence)
+		}
 		if s.Completed > 0 {
 			n := float64(s.Completed)
-			// Errors count against agreement: a candidate that fails is not a substitute.
-			s.AgreementRate = float64(s.Passes) / float64(s.Samples)
-			s.AgreementLowerBound = wilsonLowerBound(s.Passes, s.Samples)
+			s.ExactMatchRate = float64(a.exact) / n
+			s.FinishReasonMatch = float64(a.finishMatch) / n
 			s.AvgLexicalSimilarity = a.lexSum / n
 			if a.semN > 0 {
 				v := a.semSum / float64(a.semN)
@@ -630,6 +693,9 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 			if a.toolN > 0 {
 				v := float64(a.toolMatch) / float64(a.toolN)
 				s.ToolCallMatchRate = &v
+				names := float64(a.toolNameMatch) / float64(a.toolN)
+				s.ToolNameMatchRate = &names
+				s.ToolTurns = a.toolN
 			}
 			if a.jsonN > 0 {
 				v := float64(a.jsonMatch) / float64(a.jsonN)
@@ -652,7 +718,7 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 			s.AvgPrimaryScore = a.pScore / float64(s.Judged)
 			s.AvgCandidateScore = a.cScore / float64(s.Judged)
 		}
-		s.Verdict, s.VerdictReason = verdictFor(&s, &cfg.Thresholds)
+		s.Verdict, s.VerdictReason = verdictFor(&s, cfg)
 		out = append(out, s)
 	}
 	sort.SliceStable(out, func(i, j int) bool {
@@ -665,12 +731,22 @@ func summarize(records []*Record, cfg *Config, rate trafficRate) []PairSummary {
 }
 
 // verdictFor maps a scorecard onto a readiness verdict with a human reason.
-func verdictFor(s *PairSummary, t *Thresholds) (string, string) {
-	if s.Samples < t.MinSamples {
-		return VerdictCollecting, fmt.Sprintf("%d of %d samples collected", s.Samples, t.MinSamples)
+// Only scored comparisons and candidate errors are evidence: the sample minimum
+// and the agreement bound are both computed over them.
+func verdictFor(s *PairSummary, cfg *Config) (string, string) {
+	t := &cfg.Thresholds
+	if evidence := s.Scored + s.Errors; evidence < t.MinSamples {
+		reason := fmt.Sprintf("%d of %d scored samples collected", evidence, t.MinSamples)
+		if s.Unscored > 0 {
+			reason += fmt.Sprintf("; %d comparisons unscored (%s)", s.Unscored, unscoredCause(s, cfg))
+		}
+		return VerdictCollecting, reason
 	}
 	if s.ErrorRate > t.MaxErrorRate {
 		return VerdictNotReady, fmt.Sprintf("candidate error rate %.1f%% exceeds %.1f%%", s.ErrorRate*100, t.MaxErrorRate*100)
+	}
+	if s.JudgeErrorRate > t.MaxJudgeErrorRate {
+		return VerdictNotReady, fmt.Sprintf("judge failed on %.1f%% of %d judged pairs (limit %.1f%%); fix the evaluator before trusting this scorecard", s.JudgeErrorRate*100, s.Judged+s.JudgeErrors, t.MaxJudgeErrorRate*100)
 	}
 	if s.AgreementLowerBound >= t.MinAgreement {
 		return VerdictReady, fmt.Sprintf("agreement %.1f%% (95%% lower bound %.1f%%) clears %.0f%%", s.AgreementRate*100, s.AgreementLowerBound*100, t.MinAgreement*100)
@@ -679,6 +755,17 @@ func verdictFor(s *PairSummary, t *Thresholds) (string, string) {
 		return VerdictPromising, fmt.Sprintf("agreement %.1f%% clears %.0f%% but the 95%% lower bound (%.1f%%) does not yet; collect more samples", s.AgreementRate*100, t.MinAgreement*100, s.AgreementLowerBound*100)
 	}
 	return VerdictNotReady, fmt.Sprintf("agreement %.1f%% is below %.0f%%", s.AgreementRate*100, t.MinAgreement*100)
+}
+
+// unscoredCause explains why comparisons went unscored, for verdict reasons.
+func unscoredCause(s *PairSummary, cfg *Config) string {
+	if s.JudgeErrors > 0 {
+		return fmt.Sprintf("%d judge failures", s.JudgeErrors)
+	}
+	if cfg.Judge == nil && cfg.Embedding == nil && cfg.QualityFallback != QualityFallbackLexical {
+		return "no quality evaluator: configure a judge or embedding model, or set quality_fallback to \"lexical\""
+	}
+	return "no judge verdict or embedding similarity"
 }
 
 // splitRef parses "provider/model" (provider optional).

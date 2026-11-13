@@ -174,7 +174,7 @@ func (p *Plugin) runJob(j *job) {
 		cand.Text = truncate(cand.Text, p.config.MaxPayloadChars)
 		rec.CandidateAnswer = &cand
 	}
-	rec.Pass, rec.PassBasis = p.decidePass(rec.Comparison, rec.Judge)
+	rec.Pass, rec.PassBasis = p.decidePass(rec.Comparison, rec.Judge, rec.JudgeError != "")
 	done()
 }
 
@@ -191,32 +191,73 @@ func (p *Plugin) finish(rec *Record) {
 	}
 }
 
-// decidePass applies the pass rule, strongest signal first:
-// judge > tool calls / JSON structure > embeddings > lexical overlap.
-func (p *Plugin) decidePass(cmp *Comparison, verdict *JudgeVerdict) (bool, string) {
+// Pass bases name the signal that decided a record's Pass.
+const (
+	// BasisToolSelection: the candidate selected different tools (a required gate).
+	BasisToolSelection = "tool_selection"
+	// BasisJSONSchema: the primary answered in JSON and the candidate's answer is not
+	// JSON of the same structure (a required gate).
+	BasisJSONSchema = "json_schema"
+	// BasisJudge: the LLM judge's scores decided.
+	BasisJudge = "judge"
+	// BasisExact: the candidate gave the same answer (normalized text or JSON values,
+	// and the same tool calls).
+	BasisExact = "exact"
+	// BasisToolArguments: same tools, different arguments, and no judge to arbitrate.
+	BasisToolArguments = "tool_arguments"
+	// BasisSemantic: embedding similarity decided.
+	BasisSemantic = "semantic"
+	// BasisLexical: token overlap decided (only with quality_fallback "lexical").
+	BasisLexical = "lexical"
+	// BasisUnscored: no usable quality signal; the record counts toward neither
+	// agreement nor the sample minimum.
+	BasisUnscored = "unscored"
+)
+
+// decidePass applies the pass rule and returns the outcome with the signal that
+// decided it; BasisUnscored means no usable signal.
+//
+// Deterministic checks an application depends on come first and are required:
+// a candidate that selects different tools, or breaks the JSON structure the
+// primary returned, fails whatever any other signal says. After the gates the
+// strongest available quality signal decides: judge, then an exact match (a
+// tool-only turn with identical calls is one), then embeddings, then (only when
+// the operator opted in) token overlap. Same tools with different arguments fail
+// unless a judge accepted them.
+//
+// A judge that was asked and failed leaves the pair unscored rather than letting
+// a weaker signal stand in for it, so evaluator failures can never add up to a
+// "ready" verdict; scorecards report the judge error rate instead.
+func (p *Plugin) decidePass(cmp *Comparison, verdict *JudgeVerdict, judgeFailed bool) (bool, string) {
+	if cmp == nil {
+		return false, BasisUnscored
+	}
+	if cmp.ToolNamesMatch != nil && !*cmp.ToolNamesMatch {
+		return false, BasisToolSelection
+	}
+	if cmp.JSONMatch != nil && !*cmp.JSONMatch {
+		return false, BasisJSONSchema
+	}
 	t := &p.config.Thresholds
 	if verdict != nil {
-		return verdict.CandidateScore >= verdict.PrimaryScore-t.QualityTolerance, "judge"
+		return verdict.CandidateScore >= verdict.PrimaryScore-t.QualityTolerance, BasisJudge
 	}
-	if cmp == nil {
-		return false, ""
+	if cmp.ExactMatch {
+		return true, BasisExact
 	}
-	if cmp.ToolCallsMatch != nil {
-		return *cmp.ToolCallsMatch, "structural"
+	if judgeFailed {
+		return false, BasisUnscored
 	}
-	if cmp.JSONMatch != nil {
-		if !*cmp.JSONMatch {
-			return false, "structural"
-		}
-		if cmp.SemanticSimilarity != nil {
-			return *cmp.SemanticSimilarity >= t.SemanticThreshold, "semantic"
-		}
-		return true, "structural"
+	if cmp.ToolCallsMatch != nil && !*cmp.ToolCallsMatch {
+		return false, BasisToolArguments
 	}
 	if cmp.SemanticSimilarity != nil {
-		return *cmp.SemanticSimilarity >= t.SemanticThreshold, "semantic"
+		return *cmp.SemanticSimilarity >= t.SemanticThreshold, BasisSemantic
 	}
-	return cmp.LexicalSimilarity >= t.LexicalThreshold, "lexical"
+	if p.config.QualityFallback == QualityFallbackLexical {
+		return cmp.LexicalSimilarity >= t.LexicalThreshold, BasisLexical
+	}
+	return false, BasisUnscored
 }
 
 // internalContext builds a context for a plugin-owned sub-request: it skips the

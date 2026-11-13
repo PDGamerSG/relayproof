@@ -76,6 +76,19 @@ func messageText(content *schemas.ChatMessageContent) string {
 	return b.String()
 }
 
+// Tool-call differences between a primary and a candidate turn, from the point
+// of view of an agent that executes whatever the model asks for.
+const (
+	// ToolDiffMissing: the primary called tools and the candidate did not.
+	ToolDiffMissing = "missing"
+	// ToolDiffExtra: the candidate called tools and the primary did not.
+	ToolDiffExtra = "extra"
+	// ToolDiffDifferentTool: both called tools, but not the same set of tools.
+	ToolDiffDifferentTool = "different_tool"
+	// ToolDiffDifferentArgs: the same tools were called with different arguments.
+	ToolDiffDifferentArgs = "different_args"
+)
+
 // Comparison holds the deterministic metrics computed for one pair.
 type Comparison struct {
 	// LexicalSimilarity is a token-level F1 overlap in [0,1].
@@ -84,10 +97,23 @@ type Comparison struct {
 	SemanticSimilarity *float64 `json:"semantic_similarity,omitempty"`
 	// LengthRatio is len(candidate)/len(primary) in characters (0 when primary is empty).
 	LengthRatio float64 `json:"length_ratio"`
-	// ToolCallsMatch is nil when neither side called tools.
+	// ToolCallsMatch reports whether both sides made the same tool calls, arguments
+	// included. Nil when neither side called tools.
 	ToolCallsMatch *bool `json:"tool_calls_match,omitempty"`
-	// JSONMatch is nil unless the primary answer is a JSON document.
+	// ToolNamesMatch reports whether both sides selected the same tools (as a
+	// multiset of names), whatever the arguments. Nil when neither side called tools.
+	ToolNamesMatch *bool `json:"tool_names_match,omitempty"`
+	// ToolCallDiff names how the tool calls differ (see ToolDiff*); empty when they match.
+	ToolCallDiff string `json:"tool_call_diff,omitempty"`
+	// JSONMatch reports whether the candidate is a JSON document with the primary's
+	// structure (keys and value kinds). Nil unless the primary answer is a JSON document.
 	JSONMatch *bool `json:"json_match,omitempty"`
+	// JSONValuesMatch reports whether the two JSON documents are equal value for
+	// value. Nil unless both answers are JSON documents.
+	JSONValuesMatch *bool `json:"json_values_match,omitempty"`
+	// ExactMatch reports that the candidate said the same thing: equal text after
+	// whitespace and case normalization (or equal JSON values) and the same tool calls.
+	ExactMatch bool `json:"exact_match"`
 	// FinishReasonMatch reports whether both stopped for the same reason.
 	FinishReasonMatch bool `json:"finish_reason_match"`
 }
@@ -101,24 +127,75 @@ func compareAnswers(primary, candidate Answer) Comparison {
 	if p := len([]rune(primary.Text)); p > 0 {
 		cmp.LengthRatio = float64(len([]rune(candidate.Text))) / float64(p)
 	}
+	toolsEqual := true
 	if len(primary.ToolCalls) > 0 || len(candidate.ToolCalls) > 0 {
-		match := toolCallsEqual(primary.ToolCalls, candidate.ToolCalls)
-		cmp.ToolCallsMatch = &match
+		toolsEqual = toolCallsEqual(primary.ToolCalls, candidate.ToolCalls)
+		namesEqual := toolNamesEqual(primary.ToolCalls, candidate.ToolCalls)
+		cmp.ToolCallsMatch = &toolsEqual
+		cmp.ToolNamesMatch = &namesEqual
+		cmp.ToolCallDiff = toolCallDiff(primary.ToolCalls, candidate.ToolCalls, namesEqual, toolsEqual)
 		// Tool-call turns usually carry no text; overlap of empty strings says nothing.
 		if strings.TrimSpace(primary.Text) == "" && strings.TrimSpace(candidate.Text) == "" {
-			if match {
+			if toolsEqual {
 				cmp.LexicalSimilarity = 1
 			} else {
 				cmp.LexicalSimilarity = 0
 			}
 		}
 	}
+	textEqual := normalizeText(primary.Text) == normalizeText(candidate.Text)
 	if pj, ok := parseJSONDocument(primary.Text); ok {
 		cj, cok := parseJSONDocument(candidate.Text)
 		match := cok && jsonShapeEqual(pj, cj)
 		cmp.JSONMatch = &match
+		if cok {
+			values := reflect.DeepEqual(normalizeJSON(pj), normalizeJSON(cj))
+			cmp.JSONValuesMatch = &values
+			textEqual = values
+		}
 	}
+	cmp.ExactMatch = textEqual && toolsEqual
 	return cmp
+}
+
+// normalizeText lowercases text and collapses runs of whitespace, so answers that
+// differ only in spacing or capitalization count as the same answer.
+func normalizeText(s string) string {
+	return strings.Join(strings.Fields(strings.ToLower(s)), " ")
+}
+
+// toolNamesEqual compares the tools two turns selected, as a multiset of names.
+func toolNamesEqual(a, b []ToolCall) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	counts := make(map[string]int, len(a))
+	for _, c := range a {
+		counts[c.Name]++
+	}
+	for _, c := range b {
+		if counts[c.Name] == 0 {
+			return false
+		}
+		counts[c.Name]--
+	}
+	return true
+}
+
+// toolCallDiff classifies how two sets of tool calls differ.
+func toolCallDiff(primary, candidate []ToolCall, namesEqual, callsEqual bool) string {
+	switch {
+	case callsEqual:
+		return ""
+	case len(candidate) == 0:
+		return ToolDiffMissing
+	case len(primary) == 0:
+		return ToolDiffExtra
+	case !namesEqual:
+		return ToolDiffDifferentTool
+	default:
+		return ToolDiffDifferentArgs
+	}
 }
 
 func normalizeFinish(reason string) string {

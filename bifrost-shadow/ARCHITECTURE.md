@@ -79,38 +79,52 @@ No stream-sized data is stored in `BifrostContext`; the context carries only the
 
 ## How the verdict is computed
 
-**Per pair.** `decidePass` (`worker.go`) uses the strongest signal available:
+**Per pair.** `decidePass` (`worker.go`) applies two required gates, then the strongest
+quality signal available:
 
-1. If the judge ran: pass when the candidate's score is at least the primary's score minus
-   `quality_tolerance` (default 1.0 point out of 10).
-2. Else, if either side made tool calls: pass when the tool calls match as a multiset of names
-   and JSON-equal arguments.
-3. Else, if the primary answer is a JSON document: fail when the candidate's JSON shape differs;
-   when it matches, the embedding similarity decides if it was computed, otherwise the pair
-   passes.
-4. Else, if embeddings ran: pass when the cosine similarity is at least `semantic_threshold`
+1. Gate: if either side called tools and the two did not select the same tools (multiset of
+   names), the pair fails (`tool_selection`). An agent executes whatever the model picks, so a
+   different tool is a different trajectory.
+2. Gate: if the primary answered with a JSON document and the candidate's answer is not JSON with
+   the same keys and value kinds, the pair fails (`json_schema`).
+3. If the judge returned a verdict: pass when the candidate's score is at least the primary's
+   score minus `quality_tolerance` (default 1.0 point out of 10).
+4. Else, if the answers match exactly (text equal after case and whitespace normalization, or
+   equal JSON values, and the same tool calls): pass (`exact`).
+5. Else, if a judge was asked and failed: the pair is **unscored**. A weaker signal does not
+   stand in for a failed evaluator.
+6. Else, if the same tools were called with different arguments: fail (`tool_arguments`).
+7. Else, if embeddings ran: pass when the cosine similarity is at least `semantic_threshold`
    (default 0.85).
-5. Else: pass when the token F1 is at least `lexical_threshold` (default 0.6).
+8. Else, only with `quality_fallback: "lexical"`: pass when the token F1 is at least
+   `lexical_threshold` (default 0.6). Otherwise the pair is unscored.
 
-A candidate error (failed call, timeout, recovered panic) is a failure.
+A candidate error (failed call, timeout, recovered panic) is a failure. Matching JSON structure
+alone never passes a pair: `{"approved":false}` and `{"approved":true}` have the same shape.
 
-**Per candidate.** The summary groups records by experiment and candidate. Candidate errors are
-counted as samples, so they lower agreement:
+**Per candidate.** The summary groups records by experiment and candidate. Evidence is scored
+comparisons plus candidate errors; unscored comparisons are reported but are not evidence:
 
-- agreement rate = passes / samples
-- lower bound = the lower end of the 95% Wilson score interval for passes out of samples
+- agreement rate = passes / (scored + errors)
+- lower bound = the lower end of the 95% Wilson score interval for passes out of scored + errors
   (`wilsonLowerBound` in `compare.go`, z = 1.96)
 - error rate = candidate errors / samples
+- judge error rate = failed judge calls / judge calls
 
 The verdict is checked in this order (`verdictFor` in `store.go`):
 
 | Verdict | Condition |
 |---|---|
-| `collecting` | samples < `min_samples` (default 20) |
+| `collecting` | scored + errors < `min_samples` (default 20); the reason names why pairs went unscored |
 | `not_ready` | error rate > `max_error_rate` (default 0.05) |
+| `not_ready` | judge error rate > `max_judge_error_rate` (default 0.1) |
 | `ready` | lower bound >= `min_agreement` (default 0.9) |
 | `promising` | agreement rate >= `min_agreement`, lower bound not yet |
 | `not_ready` | otherwise |
+
+Scorecards also carry `pass_basis_counts` (which signal decided how many pairs) and agent
+metrics for tool-calling turns: `tool_turns`, `tool_name_match_rate`, `tool_call_match_rate` and
+`tool_diffs` (`missing`, `extra`, `different_tool`, `different_args`).
 
 The lower bound stops a short lucky streak from promoting a model: 20 passes out of 20 has a
 lower bound of 84%, so with the default threshold that candidate is `promising` until more

@@ -1,5 +1,5 @@
 diff --git a/transports/bifrost-http/lib/validator_test.go b/transports/bifrost-http/lib/validator_test.go
-index dd064d3..d5dcc54 100644
+index dd064d346..5f0a07657 100644
 --- a/transports/bifrost-http/lib/validator_test.go
 +++ b/transports/bifrost-http/lib/validator_test.go
 @@ -17,6 +17,7 @@ import (
@@ -10,7 +10,7 @@ index dd064d3..d5dcc54 100644
  	"github.com/santhosh-tekuri/jsonschema/v6"
  )
  
-@@ -279,6 +280,130 @@ func TestValidateConfigSchema_WarpSectionCoversEverySetting(t *testing.T) {
+@@ -279,6 +280,133 @@ func TestValidateConfigSchema_WarpSectionCoversEverySetting(t *testing.T) {
  	}
  }
  
@@ -37,7 +37,9 @@ index dd064d3..d5dcc54 100644
 +		"store_payloads": false, "max_payload_chars": 4000, "persist_path": "shadow.jsonl",
 +		"pricing": {"openai/gpt-4o-mini": {"input_per_million": 0.15, "output_per_million": 0.6}},
 +		"thresholds": {"min_samples": 50, "min_agreement": 0.95, "max_error_rate": 0.02,
-+			"quality_tolerance": 0.5, "lexical_threshold": 0.5, "semantic_threshold": 0.9}
++			"quality_tolerance": 0.5, "lexical_threshold": 0.5, "semantic_threshold": 0.9,
++			"max_judge_error_rate": 0.2},
++		"quality_fallback": "lexical"
 +	}`
 +	if err := ValidateConfigSchema(shadowPluginConfig(valid), schemaData); err != nil {
 +		t.Fatalf("expected valid shadow config to pass, got: %v", err)
@@ -60,6 +62,7 @@ index dd064d3..d5dcc54 100644
 +		"negative price":        `{"pricing": {"m": {"input_per_million": -1}}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +		"agreement above 1":     `{"thresholds": {"min_agreement": 2}, "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +		"force header not bool": `{"allow_force_header": "yes", "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
++		"unknown fallback":      `{"quality_fallback": "structural", "experiments": [{"source": {"model": "gpt-4o"}, "candidates": [{"provider": "openai", "model": "m"}]}]}`,
 +	}
 +	for name, config := range invalid {
 +		if err := ValidateConfigSchema(shadowPluginConfig(config), schemaData); err == nil {
@@ -142,7 +145,7 @@ index dd064d3..d5dcc54 100644
  	// Empty object should be valid (all properties are optional)
  	emptyConfig := `{}`
 diff --git a/transports/config.schema.json b/transports/config.schema.json
-index 69fd51a..4e7cf2e 100644
+index 69fd51a02..d4df68d28 100644
 --- a/transports/config.schema.json
 +++ b/transports/config.schema.json
 @@ -4248,7 +4248,7 @@
@@ -154,7 +157,7 @@ index 69fd51a..4e7cf2e 100644
            },
            "config": {
              "type": "object",
-@@ -5423,6 +5423,268 @@
+@@ -5423,6 +5423,281 @@
                  }
                }
              }
@@ -403,17 +406,30 @@ index 69fd51a..4e7cf2e 100644
 +                          "minimum": 0,
 +                          "maximum": 1,
 +                          "default": 0.6,
-+                          "description": "Token-F1 needed to pass when no judge or embedding is configured"
++                          "description": "Token-F1 needed to pass when quality_fallback is lexical and no stronger signal scored the pair"
 +                        },
 +                        "semantic_threshold": {
 +                          "type": "number",
 +                          "minimum": 0,
 +                          "maximum": 1,
 +                          "default": 0.85,
-+                          "description": "Embedding cosine needed to pass when no judge is configured"
++                          "description": "Embedding cosine needed to pass when no judge verdict is available"
++                        },
++                        "max_judge_error_rate": {
++                          "type": "number",
++                          "minimum": 0,
++                          "maximum": 1,
++                          "default": 0.1,
++                          "description": "Largest share of judge calls that may fail before a candidate's verdict is withheld"
 +                        }
 +                      },
 +                      "additionalProperties": false
++                    },
++                    "quality_fallback": {
++                      "type": "string",
++                      "enum": ["none", "lexical"],
++                      "default": "none",
++                      "description": "How to score a pair no judge verdict, exact match or embedding similarity could score: none leaves it unscored, lexical uses token overlap (weak: it does not check meaning)"
 +                    }
 +                  },
 +                  "additionalProperties": false

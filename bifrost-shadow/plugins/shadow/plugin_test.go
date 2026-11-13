@@ -211,7 +211,7 @@ func TestShadowMirrorsAndScoresNonStreamingRequest(t *testing.T) {
 	assert.Equal(t, ModelRef{Provider: "openai", Model: candidateModel}, r.Candidate)
 	assert.Empty(t, r.CandidateError)
 	assert.True(t, r.Pass)
-	assert.Equal(t, "lexical", r.PassBasis)
+	assert.Equal(t, BasisExact, r.PassBasis)
 	assert.Equal(t, int64(900), r.PrimaryLatencyMs)
 	assert.Equal(t, int64(120), r.CandidateLatencyMs)
 	// 100 in * $10/M + 50 out * $30/M; candidate 100 * $1/M + 50 * $3/M.
@@ -393,7 +393,7 @@ func TestShadowStreamingToolCalls(t *testing.T) {
 	assert.Equal(t, `{"city":"Paris","unit":"c"}`, r.PrimaryAnswer.ToolCalls[0].Arguments)
 	require.NotNil(t, r.Comparison.ToolCallsMatch)
 	assert.True(t, *r.Comparison.ToolCallsMatch)
-	assert.Equal(t, "structural", r.PassBasis)
+	assert.Equal(t, BasisExact, r.PassBasis, "a tool-only turn with identical calls is an exact match")
 	assert.True(t, r.Pass)
 }
 
@@ -864,7 +864,7 @@ func TestThresholdsHonourExplicitZero(t *testing.T) {
 	}
 	assert.Equal(t, VerdictNotReady, summarize(recs, zero, nil)[0].Verdict)
 	p := &Plugin{config: zero}
-	pass, basis := p.decidePass(&Comparison{}, &JudgeVerdict{PrimaryScore: 8, CandidateScore: 7.5})
+	pass, basis := p.decidePass(&Comparison{}, &JudgeVerdict{PrimaryScore: 8, CandidateScore: 7.5}, false)
 	assert.Equal(t, "judge", basis)
 	assert.False(t, pass)
 

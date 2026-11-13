@@ -26,7 +26,20 @@ const (
 	DefaultQualityTolerance = 1.0
 	DefaultLexicalThreshold = 0.6
 	DefaultSemanticThresh   = 0.85
+	DefaultMaxJudgeErrRate  = 0.1
 	maxAccumulatedChars     = 64 * 1024
+)
+
+// Quality fallbacks: what scores a pair that no judge verdict, exact match,
+// tool-call match or embedding similarity could score.
+const (
+	// QualityFallbackNone leaves such a pair unscored: it counts toward neither
+	// agreement nor the sample minimum. This is the default.
+	QualityFallbackNone = "none"
+	// QualityFallbackLexical scores such a pair by token overlap. Overlap does not
+	// check meaning ("approved: true" and "approved: false" overlap heavily), so
+	// it is an explicit operator choice for setups without a judge or embeddings.
+	QualityFallbackLexical = "lexical"
 )
 
 // ModelRef names a provider/model pair. An empty Provider matches any provider
@@ -105,6 +118,9 @@ type Thresholds struct {
 	LexicalThreshold float64 `json:"lexical_threshold"`
 	// SemanticThreshold is the embedding cosine similarity needed to pass when the judge did not run.
 	SemanticThreshold float64 `json:"semantic_threshold"`
+	// MaxJudgeErrorRate is the largest share of judge calls that may fail before a
+	// candidate's verdict is withheld: a failing evaluator cannot vouch for anything.
+	MaxJudgeErrorRate float64 `json:"max_judge_error_rate"`
 
 	explicit thresholdFields // ratios the parsed config named, so an explicit 0 is kept
 }
@@ -118,6 +134,7 @@ const (
 	explicitQualityTolerance
 	explicitLexicalThreshold
 	explicitSemanticThreshold
+	explicitMaxJudgeErrorRate
 )
 
 // UnmarshalJSON records which ratios the document sets, so normalize can tell an
@@ -131,6 +148,7 @@ func (t *Thresholds) UnmarshalJSON(data []byte) error {
 		QualityTolerance  *float64 `json:"quality_tolerance"`
 		LexicalThreshold  *float64 `json:"lexical_threshold"`
 		SemanticThreshold *float64 `json:"semantic_threshold"`
+		MaxJudgeErrorRate *float64 `json:"max_judge_error_rate"`
 	}{plain: (*plain)(t)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -146,6 +164,7 @@ func (t *Thresholds) UnmarshalJSON(data []byte) error {
 		{aux.QualityTolerance, &t.QualityTolerance, explicitQualityTolerance},
 		{aux.LexicalThreshold, &t.LexicalThreshold, explicitLexicalThreshold},
 		{aux.SemanticThreshold, &t.SemanticThreshold, explicitSemanticThreshold},
+		{aux.MaxJudgeErrorRate, &t.MaxJudgeErrorRate, explicitMaxJudgeErrorRate},
 	} {
 		if f.src != nil {
 			*f.dst = *f.src
@@ -196,6 +215,9 @@ type Config struct {
 	Pricing map[string]ModelPrice `json:"pricing,omitempty"`
 	// Thresholds decide readiness verdicts.
 	Thresholds Thresholds `json:"thresholds,omitempty"`
+	// QualityFallback scores pairs no stronger signal could score: "none" (default,
+	// the pair stays unscored) or "lexical" (token overlap).
+	QualityFallback string `json:"quality_fallback,omitempty"`
 }
 
 // storePayloads reports whether prompts and answers are retained.
@@ -284,11 +306,20 @@ func (c *Config) normalize() error {
 	t.defaultRatio(&t.QualityTolerance, explicitQualityTolerance, DefaultQualityTolerance)
 	t.defaultRatio(&t.LexicalThreshold, explicitLexicalThreshold, DefaultLexicalThreshold)
 	t.defaultRatio(&t.SemanticThreshold, explicitSemanticThreshold, DefaultSemanticThresh)
-	if t.MinAgreement < 0 || t.MaxErrorRate < 0 || t.QualityTolerance < 0 || t.LexicalThreshold < 0 || t.SemanticThreshold < 0 {
+	t.defaultRatio(&t.MaxJudgeErrorRate, explicitMaxJudgeErrorRate, DefaultMaxJudgeErrRate)
+	if t.MinAgreement < 0 || t.MaxErrorRate < 0 || t.QualityTolerance < 0 || t.LexicalThreshold < 0 || t.SemanticThreshold < 0 || t.MaxJudgeErrorRate < 0 {
 		return errors.New("shadow: thresholds cannot be negative")
 	}
-	if t.MinAgreement > 1 || t.MaxErrorRate > 1 || t.LexicalThreshold > 1 || t.SemanticThreshold > 1 {
+	if t.MinAgreement > 1 || t.MaxErrorRate > 1 || t.LexicalThreshold > 1 || t.SemanticThreshold > 1 || t.MaxJudgeErrorRate > 1 {
 		return errors.New("shadow: threshold ratios must be <= 1")
+	}
+	switch strings.ToLower(strings.TrimSpace(c.QualityFallback)) {
+	case "", QualityFallbackNone:
+		c.QualityFallback = QualityFallbackNone
+	case QualityFallbackLexical:
+		c.QualityFallback = QualityFallbackLexical
+	default:
+		return fmt.Errorf("shadow: quality_fallback must be %q or %q, got %q", QualityFallbackNone, QualityFallbackLexical, c.QualityFallback)
 	}
 	for key, price := range c.Pricing {
 		if price.InputPerMillion < 0 || price.OutputPerMillion < 0 {
