@@ -188,6 +188,12 @@ func newDoor(o options) (*door, error) {
 			// Callers cannot bring their own credentials; the door's token is the only one.
 			r.Out.Header.Del("Authorization")
 			r.Out.Header.Del("Cookie")
+			// The gateway refuses management calls from origins it does not list
+			// while dashboard auth is off, and browsers send Origin on every POST.
+			// The door is the gateway's only client: the route allowlist above is
+			// the boundary, and callers carry no credentials to protect.
+			r.Out.Header.Del("Origin")
+			r.Out.Header.Del("Referer")
 			r.Out.Header.Set("X-Bifrost-Setup-Token", o.setupToken)
 		},
 		ModifyResponse: func(resp *http.Response) error {

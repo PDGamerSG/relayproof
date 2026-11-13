@@ -43,6 +43,7 @@ type fakeBackend struct {
 	mu        sync.Mutex
 	tokens    []string
 	auth      []string
+	origins   []string
 	incidents []string
 	chats     int
 	rollbacks []map[string]string
@@ -57,6 +58,7 @@ func (f *fakeBackend) handler() http.Handler {
 		f.mu.Lock()
 		f.tokens = append(f.tokens, r.Header.Get("X-Bifrost-Setup-Token"))
 		f.auth = append(f.auth, r.Header.Get("Authorization"))
+		f.origins = append(f.origins, r.Header.Get("Origin")+r.Header.Get("Referer"))
 		f.mu.Unlock()
 		w.Header().Set("Set-Cookie", "token=leak")
 		_, _ = io.WriteString(w, `{"enabled":true}`)
@@ -133,6 +135,8 @@ func TestProxyAttachesTokenAndDropsCallerCredentials(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/api/shadow/summary", nil)
 	req.Header.Set("X-Bifrost-Setup-Token", "caller-guess")
 	req.Header.Set("Authorization", "Basic Zm9vOmJhcg==")
+	req.Header.Set("Origin", "https://relayproof.pallabdas.me")
+	req.Header.Set("Referer", "https://relayproof.pallabdas.me/live")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -149,6 +153,9 @@ func TestProxyAttachesTokenAndDropsCallerCredentials(t *testing.T) {
 	}
 	if f.tokens[0] != "secret-token" || f.auth[0] != "" {
 		t.Errorf("gateway saw token %q auth %q", f.tokens[0], f.auth[0])
+	}
+	if f.origins[0] != "" {
+		t.Errorf("gateway saw the caller's Origin/Referer %q; it refuses unlisted origins", f.origins[0])
 	}
 
 	for _, c := range []struct{ method, path string }{
