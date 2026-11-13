@@ -3,6 +3,58 @@
 What was run to check Bifrost Shadow, on which platform, and what came back. Every result
 below was observed, not estimated. Base: `maximhq/bifrost@ed62e4b`, Go 1.27.4, Node 26.
 
+## Round 2: review fixes, promotion and the canary guard (13 November 2026)
+
+macOS arm64 (10 cores), Go 1.27.3, Node 26.8.1, same pinned upstream. Everything below was run
+after the last code change of the round.
+
+| Suite | Command | Result |
+|---|---|---|
+| Plugin (89 top-level tests) | `cd plugins/shadow && go test -race -count=2 -cover ./...` | pass, 88.7% statement coverage |
+| Gateway handlers (20 tests) | `cd transports && go test -race -count=2 -run 'Shadow\|CELOverlap' ./bifrost-http/handlers/` | pass |
+| Config schema (2 tests) | same command, `./bifrost-http/lib/` | pass (the coverage test now also checks `CanaryConfig`) |
+| Vet | `go vet` on the plugin, `handlers`, `lib`, `server`; demo `GOWORK=off go vet ./... && go test ./...` | clean, pass |
+| TypeScript client | `tsc --noEmit --strict --noUnusedLocals --noUnusedParameters api/client/shadowClient.ts` | clean |
+| Clean-room build | `SKIP_UI=1 scripts/setup.sh <fresh checkout of ed62e4b>`: overlay, all five patches, plugin and handler tests, gateway build | pass: all five patches applied, tests passed, gateway built |
+| Key-free demo | `BIFROST_BIN=… examples/shadow-demo/run.sh` (twice) | exit 0, 1 min 41 s |
+| API contract | a gateway with demo traffic; every route's response (summary, records, record, 404 error, canary-rule, promote 200 / 409 / dry run, rollouts, rollback, export) checked field by field against `api/openapi.yaml` | 13 of 13 shapes match |
+| Client end to end | `api/client/shadowClient.ts` against the same gateway: status, auth failure, summary, paging, record, disagreements, refused promotion, plan, promote, polling, rollback, 404 on a second rollback, CSV and JSON export | 14 of 14 checks pass |
+
+Demo run 2 (the first run's guard bug is in the table below):
+
+```
+openai/gpt-4o-mini   146  100.0%  lower 97.4%  errors 0.0%  READY
+openai/llama-3.1-8b  146   67.1%  lower 59.1%  errors 2.7%  NOT READY
+promote llama-3.1-8b       HTTP 409: not_ready - agreement 67.1% is below 90%
+dry run gpt-4o-mini        create, targets gpt-4o 0.9 / gpt-4o-mini 0.1, no warnings
+promote gpt-4o-mini        HTTP 200 create
+split                      gpt-4o-mini served 20 of 200 requests (expected 20)
+canary health              healthy: live error rate 0.0% within 5.0% over 20 requests
+incident (60% 503s)        gpt-4o-mini served 6 of 150 requests, 5 failed
+canary guard               rolled back: live error rate 19.2% (95% lower bound 8.5%) exceeds 5.0%
+after rollback             gpt-4o-mini served 0 of 100 requests, 0 failed
+```
+
+Multi-candidate promotion on the real gateway (the review's routing reproduction, now fixed):
+promoting `gpt-4o-mini` at 50% and then `llama-3.1-8b` at 20% (with an override reason) left one
+routing rule, `Shadow canary: openai/gpt-4o -> openai/gpt-4o-mini, openai/llama-3.1-8b`, with
+targets gpt-4o-mini 0.5, gpt-4o 0.3, llama-3.1-8b 0.2. Before, the second rule was created and
+never served a request.
+
+Benchmarks added this round (`-count=3`, macOS arm64): `PostLLMHookCanaryOtherModel` 14 ns,
+`PostLLMHookCanarySourceModel` 25 ns, both 0 allocations; `PostLLMHookNoCapture` stays 2.2 ns.
+
+Fixed this round:
+
+| Found by | Problem | Fix |
+|---|---|---|
+| Project review, finding 1 | Reloading the plugin (any settings update) or restarting the gateway reset today's spend, lifting the daily budget | Process-wide spend ledger per persist path, saved to `<persist_path>.spend.json`; jobs reserve their expected cost first. `TestDailyBudgetSurvivesPluginReload` (memory and persisted), `TestDailyBudgetSurvivesRestartWithPersistPath`, `TestLedgerSeededFromTodaysRecords`, `TestCorruptLedgerFileIsAnError`, `TestLedgerReservations` |
+| Project review, finding 2 | A second canary for the same source was created but unreachable (the routing engine stops at the first matching rule) | Server-side promotion merges candidates into one rule per source and refuses rules an earlier rule would shadow. `TestShadowPromoteSecondCandidateSharesTheSameRule` checks the effective traffic shares; confirmed on a real gateway above |
+| Project review, finding 3 | Matching JSON keys passed a pair whatever the values, and a judge that failed on every pair still produced `ready` | JSON structure and tool selection are required gates, never a pass; a failed judge leaves the pair unscored; judge error rate above `max_judge_error_rate` withholds the verdict; lexical overlap is opt-in. `TestWrongJSONValuesAreNeverReadyWithoutAJudge` and `TestFailingJudgeCannotProduceAReadyVerdict` reproduce the review's 40-pair cases |
+| Project review, finding 4 | Quick start pointed at the wrong directory and a relative binary path | README uses paths from the repository root and an absolute `BIFROST_BIN` |
+| First demo run | The canary guard rolled back after 1 failure in 17 candidate requests (5.9% raw against 5%) | The guard uses the 95% Wilson lower bound of the live error rate. `TestCanaryGuardIgnoresASingleUnluckyFailure` |
+| API contract check | A candidate promoted with an override reason (not ready by definition) was rolled back by the verdict rule within one guard tick | Override canaries are guarded on live health only. `TestCanaryGuardRespectsAnOverride` |
+
 ## Unit and component tests
 
 | Suite | Command | Platform | Result |

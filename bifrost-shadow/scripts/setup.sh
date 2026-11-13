@@ -75,7 +75,7 @@ fi
 
 step "Testing the shadow plugin and its HTTP handler"
 (cd plugins/shadow && go test ./...)
-(cd transports && go test -run 'Shadow' ./bifrost-http/handlers/ ./bifrost-http/lib/)
+(cd transports && go test -run 'Shadow|CELOverlap' ./bifrost-http/handlers/ ./bifrost-http/lib/)
 
 step "Building the gateway"
 mkdir -p tmp
