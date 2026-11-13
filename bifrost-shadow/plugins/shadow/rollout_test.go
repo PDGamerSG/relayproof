@@ -84,6 +84,8 @@ func TestCanaryGuardRollsBackOnLiveErrors(t *testing.T) {
 
 	serveLive(t, p, primaryModel, 90, 0, 900)
 	serveLive(t, p, candidateModel, 9, 4, 300)
+	assert.Equal(t, 1, p.Summary().ActiveCanaries)
+	assert.True(t, p.Summary().AutoRollback)
 	view := p.Rollouts().Canaries[0]
 	assert.Equal(t, CanaryWatching, view.Health.Status, "9 of 10 candidate requests")
 	assert.Zero(t, p.checkCanaries())
@@ -101,6 +103,7 @@ func TestCanaryGuardRollsBackOnLiveErrors(t *testing.T) {
 
 	r := p.Rollouts()
 	assert.Empty(t, r.Canaries, "a rolled-back canary is no longer watched")
+	assert.Zero(t, p.Summary().ActiveCanaries)
 	require.Len(t, r.Events, 2)
 	assert.Equal(t, RolloutAutoRollback, r.Events[0].Action, "newest first")
 	assert.Equal(t, "canary_guard", r.Events[0].Actor)

@@ -14,8 +14,14 @@ type Summary struct {
 	SampleRate     float64   `json:"sample_rate"`
 	JudgeModel     string    `json:"judge_model,omitempty"`
 	EmbeddingModel string    `json:"embedding_model,omitempty"`
-	DailyBudgetUSD float64   `json:"daily_budget_usd"`
-	SpendTodayUSD  float64   `json:"spend_today_usd"`
+	// QualityFallback is "none" or "lexical" (see Config.QualityFallback).
+	QualityFallback string `json:"quality_fallback"`
+	// AutoRollback reports whether the canary guard rolls unhealthy canaries back.
+	AutoRollback bool `json:"auto_rollback"`
+	// ActiveCanaries is the number of candidates currently serving canary traffic.
+	ActiveCanaries int     `json:"active_canaries"`
+	DailyBudgetUSD float64 `json:"daily_budget_usd"`
+	SpendTodayUSD  float64 `json:"spend_today_usd"`
 	// SpendReservedUSD is the expected cost of shadow jobs still running; it
 	// counts against the budget until they finish.
 	SpendReservedUSD float64       `json:"spend_reserved_usd"`
@@ -40,6 +46,11 @@ func (p *Plugin) Summary() Summary {
 		Thresholds:       p.config.Thresholds,
 		Experiments:      p.config.Experiments,
 		Pairs:            summarize(p.store.snapshot(), p.config, p.trafficRate),
+		QualityFallback:  p.config.QualityFallback,
+		AutoRollback:     p.config.Canary != nil && p.config.Canary.AutoRollback,
+	}
+	if list := p.rollouts.active.Load(); list != nil {
+		s.ActiveCanaries = len(*list)
 	}
 	if p.config.Judge != nil {
 		s.JudgeModel = string(p.config.Judge.Provider) + "/" + p.config.Judge.Model
