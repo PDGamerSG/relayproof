@@ -47,8 +47,11 @@ type CanaryConfig struct {
 	AutoRollback bool `json:"auto_rollback,omitempty"`
 	// MinRequests is the number of live candidate requests needed before health is judged.
 	MinRequests int `json:"min_requests,omitempty"`
-	// MaxErrorRate is the live error rate the candidate may reach (default: thresholds.max_error_rate).
-	// The limit is never below the source model's own error rate on the same traffic.
+	// MaxErrorRate is the live error rate the candidate may reach (default:
+	// thresholds.max_error_rate). The guard fires when the 95% Wilson lower bound
+	// of the candidate's live error rate passes it, so a single failure among a
+	// few requests does not roll a canary back. The limit is never below the
+	// source model's own error rate on the same traffic.
 	MaxErrorRate float64 `json:"max_error_rate,omitempty"`
 	// MaxLatencyRatio limits candidate p95 latency to this multiple of the source's p95 (0 = off).
 	MaxLatencyRatio float64 `json:"max_latency_ratio,omitempty"`
@@ -490,8 +493,10 @@ func (p *Plugin) judgeCanary(h *CanaryHealth) (string, string) {
 		// Never blame the candidate for an outage the source shares.
 		maxErr = h.Source.ErrorRate
 	}
-	if h.Candidate.ErrorRate > maxErr {
-		return CanaryUnhealthy, fmt.Sprintf("live error rate %.1f%% exceeds %.1f%%", h.Candidate.ErrorRate*100, maxErr*100)
+	// Act on evidence, not on one unlucky request: the guard fires when even the
+	// 95% Wilson lower bound of the candidate's error rate is over the limit.
+	if lower := wilsonLowerBound(int(h.Candidate.Errors), int(h.Candidate.Requests)); lower > maxErr {
+		return CanaryUnhealthy, fmt.Sprintf("live error rate %.1f%% (95%% lower bound %.1f%%) exceeds %.1f%%", h.Candidate.ErrorRate*100, lower*100, maxErr*100)
 	}
 	if limits.MaxLatencyRatio > 0 && h.Source.P95Ms > 0 && h.Candidate.P95Ms > limits.MaxLatencyRatio*h.Source.P95Ms {
 		return CanaryUnhealthy, fmt.Sprintf("live p95 latency %.0f ms is over %.1fx the source's %.0f ms", h.Candidate.P95Ms, limits.MaxLatencyRatio, h.Source.P95Ms)

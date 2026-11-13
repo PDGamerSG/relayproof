@@ -83,7 +83,7 @@ func TestCanaryGuardRollsBackOnLiveErrors(t *testing.T) {
 	promote(t, p, 0.1)
 
 	serveLive(t, p, primaryModel, 90, 0, 900)
-	serveLive(t, p, candidateModel, 9, 3, 300)
+	serveLive(t, p, candidateModel, 9, 4, 300)
 	view := p.Rollouts().Canaries[0]
 	assert.Equal(t, CanaryWatching, view.Health.Status, "9 of 10 candidate requests")
 	assert.Zero(t, p.checkCanaries())
@@ -91,13 +91,13 @@ func TestCanaryGuardRollsBackOnLiveErrors(t *testing.T) {
 	serveLive(t, p, candidateModel, 1, 0, 300)
 	view = p.Rollouts().Canaries[0]
 	assert.Equal(t, int64(10), view.Health.Candidate.Requests)
-	assert.InDelta(t, 0.3, view.Health.Candidate.ErrorRate, 1e-9)
+	assert.InDelta(t, 0.4, view.Health.Candidate.ErrorRate, 1e-9)
 	assert.Equal(t, int64(90), view.Health.Source.Requests)
 	assert.Equal(t, CanaryUnhealthy, view.Health.Status)
 
 	assert.Equal(t, 1, p.checkCanaries())
 	require.Len(t, rec.calls, 1)
-	assert.Contains(t, rec.calls[0], "big-to-small|openai/gpt-small|canary guard: live error rate 30.0%")
+	assert.Contains(t, rec.calls[0], "big-to-small|openai/gpt-small|canary guard: live error rate 40.0% (95% lower bound 16.8%) exceeds 5.0%")
 
 	r := p.Rollouts()
 	assert.Empty(t, r.Canaries, "a rolled-back canary is no longer watched")
@@ -105,7 +105,7 @@ func TestCanaryGuardRollsBackOnLiveErrors(t *testing.T) {
 	assert.Equal(t, RolloutAutoRollback, r.Events[0].Action, "newest first")
 	assert.Equal(t, "canary_guard", r.Events[0].Actor)
 	require.NotNil(t, r.Events[0].Health)
-	assert.Equal(t, int64(3), r.Events[0].Health.Candidate.Errors)
+	assert.Equal(t, int64(4), r.Events[0].Health.Candidate.Errors)
 	assert.Zero(t, p.checkCanaries(), "nothing left to roll back")
 }
 
@@ -118,6 +118,19 @@ func TestCanaryGuardToleratesSharedOutage(t *testing.T) {
 	serveLive(t, p, primaryModel, 20, 6, 900)   // 30% source errors
 	serveLive(t, p, candidateModel, 20, 5, 300) // 25% candidate errors
 	assert.Equal(t, CanaryHealthy, p.Rollouts().Canaries[0].Health.Status)
+	assert.Zero(t, p.checkCanaries())
+	assert.Empty(t, rec.calls)
+}
+
+// One failure in a handful of requests is not evidence of an unhealthy candidate.
+func TestCanaryGuardIgnoresASingleUnluckyFailure(t *testing.T) {
+	p := newTestPlugin(t, guardConfig())
+	rec := &rollbackRecorder{}
+	p.SetRollbackHook(rec.hook)
+	promote(t, p, 0.1)
+	serveLive(t, p, candidateModel, 17, 1, 300) // 5.9% raw, lower bound 1.0%
+	h := p.Rollouts().Canaries[0].Health
+	assert.Equal(t, CanaryHealthy, h.Status, h.Reason)
 	assert.Zero(t, p.checkCanaries())
 	assert.Empty(t, rec.calls)
 }
