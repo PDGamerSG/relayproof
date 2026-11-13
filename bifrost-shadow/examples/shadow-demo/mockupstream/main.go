@@ -9,6 +9,10 @@
 //	judge-1       pairwise judge: scores answers against the dataset's gold facts
 //
 // Everything is derived from the shared dataset, so runs are reproducible.
+//
+// POST /admin/incident?model=<model>&error_pct=<0-100> simulates a provider
+// incident: that share of the model's requests fails with HTTP 503 until it is
+// set back to 0. The demo uses it to show the canary guard rolling back.
 package main
 
 import (
@@ -18,9 +22,12 @@ import (
 	"hash/fnv"
 	"log"
 	"math"
+	"math/rand/v2"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/maximhq/bifrost/examples/shadow-demo/dataset"
@@ -67,6 +74,7 @@ func main() {
 	mux.HandleFunc("/v1/embeddings", handleEmbeddings)
 	mux.HandleFunc("/v1/models", handleModels)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
+	mux.HandleFunc("/admin/incident", handleIncident)
 	log.Printf("mock upstream listening on http://%s (speed=%.2f)", *addr, *speed)
 	log.Fatal(http.ListenAndServe(*addr, mux))
 }
@@ -117,6 +125,35 @@ func handleModels(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"object": "list", "data": models})
 }
 
+// incidents maps a model to the share of its requests (0-100) that fail.
+var incidents sync.Map
+
+func handleIncident(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "use POST")
+		return
+	}
+	model := r.URL.Query().Get("model")
+	pct, err := strconv.Atoi(r.URL.Query().Get("error_pct"))
+	if model == "" || err != nil || pct < 0 || pct > 100 {
+		writeError(w, http.StatusBadRequest, "model and error_pct (0-100) are required")
+		return
+	}
+	if pct == 0 {
+		incidents.Delete(model)
+	} else {
+		incidents.Store(model, pct)
+	}
+	log.Printf("incident: %s fails %d%% of requests", model, pct)
+	writeJSON(w, http.StatusOK, map[string]any{"model": model, "error_pct": pct})
+}
+
+// inIncident reports whether this request to model should fail.
+func inIncident(model string) bool {
+	v, ok := incidents.Load(model)
+	return ok && rand.IntN(100) < v.(int)
+}
+
 func handleChat(w http.ResponseWriter, r *http.Request) {
 	var req chatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -128,6 +165,9 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 		rep = judge(req)
 	} else {
 		rep = answer(req)
+	}
+	if inIncident(req.Model) {
+		rep.status = http.StatusServiceUnavailable
 	}
 	time.Sleep(rep.latency)
 	if rep.status != 0 {
