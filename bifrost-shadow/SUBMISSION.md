@@ -14,6 +14,7 @@ not exist yet; creating it needs the team's explicit go-ahead. Every number belo
 | Theme to select | **Open-Source Bifrost Gateway** (Problem Statement 04, "Build a Feature the Open-Source Gateway Is Missing"). No Tavily integration, so leave the optional Tavily checkbox unticked |
 | Team | vulcan, two members. TODO: member names and roles as they should appear in the submission |
 | Base | `maximhq/bifrost@ed62e4b`, applied by one script (`scripts/setup.sh`) |
+| Live demo | <https://relayproof.pallabdas.me/live> (console: trial on the hosted gateway, or sign in to your own) and <https://relayproof.pallabdas.me> (overview). Backend on Render, site on Vercel |
 | Prototype deadline | 15 November 2026, 11:59 PM as displayed in the event dashboard. Internal cutoff: 15 November, 6 PM IST |
 | Judging | 29 November 2026 |
 | Required | Public repository, working prototype, detailed README, architecture and pitch materials (deployment optional) |
@@ -134,7 +135,14 @@ browser and go to **Models → Shadow Traffic**.
 
 ## Three-minute live demo script
 
-**Before recording (not timed)**
+**Simplest: the hosted console.** Open <https://relayproof.pallabdas.me/live> (Trial). Everything
+below happens there with no setup: scorecards are seeded within a minute of the backend booting,
+Promote shows the gateway's dry-run plan, "Fail 60% of calls" breaks a candidate, "Send a burst"
+gets the guard to its ten-request minimum quickly, and Rollout history shows the `auto_rollback`
+event. The incident clears itself after 3 minutes and the scorecards are replayed, so the demo can
+be run again. The steps below record the same story from a local build instead.
+
+**Before recording a local run (not timed)**
 
 1. Build with `setup.sh`, or reuse a binary built earlier with it.
 2. Terminal A: run `run.sh` on spare ports so it does not collide with the dashboard gateway,
@@ -226,9 +234,10 @@ of AI, user experience, and scalability or potential. No weights were published.
 
 ## Submission checklist
 
-- [ ] Public repository. **Not created.** Publication needs the team's explicit go-ahead.
-  Publish `bifrost-shadow/` as a clean repository; keep the private research archive and the
-  event dashboard material out of it. TODO: choose a license (upstream Bifrost is Apache-2.0).
+- [x] Public repository: <https://github.com/PDGamerSG/relayproof> (public since 13 November).
+  TODO: choose a license (upstream Bifrost is Apache-2.0).
+- [x] Deployment: console and overview on Vercel, demo backend on Render (`render.yaml`,
+  `deploy/`).
 - [x] Detailed README: [`README.md`](README.md).
 - [x] Verification log: [`TESTING.md`](TESTING.md).
 - [x] Architecture: [`media/architecture.svg`](media/architecture.svg) and

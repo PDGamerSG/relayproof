@@ -11,6 +11,21 @@ practical feature through supported extension points). Everything here is writte
 upstream contribution: a built-in plugin, a gateway API, a dashboard page, schema, docs and
 tests, applied to `maximhq/bifrost@ed62e4b` by one script.
 
+## Try it live
+
+- [relayproof.pallabdas.me/live](https://relayproof.pallabdas.me/live): the live console. **Trial**
+  runs on a hosted gateway (Bifrost with this plugin and a mock upstream, so no keys): watch
+  scorecards fill, open the disagreements, promote `gpt-4o-mini` to a 10% canary, break it with a
+  simulated provider incident and watch the guard roll it back. **Sign in** points the same
+  console at your own gateway with its dashboard login or setup token.
+- [relayproof.pallabdas.me](https://relayproof.pallabdas.me): the overview, with a simulation that
+  needs no backend.
+
+The hosted backend is [`deploy/`](deploy/): one container with the gateway and mock on loopback
+and a front door that exposes only the shadow API (setup token attached server-side) and the demo
+controls. It resets itself: incidents clear after 3 minutes, canaries roll back after 30, and the
+scorecards are replayed after an incident.
+
 ## The problem
 
 Model spend is the largest line item for most AI products, and the cheapest fix is a cheaper

@@ -17,6 +17,25 @@ browser / Next.js ──HTTP──► Bifrost gateway :8080
 | [`client/shadowClient.ts`](client/shadowClient.ts) | Dependency-free TypeScript client with full types. Copy it into the frontend. |
 | [`../examples/shadow-demo/dev.sh`](../examples/shadow-demo/dev.sh) | A long-running local backend with seeded data and live traffic, no API keys. |
 
+## 0. The hosted trial backend
+
+`https://relayproof.pallabdas.me/live` talks to a hosted gateway built from
+[`../deploy/`](../deploy/). The site calls its own origin and Vercel rewrites `/api/shadow/*` and
+`/api/demo/*` to the backend's front door (`examples/shadow-demo/frontdoor`). The front door
+attaches the setup token itself and forwards only these routes:
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/shadow/summary`, `/records`, `/records/{id}`, `/rollouts`, `/export`, `/canary-rule` | As below. |
+| POST | `/api/shadow/promote`, `/api/shadow/rollback` | As below. 30 POSTs a minute per client. |
+| GET | `/api/demo/status` | Live traffic counters, active incidents, whether scorecards are being replayed. |
+| POST | `/api/demo/incident` `{"model":"gpt-4o-mini","error_pct":60}` | Candidates only; `error_pct` 0 clears it, and it clears itself after 3 minutes. When the last incident ends, records are cleared and 300 requests replayed. |
+| POST | `/api/demo/traffic` `{"n":40}` | Up to 60 requests through the gateway, one burst at a time. |
+
+Everything else answers `403`; `DELETE /api/shadow/records` is not exposed. Canaries older than
+30 minutes are rolled back. A frontend can use the hosted backend the same way:
+`new ShadowClient({ baseUrl: "https://relayproof.pallabdas.me" })`, no token.
+
 ## 1. Start a backend
 
 Build the gateway once (from the repository root):

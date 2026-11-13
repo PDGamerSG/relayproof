@@ -3,6 +3,26 @@
 What was run to check Bifrost Shadow, on which platform, and what came back. Every result
 below was observed, not estimated. Base: `maximhq/bifrost@ed62e4b`, Go 1.27.4, Node 26.
 
+## Hosted deployment and live console (13 November 2026)
+
+Backend: Render web service `relayproof-api`, starter plan (0.5 CPU, 512 MB), built from
+`deploy/Dockerfile` on upstream `ed62e4b`. Site: Vercel, <https://relayproof.pallabdas.me>, with
+the console at `/live` and `/api/shadow/*`, `/api/demo/*` rewritten to the backend.
+
+| Check | Result |
+|---|---|
+| Image built locally (Colima, arm64) and run with a 512 MB limit | 226 MiB in use after seeding 300 requests; `gpt-4o-mini` ready, `llama-3.1-8b` not ready |
+| Front door unit tests (`go test -race ./frontdoor`) | Pass: allowlist, token attached and caller credentials, cookies, Origin and Referer dropped, incident validation and self-clearing, bursts, canary janitor, reset after the last incident, POST limit |
+| First deploy on Render's free plan (0.1 CPU) | Failed: the gateway was still booting when the entrypoint's 120 s wait ran out. Moved to starter and a 300 s wait |
+| Starter boot | Front door healthy and `gpt-4o-mini` ready (lower bound 97.3%, 139 samples) 50 s after the container started |
+| Public surface, on the backend and through the site | `DELETE /api/shadow/records` 403; `/api/config` and `/v1/chat/completions` 404 |
+| Bug found in production | Promote from the site answered 403: browsers send `Origin` on POST and the gateway refuses unlisted origins while dashboard auth is off. Fixed in the front door (drops `Origin` and `Referer`), with a regression test; after redeploying, a dry run with `Origin` set answers 200 |
+| Full flow in a browser on `/live` (trial) | Promoted `gpt-4o-mini` to 10% at 21:38:48 IST; set a 60% incident and sent a 40-request burst; the guard rolled it back at 21:39:08: "live error rate 70.0% (95% lower bound 39.7%) exceeds 5.0%" over 10 candidate requests, source 0.0% |
+| Recovery | After "Recover", the scorecards were cleared 20 s later; `gpt-4o-mini` was ready again 32 s after recovery (55 scored) and the 300-request replay finished by 64 s |
+| Sign in with a dashboard login | Against a local gateway with an admin account: a wrong password is refused ("The gateway refused that username and password."), the right one connects and the console shows its (empty) scorecards |
+| Sign in from the hosted page to a gateway on `localhost` | CORS preflight from `https://relayproof.pallabdas.me` to the dev gateway answers 200 with the origin allowed, and a GET with the setup token answers 200. In the app's own browser pane the call itself was blocked (`net::ERR_BLOCKED_BY_CLIENT`, the pane does not let a public page reach localhost), so this path is **not verified in a browser** |
+| `/live` at 375 px wide | No horizontal overflow |
+
 ## Round 2: review fixes, promotion and the canary guard (13 November 2026)
 
 macOS arm64 (10 cores), Go 1.27.3, Node 26.8.1, same pinned upstream. Everything below was run

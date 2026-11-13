@@ -4,7 +4,7 @@
     "drop_excess_requests": false,
     "enable_logging": true,
     "enforce_auth_on_inference": false,
-    "allowed_origins": ["*"]
+    "allowed_origins": ["*", "https://relayproof.pallabdas.me"]
   },
   "providers": {
     "openai": {
