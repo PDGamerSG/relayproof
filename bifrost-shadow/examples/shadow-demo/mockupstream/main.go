@@ -71,6 +71,7 @@ func main() {
 	flag.Parse()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/chat/completions", handleChat)
+	mux.HandleFunc("/v1/messages", handleMessages)
 	mux.HandleFunc("/v1/embeddings", handleEmbeddings)
 	mux.HandleFunc("/v1/models", handleModels)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })

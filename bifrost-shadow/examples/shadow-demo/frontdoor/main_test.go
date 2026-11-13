@@ -49,6 +49,9 @@ type fakeBackend struct {
 	rollbacks []map[string]string
 	since     time.Time
 	resets    int
+
+	lastBody         map[string]any
+	lastShadowHeader string
 }
 
 func (f *fakeBackend) handler() http.Handler {
@@ -95,11 +98,17 @@ func (f *fakeBackend) handler() http.Handler {
 		f.mu.Unlock()
 		_, _ = io.WriteString(w, `{}`)
 	})
-	mux.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/chat/completions", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		f.mu.Lock()
 		f.chats++
+		f.lastBody = body
+		f.lastShadowHeader = r.Header.Get("x-bf-shadow")
 		f.mu.Unlock()
-		_, _ = io.WriteString(w, `{}`)
+		w.Header().Set("X-Bifrost-Request-Id", "req-42")
+		w.Header().Set("x-bf-shadow", "sampled")
+		_, _ = io.WriteString(w, `{"model":"claude-opus-5-5","choices":[{"message":{"role":"assistant","content":"Paris."},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":3}}`)
 	})
 	return mux
 }
@@ -117,6 +126,15 @@ func newTestDoor(t *testing.T, f *fakeBackend, o options) (*door, *httptest.Serv
 	}
 	if o.postsPerMin == 0 {
 		o.postsPerMin = 100
+	}
+	if o.incidentList == "" {
+		o.incidentList = "gpt-4o-mini,llama-3.1-8b"
+	}
+	if o.askPerHour == 0 {
+		o.askPerHour = 5
+	}
+	if o.askMaxChars == 0 {
+		o.askMaxChars = 100
 	}
 	o.model = "openai/gpt-4o"
 	d, err := newDoor(o)
@@ -321,5 +339,118 @@ func TestScoresResetAfterTheLastIncidentEnds(t *testing.T) {
 	defer f.mu.Unlock()
 	if f.resets != 1 || f.chats != 6 {
 		t.Fatalf("resets %d, replayed chats %d; want 1 and 6", f.resets, f.chats)
+	}
+}
+
+func TestDailyCapLimitsEveryKindOfRequest(t *testing.T) {
+	f := &fakeBackend{}
+	d, srv := newTestDoor(t, f, options{dailyRequests: 5, burstMax: 10})
+	resp, err := http.Post(srv.URL+"/api/demo/traffic", "application/json", strings.NewReader(`{"n":8}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var queued struct {
+		Queued int `json:"queued"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&queued)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusAccepted || queued.Queued != 5 {
+		t.Fatalf("burst of 8 under a cap of 5: status %d queued %d, want 202 and 5", resp.StatusCode, queued.Queued)
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for d.burstBusy.Load() && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	resp, err = http.Post(srv.URL+"/api/demo/traffic", "application/json", strings.NewReader(`{"n":1}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusTooManyRequests {
+		t.Errorf("burst after the cap: status %d, want 429", resp.StatusCode)
+	}
+	resp, err = http.Post(srv.URL+"/api/demo/ask", "application/json", strings.NewReader(`{"prompt":"Capital of France?"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusTooManyRequests {
+		t.Errorf("ask after the cap: status %d, want 429", resp.StatusCode)
+	}
+	if got := d.take(1); got != 0 {
+		t.Errorf("take after the cap returned %d", got)
+	}
+}
+
+func TestAskForcesShadowingAndReturnsTheRequestID(t *testing.T) {
+	f := &fakeBackend{}
+	_, srv := newTestDoor(t, f, options{maxTokens: 512, effort: "low"})
+
+	post := func(body string) (*http.Response, askResponse) {
+		resp, err := http.Post(srv.URL+"/api/demo/ask", "application/json", strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		var out askResponse
+		_ = json.NewDecoder(resp.Body).Decode(&out)
+		return resp, out
+	}
+	if resp, _ := post(`{"prompt":"   "}`); resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("empty prompt: status %d", resp.StatusCode)
+	}
+	if resp, _ := post(`{"prompt":"` + strings.Repeat("x", 101) + `"}`); resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("long prompt: status %d", resp.StatusCode)
+	}
+	resp, out := post(`{"prompt":"What is the capital of France?"}`)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("ask: status %d", resp.StatusCode)
+	}
+	if out.RequestID != "req-42" || out.Answer != "Paris." || !out.Shadowed || out.Model != "gpt-4o" {
+		t.Errorf("ask response %+v", out)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.lastShadowHeader != "force" {
+		t.Errorf("gateway saw x-bf-shadow %q, want force", f.lastShadowHeader)
+	}
+	if f.lastBody["max_tokens"] != float64(512) || f.lastBody["reasoning_effort"] != "low" {
+		t.Errorf("request body %v lacks max_tokens 512 and reasoning_effort low", f.lastBody)
+	}
+}
+
+func TestAskIsLimitedPerAddress(t *testing.T) {
+	f := &fakeBackend{}
+	_, srv := newTestDoor(t, f, options{askPerHour: 2})
+	codes := []int{}
+	for range 3 {
+		resp, err := http.Post(srv.URL+"/api/demo/ask", "application/json", strings.NewReader(`{"prompt":"hi"}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		codes = append(codes, resp.StatusCode)
+	}
+	if codes[0] != 200 || codes[1] != 200 || codes[2] != http.StatusTooManyRequests {
+		t.Errorf("statuses %v, want 200 200 429", codes)
+	}
+}
+
+func TestIncidentModelsAreConfigurable(t *testing.T) {
+	f := &fakeBackend{}
+	_, srv := newTestDoor(t, f, options{incidentList: "anthropic/claude-sonnet-5-5, claude-haiku-5-5"})
+	post := func(model string) int {
+		resp, err := http.Post(srv.URL+"/api/demo/incident", "application/json", strings.NewReader(`{"model":"`+model+`","error_pct":50}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	if got := post("gpt-4o-mini"); got != http.StatusBadRequest {
+		t.Errorf("model outside the list: status %d", got)
+	}
+	if got := post("anthropic/claude-sonnet-5-5"); got != http.StatusOK {
+		t.Errorf("listed model: status %d", got)
 	}
 }
