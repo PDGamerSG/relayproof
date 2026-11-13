@@ -295,3 +295,42 @@ func TestPairScorecard(t *testing.T) {
 	assert.Equal(t, 1, s.Samples)
 	assert.Equal(t, VerdictPromising, s.Verdict, "1 of 1 passes: the lower bound is only 21%")
 }
+
+// BenchmarkPostLLMHookCanaryOtherModel: a response for a model no canary covers,
+// while a canary is active.
+func BenchmarkPostLLMHookCanaryOtherModel(b *testing.B) {
+	p := benchCanaryPlugin(b)
+	ctx := requestCtx("")
+	resp := liveResponse("unrelated", "unrelated", 100)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = p.PostLLMHook(ctx, resp, nil)
+	}
+}
+
+// BenchmarkPostLLMHookCanarySourceModel: a response the canary counts.
+func BenchmarkPostLLMHookCanarySourceModel(b *testing.B) {
+	p := benchCanaryPlugin(b)
+	ctx := requestCtx("")
+	resp := liveResponse(primaryModel, candidateModel, 100)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = p.PostLLMHook(ctx, resp, nil)
+	}
+}
+
+func benchCanaryPlugin(b *testing.B) *Plugin {
+	resetLedgers()
+	p, err := Init(context.Background(), guardConfig(), testLogger)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() { _ = p.Cleanup() })
+	exp := p.config.Experiments[0]
+	if _, err := p.RecordRollout(RolloutEvent{Action: RolloutPromote, Experiment: exp.Name, Source: exp.Source, Candidate: exp.Candidates[0], Weight: 0.1}); err != nil {
+		b.Fatal(err)
+	}
+	return p
+}

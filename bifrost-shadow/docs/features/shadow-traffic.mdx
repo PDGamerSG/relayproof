@@ -184,6 +184,11 @@ Every provider named in `experiments`, `judge` and `embedding` must be configure
 | `thresholds.semantic_threshold` | `0.85` | Embedding cosine needed to pass when no judge verdict is available. |
 | `thresholds.lexical_threshold` | `0.6` | Token F1 needed to pass with `quality_fallback: "lexical"` when no stronger signal decided. |
 | `thresholds.max_judge_error_rate` | `0.1` | Share of judge calls that may fail before the verdict is withheld (`not_ready`). A failing evaluator cannot vouch for a candidate. |
+| `canary.auto_rollback` | `false` | Roll an unhealthy canary back automatically. Without it the guard only reports health. |
+| `canary.min_requests` | `20` | Live candidate requests before health is judged. |
+| `canary.max_error_rate` | `thresholds.max_error_rate` | Limit for the 95% lower bound of the candidate's live error rate; never below the source's own rate. |
+| `canary.max_latency_ratio` | `0` (off) | Limit on candidate p95 latency as a multiple of the source's p95. |
+| `canary.rollback_on_not_ready` | `true` | Also treat a canary as unhealthy when its shadow verdict turns `not_ready`. |
 | `quality_fallback` | `"none"` | What scores a pair that no judge, exact match or embedding could: `"none"` leaves it unscored; `"lexical"` uses token overlap. Overlap does not check meaning (`"approved": true` and `"approved": false` overlap heavily), so it is an explicit choice for setups without a judge or embeddings. |
 
 A threshold set to `0` is used as `0`, not replaced by its default: `quality_tolerance: 0` passes only candidates that the judge scores at least as high as the primary. Negative thresholds are rejected.
@@ -202,18 +207,46 @@ A threshold set to `0` is used as `0`, not replaced by its default: `quality_tol
 
 ## Promoting a candidate
 
-The scorecard tells you a candidate is safe on the traffic it has seen. A canary confirms it on real users with a small, reversible share.
+The scorecard tells you a candidate is safe on the traffic it has seen. A canary confirms it on real users with a small, reversible share, and the canary guard watches it while it runs.
 
 ```bash
-# 1. Build the rule: 10% of openai/gpt-4o traffic to openai/gpt-4o-mini
-curl -s "http://localhost:8080/api/shadow/canary-rule?experiment=gpt-4o%20cost-down&candidate=openai/gpt-4o-mini&weight=0.1" > rule.json
+# See the plan first: the rule, the traffic split, and any rule that would interfere
+curl -s -X POST http://localhost:8080/api/shadow/promote -H "Content-Type: application/json" \
+  -d '{"experiment":"gpt-4o cost-down","candidate":"openai/gpt-4o-mini","weight":0.1,"dry_run":true}'
 
-# 2. Create it
-curl -X POST http://localhost:8080/api/routing/rules \
-  -H "Content-Type: application/json" -d @rule.json
+# Promote: 10% of openai/gpt-4o traffic to openai/gpt-4o-mini
+curl -s -X POST http://localhost:8080/api/shadow/promote -H "Content-Type: application/json" \
+  -d '{"experiment":"gpt-4o cost-down","candidate":"openai/gpt-4o-mini","weight":0.1}'
 ```
 
-The generated rule matches `provider == "openai" && model == "gpt-4o"`, keeps 90% on the primary and sends 10% to the candidate. It is named `Shadow canary: <source> -> <candidate>` and has priority 10 unless you pass `priority`; the routing API allows one rule per priority in a scope, so pass a free one when 10 is taken. To ramp an existing canary, build the rule again with the new `weight` and send its `targets` to `PUT /api/routing/rules/{rule_id}`. For a wildcard source, the most frequently observed primary model is used, because a routing rule needs a concrete model. Keep the experiment running after promotion: the sampled share of the remaining primary traffic keeps the scorecard current.
+`POST /api/shadow/promote` writes the routing rule itself and records the promotion, with the scorecard it rested on, in the rollout log:
+
+- **Gated on the verdict.** A candidate that is not `ready` is refused with `409` and its verdict and reason. To promote it anyway, send `override_reason`; it is recorded with the promotion.
+- **One rule per source.** The rule matches `provider == "openai" && model == "gpt-4o"` and sends `weight` to the candidate and the rest to the source. Promoting a second candidate for the same source adds it to that rule (for example 70/10/20) instead of creating a second rule: the routing engine stops at the first matching rule, so a second rule would never serve traffic. Promoting the same candidate again changes its weight.
+- **Checked against your rules.** Every other enabled rule's CEL expression is partially evaluated for a chat request to the source model. A global rule that matches every such request and runs first refuses the promotion with `409` and names the rule; rules that may match some requests, scoped rules, and rules the canary will now run ahead of come back as `warnings`.
+- **Priority.** A new rule takes the first free global priority from 10, or the `priority` you pass.
+
+`POST /api/shadow/rollback` with `experiment` and `candidate` gives the candidate's share back to the source; a rule left with only the source is deleted. For a wildcard source the most frequently observed primary model is used, because a routing rule needs a concrete model. Keep the experiment running after promotion: the sampled share of the traffic the source still serves keeps the scorecard current.
+
+### Canary guard
+
+While a canary runs, the plugin counts live responses to the source model by the target that served them: requests, errors, p50 and p95 latency, for the candidate and for the source. `GET /api/shadow/rollouts` shows each canary with its health:
+
+| Status | When |
+|---|---|
+| `watching` | Fewer than `canary.min_requests` candidate requests so far |
+| `healthy` | Within every limit |
+| `unhealthy` | The 95% lower bound of the candidate's live error rate is over `canary.max_error_rate` (never below the source's own error rate on the same traffic), its p95 latency is over `canary.max_latency_ratio` times the source's, or continued shadow evaluation turned its verdict to `not_ready` |
+
+With `canary.auto_rollback: true` the guard rolls an unhealthy canary back on its own within a few seconds and records an `auto_rollback` event with the health that triggered it. A canary promoted with an override reason is guarded on live health only, since its verdict was overridden. Without `auto_rollback` the guard only reports. The lower bound keeps a single failed request among a handful from rolling a healthy canary back.
+
+```json
+"canary": { "auto_rollback": true, "min_requests": 20, "max_latency_ratio": 3 }
+```
+
+The rollout log and the watched canaries survive plugin reloads and, with `persist_path`, restarts (`<persist_path>.rollouts.json`).
+
+`GET /api/shadow/canary-rule` still returns a bare routing-rule body for `POST /api/routing/rules`, without the checks above.
 
 ---
 
@@ -221,13 +254,17 @@ The generated rule matches `provider == "openai" && model == "gpt-4o"`, keeps 90
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/shadow/summary` | Counters, spend, thresholds, experiments and per-candidate scorecards (`pairs`). |
+| `GET` | `/api/shadow/summary` | Counters, spend, thresholds, experiments, guard state and per-candidate scorecards (`pairs`). |
 | `GET` | `/api/shadow/records` | Comparisons, newest first. Query: `experiment`, `candidate` (`provider/model`), `outcome` (`pass`, `fail`, `error`), `limit` (default 50, max 500), `offset`. |
 | `GET` | `/api/shadow/records/{id}` | One comparison with both answers, metrics and the judge verdict. |
-| `DELETE` | `/api/shadow/records` | Clear records and counters and restart `started_at` (audited). Today's evaluation spend is kept, so a reset never lifts the daily budget. |
+| `DELETE` | `/api/shadow/records` | Clear records and counters and restart `started_at` (audited). Today's spend, the rollout log and canaries are kept, so a reset never lifts the daily budget. |
+| `POST` | `/api/shadow/promote` | Promote a candidate to a canary (audited). Body: `experiment`, `candidate`, `weight` (default `0.1`), `priority`, `override_reason`, `dry_run`. `409` when not ready or when an earlier rule would shadow the canary; `503` without a config store. |
+| `POST` | `/api/shadow/rollback` | Remove a candidate from its canary rule (audited). Body: `experiment`, `candidate`, `reason`. |
+| `GET` | `/api/shadow/rollouts` | Active canaries with live health, and the rollout log, newest first. |
+| `GET` | `/api/shadow/export` | `format=json` (summary, records, rollouts) or `format=csv` with `kind=scorecards` or `kind=records`. Record filters apply. |
 | `GET` | `/api/shadow/canary-rule` | A routing-rule body for `POST /api/routing/rules`. Query: `experiment`, `candidate`, `weight` from `0.0001` to `1` (default `0.1`), `priority` (default `10`). |
 
-All routes answer `404` with a message when the plugin is not enabled.
+All routes answer `404` with a message when the plugin is not enabled. An OpenAPI description and a typed TypeScript client are in the repository's `api/` directory.
 
 ---
 
@@ -250,13 +287,16 @@ All routes answer `404` with a message when the plugin is not enabled.
 | The plugin's own work per streamed chunk | 0.4 | 0 |
 | Sampled request (snapshot + hand-off) | 9,600 | 33 |
 
+With a canary active, `PostLLMHook` also counts live responses for the canary's source model (macOS arm64, 10 cores, `-count=3`): 14 ns and no allocations for a response to another model, 25 ns and no allocations for one the canary counts. With no canary it is a single atomic load.
+
 ## Limitations
 
 - Chat completions only (`/v1/chat/completions` and the SDK integrations that map to it, streaming included). Responses API, embeddings, images and audio are not mirrored.
-- Records live in each gateway node. In a cluster, each node reports on the traffic it served.
+- Records, spend, canary health and the rollout log live in each gateway node. In a cluster, each node reports on the traffic it served and enforces its own daily budget; routing rules written by promotion are shared through the config store.
+- The conflict check evaluates other rules for a chat request to the source model with only provider, model and request type known. Rules that depend on headers, keys, teams, budgets or complexity are reported as warnings, not refused.
 - A candidate is compared with the primary, not with ground truth. A judge measures "as good as the primary", which is the question a cost-down switch needs answered.
-- Multi-turn agents that execute tools see only the turn that was sampled. The candidate's tool calls are compared, never executed.
+- Multi-turn agents that execute tools are evaluated one turn at a time: each sampled turn compares the candidate's tool selection and arguments with the primary's. The candidate's tool calls are never executed.
 
 ## Try it without API keys
 
-`examples/shadow-demo` runs a deterministic mock upstream, a Bifrost gateway with the plugin, and a load generator. It ends by promoting the ready candidate and checking the 90/10 split. See its README.
+`examples/shadow-demo` runs a deterministic mock upstream, a Bifrost gateway with the plugin, and a load generator. It shows the weak candidate refused, promotes the ready one to a 10% canary, checks the split, simulates a provider incident and checks that the canary guard rolls it back. `dev.sh` in the same directory keeps a seeded gateway running for frontend work. See its README.
