@@ -1,5 +1,5 @@
 diff --git a/transports/bifrost-http/lib/config.go b/transports/bifrost-http/lib/config.go
-index f6a0f28..81ffe77 100644
+index f6a0f28f2..81ffe77c9 100644
 --- a/transports/bifrost-http/lib/config.go
 +++ b/transports/bifrost-http/lib/config.go
 @@ -59,6 +59,7 @@ import (
@@ -19,7 +19,7 @@ index f6a0f28..81ffe77 100644
  
  func GetBuiltinPluginNames() []string {
 diff --git a/transports/bifrost-http/server/plugins.go b/transports/bifrost-http/server/plugins.go
-index 408705c..a78cde7 100644
+index 408705c37..a78cde72f 100644
 --- a/transports/bifrost-http/server/plugins.go
 +++ b/transports/bifrost-http/server/plugins.go
 @@ -16,6 +16,7 @@ import (
@@ -62,7 +62,7 @@ index 408705c..a78cde7 100644
  	// no earlier routing plugin (governance routing rules, governance VK LB, enterprise LB)
  	// already set one. CEL rules can still match on provider == "" because this runs last.
 diff --git a/transports/bifrost-http/server/server.go b/transports/bifrost-http/server/server.go
-index 08342ca..e4c0715 100644
+index 08342ca83..a65f7bc2e 100644
 --- a/transports/bifrost-http/server/server.go
 +++ b/transports/bifrost-http/server/server.go
 @@ -43,6 +43,7 @@ import (
@@ -83,23 +83,24 @@ index 08342ca..e4c0715 100644
  	// Both at once: applied separately, the classifier spends the gap between
  	// them configured for a store it has not been given, and warms a throwaway
  	// generation into the embedded one.
-@@ -3013,6 +3017,15 @@ func (s *BifrostHTTPServer) RegisterAPIRoutes(ctx context.Context, callbacks Ser
+@@ -3013,6 +3017,16 @@ func (s *BifrostHTTPServer) RegisterAPIRoutes(ctx context.Context, callbacks Ser
  		}
  		return p
  	})
 +	// Resolve the shadow plugin per request, like the cache handler, so enabling or
-+	// reloading it through /api/plugins is honored without a restart.
++	// reloading it through /api/plugins is honored without a restart. Promotion
++	// writes routing rules, so it needs the config store, like routingHandler.
 +	shadowHandler := handlers.NewShadowHandler(func() handlers.ShadowReader {
 +		p, err := lib.FindPluginAs[*shadow.Plugin](s.Config, shadow.PluginName)
 +		if err != nil || p == nil {
 +			return nil
 +		}
 +		return p
-+	})
++	}, s.shadowRoutingRules())
  	// Websocket handler needs to go below UI handler
  	logger.Debug("initializing websocket server")
  	if s.WebSocketHandler == nil {
-@@ -3169,6 +3182,7 @@ func (s *BifrostHTTPServer) RegisterAPIRoutes(ctx context.Context, callbacks Ser
+@@ -3169,6 +3183,7 @@ func (s *BifrostHTTPServer) RegisterAPIRoutes(ctx context.Context, callbacks Ser
  	}
  	s.skillsServingHandler = skillsServingHandler
  	cacheHandler.RegisterRoutes(s.Router, middlewares...)
@@ -107,7 +108,7 @@ index 08342ca..e4c0715 100644
  	if featureFlagsHandler != nil {
  		featureFlagsHandler.RegisterRoutes(s.Router, middlewares...)
  	}
-@@ -3761,6 +3775,11 @@ func (s *BifrostHTTPServer) Bootstrap(ctx context.Context) error {
+@@ -3761,6 +3776,11 @@ func (s *BifrostHTTPServer) Bootstrap(ctx context.Context) error {
  	if err == nil && semanticCachePlugin != nil {
  		semanticCachePlugin.SetEmbeddingRequestExecutor(s.Client.EmbeddingRequest)
  	}
@@ -119,13 +120,14 @@ index 08342ca..e4c0715 100644
  	// Wire the routing plugin's semantic-classification embedding path. The
  	// executor cannot be passed at Init: the plugin is built while the bifrost
  	// client is still being assembled.
-@@ -4092,3 +4111,16 @@ func (s *BifrostHTTPServer) cleanupAfterServeError() {
+@@ -4092,3 +4112,27 @@ func (s *BifrostHTTPServer) cleanupAfterServeError() {
  		s.skillsServingHandler.Close()
  	}
  }
 +
-+// wireShadowPlugin gives the shadow plugin the client calls it issues and a
-+// pricing function backed by the model catalog (pricing overrides included).
++// wireShadowPlugin gives the shadow plugin the client calls it issues, a
++// pricing function backed by the model catalog (pricing overrides included),
++// and the rollback its canary guard uses.
 +func (s *BifrostHTTPServer) wireShadowPlugin(p *shadow.Plugin) {
 +	var price shadow.PriceFunc
 +	if s.Config.ModelCatalog != nil {
@@ -135,12 +137,30 @@ index 08342ca..e4c0715 100644
 +		}
 +	}
 +	p.SetExecutors(s.Client.ChatCompletionRequest, s.Client.EmbeddingRequest, price)
++	p.SetRollbackHook(handlers.NewShadowRollbackHook(p, s.shadowRoutingRules()))
++}
++
++// shadowRoutingRules is the routing-rule store shadow promotion writes to, or
++// nil when there is no config store.
++func (s *BifrostHTTPServer) shadowRoutingRules() handlers.ShadowRoutingRules {
++	if s.Config == nil || s.Config.ConfigStore == nil {
++		return nil
++	}
++	return handlers.NewShadowRoutingRules(s.Config.ConfigStore, s)
 +}
 diff --git a/transports/go.mod b/transports/go.mod
-index afc0d23..298ee5f 100644
+index afc0d23ad..071a9ed82 100644
 --- a/transports/go.mod
 +++ b/transports/go.mod
-@@ -27,6 +27,7 @@ require (
+@@ -12,6 +12,7 @@ require (
+ 	github.com/go-git/go-billy/v5 v5.9.0
+ 	github.com/go-git/go-git/v5 v5.19.2
+ 	github.com/golang-jwt/jwt/v5 v5.3.1
++	github.com/google/cel-go v0.30.0
+ 	github.com/google/pprof v0.0.0-20260802141513-ef3492d7dac3
+ 	github.com/google/uuid v1.6.0
+ 	github.com/klauspost/compress v1.20.3
+@@ -27,6 +28,7 @@ require (
  	github.com/maximhq/bifrost/plugins/prompts v1.1.16
  	github.com/maximhq/bifrost/plugins/routing v1.3.1
  	github.com/maximhq/bifrost/plugins/semanticcache v1.7.6
@@ -148,6 +168,14 @@ index afc0d23..298ee5f 100644
  	github.com/maximhq/bifrost/plugins/telemetry v1.9.6
  	github.com/pion/ice/v4 v4.4.4
  	github.com/pion/logging v0.2.4
+@@ -136,7 +138,6 @@ require (
+ 	github.com/go-openapi/validate v0.26.5 // indirect
+ 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
+ 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
+-	github.com/google/cel-go v0.30.0 // indirect
+ 	github.com/google/jsonschema-go v0.4.2 // indirect
+ 	github.com/google/s2a-go v0.1.9 // indirect
+ 	github.com/googleapis/enterprise-certificate-proxy v0.3.16 // indirect
 @@ -240,4 +241,7 @@ require (
  	gorm.io/driver/postgres v1.6.0 // indirect
  )

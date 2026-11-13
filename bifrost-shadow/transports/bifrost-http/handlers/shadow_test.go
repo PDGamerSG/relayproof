@@ -56,6 +56,16 @@ func (f *fakeShadow) BuildCanaryRule(experiment, candidate string, weight float6
 	return &shadow.CanaryRule{Name: experiment + "->" + candidate, CelExpression: `model == "x"`}, nil
 }
 
+func (f *fakeShadow) PairScorecard(experiment, candidate string) (shadow.PairSummary, error) {
+	return shadow.PairSummary{Experiment: experiment, Verdict: shadow.VerdictReady}, nil
+}
+
+func (f *fakeShadow) RecordRollout(ev shadow.RolloutEvent) (shadow.RolloutEvent, error) {
+	return ev, nil
+}
+
+func (f *fakeShadow) Rollouts() shadow.Rollouts { return shadow.Rollouts{} }
+
 func shadowCtx(query string) *fasthttp.RequestCtx {
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("/api/shadow/x?" + query)
@@ -70,8 +80,8 @@ func decode(t *testing.T, ctx *fasthttp.RequestCtx) map[string]any {
 }
 
 func TestShadowHandlerPluginNotLoaded(t *testing.T) {
-	h := NewShadowHandler(func() ShadowReader { return nil })
-	for _, fn := range []fasthttp.RequestHandler{h.getSummary, h.listRecords, h.getRecord, h.resetRecords, h.getCanaryRule} {
+	h := NewShadowHandler(func() ShadowReader { return nil }, nil)
+	for _, fn := range []fasthttp.RequestHandler{h.getSummary, h.listRecords, h.getRecord, h.resetRecords, h.getCanaryRule, h.promote, h.rollback, h.getRollouts, h.export} {
 		ctx := shadowCtx("")
 		fn(ctx)
 		assert.Equal(t, fasthttp.StatusNotFound, ctx.Response.StatusCode())
@@ -80,7 +90,7 @@ func TestShadowHandlerPluginNotLoaded(t *testing.T) {
 }
 
 func TestShadowHandlerSummary(t *testing.T) {
-	h := NewShadowHandler(func() ShadowReader { return &fakeShadow{} })
+	h := NewShadowHandler(func() ShadowReader { return &fakeShadow{} }, nil)
 	ctx := shadowCtx("")
 	h.getSummary(ctx)
 	assert.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode())
@@ -92,7 +102,7 @@ func TestShadowHandlerSummary(t *testing.T) {
 
 func TestShadowHandlerListRecords(t *testing.T) {
 	f := &fakeShadow{records: []*shadow.Record{{ID: "r1"}, {ID: "r2"}}}
-	h := NewShadowHandler(func() ShadowReader { return f })
+	h := NewShadowHandler(func() ShadowReader { return f }, nil)
 	ctx := shadowCtx("experiment=exp&candidate=openai%2Fgpt-small&outcome=fail&limit=20&offset=40")
 	h.listRecords(ctx)
 	assert.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode())
@@ -109,7 +119,7 @@ func TestShadowHandlerListRecords(t *testing.T) {
 
 func TestShadowHandlerGetRecord(t *testing.T) {
 	f := &fakeShadow{records: []*shadow.Record{{ID: "r1", Experiment: "e"}}}
-	h := NewShadowHandler(func() ShadowReader { return f })
+	h := NewShadowHandler(func() ShadowReader { return f }, nil)
 	ctx := shadowCtx("")
 	ctx.SetUserValue("id", "r1")
 	h.getRecord(ctx)
@@ -124,7 +134,7 @@ func TestShadowHandlerGetRecord(t *testing.T) {
 
 func TestShadowHandlerReset(t *testing.T) {
 	f := &fakeShadow{}
-	h := NewShadowHandler(func() ShadowReader { return f })
+	h := NewShadowHandler(func() ShadowReader { return f }, nil)
 	ctx := shadowCtx("")
 	h.resetRecords(ctx)
 	assert.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode())
@@ -138,7 +148,7 @@ func TestShadowHandlerReset(t *testing.T) {
 
 func TestShadowHandlerCanaryRule(t *testing.T) {
 	f := &fakeShadow{}
-	h := NewShadowHandler(func() ShadowReader { return f })
+	h := NewShadowHandler(func() ShadowReader { return f }, nil)
 
 	ctx := shadowCtx("experiment=e&candidate=openai%2Fsmall")
 	h.getCanaryRule(ctx)
@@ -171,7 +181,7 @@ func TestShadowHandlerCanaryRule(t *testing.T) {
 
 func TestShadowHandlerCanaryRuleRejectsUnusableWeights(t *testing.T) {
 	f := &fakeShadow{}
-	h := NewShadowHandler(func() ShadowReader { return f })
+	h := NewShadowHandler(func() ShadowReader { return f }, nil)
 	for _, w := range []string{"NaN", "nan", "Inf", "%2BInf", "-Inf", "infinity", "0", "-0.5", "0.00001", "1.5", "lots"} {
 		ctx := shadowCtx("experiment=e&candidate=c&weight=" + w)
 		h.getCanaryRule(ctx)
@@ -188,7 +198,7 @@ func TestShadowHandlerCanaryRuleRejectsUnusableWeights(t *testing.T) {
 
 func TestShadowHandlerCanaryRuleRejectsInvalidPriority(t *testing.T) {
 	f := &fakeShadow{}
-	h := NewShadowHandler(func() ShadowReader { return f })
+	h := NewShadowHandler(func() ShadowReader { return f }, nil)
 	for _, p := range []string{"-1", "abc", "1.5", "1e3"} {
 		ctx := shadowCtx("experiment=e&candidate=c&priority=" + p)
 		h.getCanaryRule(ctx)
@@ -200,7 +210,7 @@ func TestShadowHandlerCanaryRuleRejectsInvalidPriority(t *testing.T) {
 
 func TestShadowHandlerCanaryRulePriority(t *testing.T) {
 	f := &fakeShadow{}
-	h := NewShadowHandler(func() ShadowReader { return f })
+	h := NewShadowHandler(func() ShadowReader { return f }, nil)
 
 	ctx := shadowCtx("experiment=e&candidate=c")
 	h.getCanaryRule(ctx)
