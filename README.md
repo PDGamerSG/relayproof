@@ -1,14 +1,58 @@
-# RelayProof — hackathon research and Claude handoff
+# Bifrost Shadow
 
-> **Implemented project: [Bifrost Shadow](bifrost-shadow/README.md).** After further research the
-> team built shadow traffic evaluation for Bifrost (PS04 contributor track) instead of the
-> RelayProof plan below. The research and plan in this file are kept for reference.
+**Shadow traffic evaluation, gated canary promotion and automatic rollback for the
+[Bifrost](https://github.com/maximhq/bifrost) AI gateway.** Test a cheaper model on real
+production traffic without users seeing its answers, promote it to a canary only when the
+statistics say it is ready, and let the gateway pull it back on its own if it misbehaves live.
+
+| | |
+|---|---|
+| Event | Geek Room Global AI Hackathon 2026 on HackCulture |
+| Category | AI Agents & Intelligent Systems |
+| Theme (primary problem statement) | **Open-Source Bifrost Gateway** (PS04) |
+| Tavily integration | None |
+| Application | [`bifrost-shadow/`](bifrost-shadow/README.md) |
+| Frontend contract | [`bifrost-shadow/api/`](bifrost-shadow/api/README.md): OpenAPI spec, typed TypeScript client, connection guide |
+| Verification | [`bifrost-shadow/TESTING.md`](bifrost-shadow/TESTING.md) |
+
+## Quick start
+
+From this directory (needs git, Go 1.27+ and a C compiler; no API keys):
+
+```bash
+# Clone upstream Bifrost at the pinned commit into ./bifrost, add the plugin, apply patches, test, build
+SKIP_UI=1 bifrost-shadow/scripts/setup.sh
+
+# Key-free demo: scorecards, refused and accepted promotion, simulated incident, automatic rollback
+BIFROST_BIN="$(pwd)/bifrost/tmp/bifrost-http" ./bifrost/examples/shadow-demo/run.sh
+
+# A seeded gateway that keeps running, for frontend work
+BIFROST_BIN="$(pwd)/bifrost/tmp/bifrost-http" ./bifrost/examples/shadow-demo/dev.sh
+```
+
+`./bifrost/` is a generated build tree and is ignored by Git.
+
+## Repository layout
+
+| Path | What |
+|---|---|
+| `bifrost-shadow/` | The implemented project: plugin, gateway API, patches against upstream, docs, demo, tests |
+| `.github/workflows/shadow.yml` | CI: clean build on pinned upstream, race tests, the full demo, client typecheck |
+| `research/`, `docs/`, `CLAUDE_HANDOFF.md` | Archive of the earlier RelayProof research and plan (not implemented) |
+
+---
+
+# Research archive: RelayProof
+
+> The team built [Bifrost Shadow](bifrost-shadow/README.md) instead of the RelayProof plan
+> below. The research and plan are kept for reference and describe work that was not built.
 
 **Recommendation: build a Bifrost upgrade and compatibility lab that turns a broken agent workflow into a small, replayable regression test.** Pair it with a narrowly focused stale-answer verifier for AI-generated API migration advice.
 
 Research date: **10 November 2026**. This directory contains a specification and implementation plan, **not an implemented application**. Proposed features, budgets, scores, and milestones below are design decisions, not measured product results.
 
 Private repository: **[PDGamerSG/relayproof](https://github.com/PDGamerSG/relayproof)**. It retains the research and sanitized source archive for the implementation handoff. Keep this repository private. Build the application in the `relayproof/` subdirectory without a nested Git repository; prepare a separate clean public application repository when publication is authorized.
+
 
 ## Start here in the morning
 
