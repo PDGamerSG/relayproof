@@ -834,3 +834,117 @@ ul.lv-warn {
   transform: translateX(-50%);
   color: var(--amber);
 }
+
+/* Ask the gateway */
+
+.lv-ask {
+  padding-top: 8px;
+}
+.lv-ask__form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-l);
+  background: var(--lit);
+  box-shadow: 8px 10px 0 rgb(var(--shade) / 0.12);
+}
+.lv-ask__form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-size: var(--step-1);
+  resize: vertical;
+  background: var(--lit);
+  color: var(--ink);
+}
+.lv-ask__form textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.lv-ask__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.lv-ask__examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lv-chip {
+  padding: 5px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  transition: border-color 140ms ease, color 140ms ease;
+}
+.lv-chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.lv-ask__out {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+@media (min-width: 900px) {
+  .lv-ask__out {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lv-ask__out > .lv-ask__q,
+  .lv-ask__out > p {
+    grid-column: 1 / -1;
+  }
+}
+.lv-ask__q {
+  font-weight: 650;
+  font-size: var(--step-1);
+}
+.lv-ask__card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+  min-width: 0;
+}
+.lv-ask__card[data-role="primary"] {
+  border-color: var(--ink);
+}
+.lv-ask__card[data-pass="true"] {
+  border-color: var(--ready);
+}
+.lv-ask__card[data-pass="false"],
+.lv-ask__card[data-pass="error"] {
+  border-color: var(--fail);
+}
+.lv-ask__card header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.lv-ask__verdict {
+  margin-left: auto;
+  font-weight: 650;
+}
+.lv-ask__card[data-pass="true"] .lv-ask__verdict {
+  color: var(--ready);
+}
+.lv-ask__card[data-pass="false"] .lv-ask__verdict,
+.lv-ask__card[data-pass="error"] .lv-ask__verdict {
+  color: var(--fail);
+}
+.lv-ask__text {
+  font-size: var(--step-0);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

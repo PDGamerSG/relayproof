@@ -32,6 +32,29 @@ export interface DemoStatus {
   incident_models: string[];
   incident_ttl_seconds: number;
   canary_ttl_seconds: number;
+  /** What the gateway calls: "mock" or a provider such as "anthropic". */
+  upstream?: string;
+  primary_model?: string;
+  requests_today?: number;
+  /** Requests the demo may send per UTC day; 0 means no cap. */
+  daily_request_cap?: number;
+  live_traffic_only_when_watched?: boolean;
+  asked?: number;
+  ask_max_chars?: number;
+  ask_per_hour?: number;
+}
+
+/** POST /api/demo/ask: the primary model's answer to a visitor's question. */
+export interface AskResponse {
+  request_id: string;
+  model: string;
+  answer: string;
+  finish_reason?: string;
+  latency_ms: number;
+  /** The plugin replayed the question against every candidate. */
+  shadowed: boolean;
+  input_tokens: number;
+  output_tokens: number;
 }
 
 export interface DemoApi {
@@ -39,6 +62,7 @@ export interface DemoApi {
   /** error_pct 0 clears the incident. */
   incident: (model: string, errorPct: number) => Promise<DemoStatus>;
   traffic: (n: number) => Promise<{ queued: number }>;
+  ask: (prompt: string) => Promise<AskResponse>;
 }
 
 export type GatewayAuth = { kind: "password"; username: string; password: string } | { kind: "token"; token: string };
@@ -77,6 +101,7 @@ function demoApi(base: string): DemoApi {
     status: () => call<DemoStatus>("GET", "status"),
     incident: (model, errorPct) => call<DemoStatus>("POST", "incident", { model, error_pct: errorPct }),
     traffic: (n) => call<{ queued: number }>("POST", "traffic", { n }),
+    ask: (prompt) => call<AskResponse>("POST", "ask", { prompt }),
   };
 }
 

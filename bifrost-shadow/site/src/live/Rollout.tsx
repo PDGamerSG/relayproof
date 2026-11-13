@@ -131,7 +131,7 @@ function remaining(until: string, now: number): string {
 export function IncidentPanel({ status, rollouts, now, notify, refresh }: PanelProps) {
   const demo = useConnection().demo!;
   const [busy, setBusy] = useState<string>();
-  const [burst, setBurst] = useState(40);
+  const [burst, setBurst] = useState(20);
 
   const act = async (key: string, fn: () => Promise<unknown>, ok: string) => {
     setBusy(key);
@@ -206,14 +206,21 @@ export function IncidentPanel({ status, rollouts, now, notify, refresh }: PanelP
 
       <div className="lv-burst">
         <p className="small muted">
-          The guard needs about ten requests to the canary before it judges. At a 10% share that takes a couple of minutes of live traffic;
-          a burst gets there sooner.
+          The guard needs a few requests to the canary before it judges; at a 10% share that takes a while of live traffic, and a burst
+          gets there sooner.
+          {status?.daily_request_cap ? (
+            <>
+              {" "}
+              Today: <b className="num">{status.requests_today ?? 0}</b> of <span className="num">{status.daily_request_cap}</span> requests
+              used.
+            </>
+          ) : null}
         </p>
         <div className="lv-burst__row">
           <label className="small">
             <span className="sr-only">Requests in the burst</span>
             <select value={burst} onChange={(e) => setBurst(Number(e.target.value))} disabled={status?.burst_running}>
-              {[20, 40, 60].map((n) => (
+              {[10, 20, 30, 40, 60].filter((n) => n <= (status?.burst_max ?? 60)).map((n) => (
                 <option key={n} value={n}>
                   {n} requests
                 </option>
@@ -223,7 +230,11 @@ export function IncidentPanel({ status, rollouts, now, notify, refresh }: PanelP
           <button
             type="button"
             className="btn btn--small btn--ghost"
-            disabled={busy !== undefined || status?.burst_running}
+            disabled={
+              busy !== undefined ||
+              status?.burst_running ||
+              (!!status?.daily_request_cap && (status.requests_today ?? 0) >= status.daily_request_cap)
+            }
             onClick={() => act("burst", () => demo.traffic(burst), `Sending ${burst} requests through the gateway.`)}
           >
             {status?.burst_running ? "Burst running…" : "Send a burst"}

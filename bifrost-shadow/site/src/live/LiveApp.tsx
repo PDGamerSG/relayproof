@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LINKS } from "../data/site";
 import { Mark } from "../components/Icons";
 import { ago, ConnectionContext, count, errorText, modelId, ms, pct, trialConnection, type Connection, type DemoStatus } from "./backend";
+import { AskPanel } from "./Ask";
 import { ConnectPanel } from "./Connect";
 import { DisagreementsDialog, PromoteDialog } from "./Dialogs";
 import { CanaryPanel, Downloads, History, IncidentPanel } from "./Rollout";
@@ -94,16 +95,11 @@ export function LiveApp() {
         Skip to the scorecards
       </a>
       <header className="lv-bar">
-        <a className="lv-bar__brand" href="./">
+        <a className="lv-bar__brand" href="./" aria-label="RelayProof home">
           <Mark />
           <span>RelayProof</span>
         </a>
         <span className="lv-bar__tag">Live console</span>
-        <nav className="lv-bar__links" aria-label="Sections">
-          <a href="#scorecards">Scorecards</a>
-          <a href="#rollout">Canary</a>
-          <a href="#history">History</a>
-        </nav>
         <p className="lv-conn" data-state={connection} role="status" aria-live="polite">
           <span className="lv-conn__dot" aria-hidden="true" />
           {connection === "live" && (
@@ -124,10 +120,18 @@ export function LiveApp() {
             <h1 className="lv-title">Shadow traffic, live.</h1>
             <p className="lede">
               {conn.mode === "trial" ? (
-                <>
-                  The trial runs on a hosted Bifrost gateway with the RelayProof plugin, serving a mock upstream so no provider keys are
-                  involved. A request arrives every second; half are replayed against two cheaper models and scored.
-                </>
+                status?.upstream && status.upstream !== "mock" ? (
+                  <>
+                    The trial runs on a hosted Bifrost gateway with the RelayProof plugin, calling real Claude models.{" "}
+                    <span className="model">{status.primary_model}</span> answers every request; {status.incident_models.join(" and ")} run
+                    in its shadow, and a judge scores each pair. Ask your own question below, or watch the scorecards fill.
+                  </>
+                ) : (
+                  <>
+                    The trial runs on a hosted Bifrost gateway with the RelayProof plugin, serving a mock upstream so no provider keys are
+                    involved. Requests arrive every second; half are replayed against two cheaper models and scored.
+                  </>
+                )
               ) : (
                 <>
                   Signed in to <span className="model">{conn.label}</span>. Scorecards, promotion and rollback act on that gateway and its
@@ -170,6 +174,8 @@ export function LiveApp() {
             </div>
           </div>
         )}
+
+        {conn.demo && <AskPanel status={status} />}
 
         {summary && <Tiles summary={summary} status={status} />}
 
@@ -244,8 +250,16 @@ export function LiveApp() {
             Trial backend: Bifrost at upstream commit ed62e4b with the shadow plugin, on Render. Its public front door exposes only the
             shadow API and the demo controls; it resets canaries after{" "}
             {status ? `${Math.round(status.canary_ttl_seconds / 60)} minutes` : "a while"} and incidents after{" "}
-            {status ? `${Math.round(status.incident_ttl_seconds / 60)} minutes` : "a few minutes"}. Spend is computed from configured
-            prices; the mock charges nothing.
+            {status ? `${Math.round(status.incident_ttl_seconds / 60)} minutes` : "a few minutes"}.{" "}
+            {status?.upstream && status.upstream !== "mock" ? (
+              <>
+                Model calls are real and capped at {status.daily_request_cap || "an unlimited number of"} requests a day
+                {status.live_traffic_only_when_watched ? "; background traffic runs only while someone has this page open" : ""}. Outages are
+                simulated by a proxy in front of the provider, never caused.
+              </>
+            ) : (
+              <>Spend is computed from configured prices; the mock charges nothing.</>
+            )}
           </p>
         ) : (
           <p>
@@ -298,6 +312,7 @@ function Walkthrough({ summary, rollouts, status }: { summary?: Summary; rollout
   const broken = (status?.incidents.length ?? 0) > 0 || (rollouts?.events.some((e) => e.action === "auto_rollback") ?? false);
   const rolledBack = rollouts?.events.some((e) => e.action === "auto_rollback") ?? false;
   const steps = [
+    { done: (status?.asked ?? 0) > 0, text: "Ask your own question.", href: "#ask" },
     { done: ready, text: "Wait for a candidate to reach Ready.", href: "#scorecards" },
     { done: promoted, text: "Promote it to a 10% canary.", href: "#scorecards" },
     { done: broken, text: "Simulate an incident on that model.", href: "#rollout" },
