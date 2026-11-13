@@ -84,7 +84,16 @@ type JudgeConfig struct {
 	Model    string                `json:"model"`
 	// SampleRate is the share of completed shadow pairs that are judged (default 1.0).
 	SampleRate *float64 `json:"sample_rate,omitempty"`
+	// MaxTokens caps the judge's reply (default 300). Models that think before
+	// answering count thinking against it, so give them more room.
+	MaxTokens int `json:"max_tokens,omitempty"`
+	// Effort is sent as the request's reasoning effort ("low", "medium", ...)
+	// when set; empty leaves the judge model's default.
+	Effort string `json:"effort,omitempty"`
 }
+
+// DefaultJudgeMaxTokens is the judge reply cap when judge.max_tokens is unset.
+const DefaultJudgeMaxTokens = 300
 
 // EmbeddingConfig configures the optional embedding-similarity comparison.
 type EmbeddingConfig struct {
@@ -276,6 +285,12 @@ func (c *Config) normalize() error {
 		}
 		if c.Judge.SampleRate != nil && (*c.Judge.SampleRate < 0 || *c.Judge.SampleRate > 1) {
 			return errors.New("shadow: judge.sample_rate must be in [0, 1]")
+		}
+		if c.Judge.MaxTokens < 0 {
+			return errors.New("shadow: judge.max_tokens must not be negative")
+		}
+		if c.Judge.MaxTokens == 0 {
+			c.Judge.MaxTokens = DefaultJudgeMaxTokens
 		}
 	}
 	if c.Embedding != nil && (c.Embedding.Provider == "" || c.Embedding.Model == "") {

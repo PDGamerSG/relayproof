@@ -63,6 +63,34 @@ func TestBuildJudgeRequestRandomizesSlots(t *testing.T) {
 	req = buildJudgeRequest(judge, conv, primary, candidate, true)
 	user = *req.Input[1].Content.ContentStr
 	assert.Less(t, strings.Index(user, "CANDIDATE-ANSWER"), strings.Index(user, "PRIMARY-ANSWER"))
+
+	// Defaults: a 300-token reply and no reasoning parameter.
+	assert.Equal(t, DefaultJudgeMaxTokens, *req.Params.MaxCompletionTokens)
+	assert.Nil(t, req.Params.Reasoning)
+}
+
+func TestJudgeRequestCarriesConfiguredTokensAndEffort(t *testing.T) {
+	judge := &JudgeConfig{Provider: "anthropic", Model: "claude-opus-5-5", MaxTokens: 2048, Effort: "low"}
+	q := "What is 2+2?"
+	conv := []schemas.ChatMessage{{Role: schemas.ChatMessageRoleUser, Content: &schemas.ChatMessageContent{ContentStr: &q}}}
+	req := buildJudgeRequest(judge, conv, Answer{Text: "4"}, Answer{Text: "4"}, false)
+	assert.Equal(t, 2048, *req.Params.MaxCompletionTokens)
+	if assert.NotNil(t, req.Params.Reasoning) && assert.NotNil(t, req.Params.Reasoning.Effort) {
+		assert.Equal(t, "low", *req.Params.Reasoning.Effort)
+	}
+}
+
+func TestJudgeMaxTokensValidation(t *testing.T) {
+	cfg := &Config{
+		Experiments: []Experiment{{Name: "e", Source: ModelRef{Model: "a"}, Candidates: []ModelRef{{Provider: "openai", Model: "b"}}}},
+		Judge:       &JudgeConfig{Provider: "openai", Model: "j", MaxTokens: -1},
+	}
+	assert.Error(t, cfg.normalize())
+
+	cfg.Judge.MaxTokens = 0
+	if assert.NoError(t, cfg.normalize()) {
+		assert.Equal(t, DefaultJudgeMaxTokens, cfg.Judge.MaxTokens)
+	}
 }
 
 func TestRenderTranscriptKeepsMostRecentTurns(t *testing.T) {

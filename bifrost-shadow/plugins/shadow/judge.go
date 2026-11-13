@@ -46,8 +46,21 @@ func buildJudgeRequest(judge *JudgeConfig, conversation []schemas.ChatMessage, p
 	sb.WriteString(renderAnswer(b))
 	user := sb.String()
 	system := judgeSystemPrompt
-	maxTokens := 300
+	maxTokens := judge.MaxTokens
+	if maxTokens <= 0 {
+		maxTokens = DefaultJudgeMaxTokens
+	}
+	// Temperature 0 for repeatable verdicts; the gateway drops it for models
+	// that reject sampling parameters.
 	temperature := 0.0
+	params := &schemas.ChatParameters{
+		MaxCompletionTokens: &maxTokens,
+		Temperature:         &temperature,
+	}
+	if judge.Effort != "" {
+		effort := judge.Effort
+		params.Reasoning = &schemas.ChatReasoning{Effort: &effort}
+	}
 	return &schemas.BifrostChatRequest{
 		Provider: judge.Provider,
 		Model:    judge.Model,
@@ -55,10 +68,7 @@ func buildJudgeRequest(judge *JudgeConfig, conversation []schemas.ChatMessage, p
 			{Role: schemas.ChatMessageRoleSystem, Content: &schemas.ChatMessageContent{ContentStr: &system}},
 			{Role: schemas.ChatMessageRoleUser, Content: &schemas.ChatMessageContent{ContentStr: &user}},
 		},
-		Params: &schemas.ChatParameters{
-			MaxCompletionTokens: &maxTokens,
-			Temperature:         &temperature,
-		},
+		Params: params,
 	}
 }
 

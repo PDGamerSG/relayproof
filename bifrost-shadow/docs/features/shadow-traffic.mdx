@@ -165,7 +165,7 @@ Every provider named in `experiments`, `judge` and `embedding` must be configure
 | `experiments[].source` | required | `provider` and `model` of the primary. `model: "*"` matches every model; an empty provider matches any provider. |
 | `experiments[].candidates` | required | Models each sampled request is replayed against. |
 | `experiments[].sample_rate` | plugin rate | Per-experiment override. |
-| `judge` | none | `provider`, `model`, and `sample_rate` (default `1.0`, the share of pairs judged). |
+| `judge` | none | `provider`, `model`, `sample_rate` (default `1.0`, the share of pairs judged), `max_tokens` (default `300`, the cap on the judge's reply) and `effort` (sent as the request's reasoning effort; unset leaves the model's default). Models that think before answering, such as `claude-opus-5-5`, count thinking against `max_tokens`: give them more room (the hosted Claude demo uses `2048` with `effort: "low"`). The judge is asked for temperature 0; Bifrost drops it for models that reject sampling parameters. |
 | `embedding` | none | `provider` and `model` for semantic similarity. |
 | `max_concurrency` | `4` | Shadow workers. |
 | `queue_size` | `256` | Pending jobs. A full queue drops new jobs; see `counters.dropped`. |
