@@ -135,12 +135,20 @@ browser and go to **Models → Shadow Traffic**.
 
 ## Three-minute live demo script
 
-**Simplest: the hosted console.** Open <https://relayproof.pallabdas.me/live> (Trial). Everything
-below happens there with no setup: scorecards are seeded within a minute of the backend booting,
-Promote shows the gateway's dry-run plan, "Fail 60% of calls" breaks a candidate, "Send a burst"
-gets the guard to its ten-request minimum quickly, and Rollout history shows the `auto_rollback`
-event. The incident clears itself after 3 minutes and the scorecards are replayed, so the demo can
-be run again. The steps below record the same story from a local build instead.
+**Simplest: the hosted console, on real Claude models.** Open
+<https://relayproof.pallabdas.me/live> (Trial). `claude-opus-5-5` serves; `claude-sonnet-5-5` and
+`claude-haiku-5-5` are shadowed and judged by `claude-opus-5-5`.
+
+1. **Ask the gateway**: type a question. Opus answers at once; Sonnet's and Haiku's shadow answers
+   appear beside it with latency and the judge's verdict ("Agrees" / "Disagrees").
+2. **Scorecards**: on the demo traffic both cheaper models reach Ready (first run: 100% agreement,
+   lower bound 92.1% after 45 pairs); Haiku at 98% lower cost, Sonnet at 52%.
+3. **Promote** Haiku: the dialog preselects 25% and shows the gateway's dry-run plan (75/25).
+4. **Fail 60% of calls** on Haiku, then **Send a burst**: the guard rolls it back on its own within
+   about half a minute; Rollout history shows the `auto_rollback` event and its reason.
+
+The outage clears itself after 3 minutes and the scorecards are replayed, so the demo can be run
+again. The steps below record the same story from a local build, on the mock upstream.
 
 **Before recording a local run (not timed)**
 

@@ -11,7 +11,7 @@ statistics say it is ready, and let the gateway pull it back on its own if it mi
 | Category | AI Agents & Intelligent Systems |
 | Theme (primary problem statement) | **Open-Source Bifrost Gateway** (PS04) |
 | Tavily integration | None |
-| Live | [relayproof.pallabdas.me](https://relayproof.pallabdas.me) (overview) and [relayproof.pallabdas.me/live](https://relayproof.pallabdas.me/live) (live console: a trial on the hosted gateway, or sign in to your own) |
+| Live | [relayproof.pallabdas.me](https://relayproof.pallabdas.me) (overview) and [relayproof.pallabdas.me/live](https://relayproof.pallabdas.me/live) (live console on real Claude models: `claude-opus-5-5` serves, `claude-sonnet-5-5` and `claude-haiku-5-5` are shadowed and judged; ask your own question, promote, break, watch the rollback; or sign in to your own gateway) |
 | Hosted backend | [`bifrost-shadow/deploy/`](bifrost-shadow/deploy/): gateway, mock upstream and a public front door in one container, on Render ([`render.yaml`](render.yaml)) |
 | Application | [`bifrost-shadow/`](bifrost-shadow/README.md) |
 | Frontend contract | [`bifrost-shadow/api/`](bifrost-shadow/api/README.md): OpenAPI spec, typed TypeScript client, connection guide |

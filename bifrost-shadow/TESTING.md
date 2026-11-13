@@ -3,6 +3,24 @@
 What was run to check Bifrost Shadow, on which platform, and what came back. Every result
 below was observed, not estimated. Base: `maximhq/bifrost@ed62e4b`, Go 1.27.4, Node 26.
 
+## Real Claude models on the hosted demo (14 November 2026)
+
+The hosted backend switched to `claude-opus-5-5` (primary), `claude-sonnet-5-5` and
+`claude-haiku-5-5` (candidates), judged by `claude-opus-5-5` at low effort, through the fault proxy.
+
+| Check | Result |
+|---|---|
+| Local run of the Claude configuration against the mock's Anthropic face (no key) | Gateway's Anthropic provider, fault proxy and Opus judge worked; an asked question's two shadow records were found by its request ID |
+| Mock mode through the same entrypoint (regression) | `gpt-4o-mini` ready, `llama-3.1-8b` not ready |
+| Front door, fault proxy, plugin and schema tests | Pass (daily cap over every request kind, `ask` forcing the shadow path and returning the request ID, per-address question limit, configurable candidates; judge `max_tokens` and `effort`) |
+| Production boot with the key | `upstream: anthropic`; 40 seed requests; every pair judged, no judge errors, no candidate errors |
+| Real scorecards after 45 requests | `claude-haiku-5-5` ready, 100% agreement, lower bound 92.1%, judge 9.3 vs 9.3, p50 1.22 s to 750 ms, 98.0% cheaper. `claude-sonnet-5-5` ready, 100%, lower bound 92.1%, judge 9.2 vs 9.3, 1.22 s to 1.09 s, 52.0% cheaper |
+| Judge reasons are real | For example, it preferred a candidate's bare "943" over Opus's worked answer because the prompt asked for just the number |
+| Ask the gateway, in a browser on `/live` | "Explain in one sentence why the sky is blue": Opus 1.28 s; Sonnet 1.38 s, agrees; Haiku 927 ms, agrees |
+| Promote, outage, rollback, in a browser | Haiku promoted to 25% at 02:16:20 IST; 60% outage on Haiku and a 20-request burst; the guard rolled it back at 02:16:49 ("shadow verdict turned not_ready on continued evaluation"; 4 of 4 live canary requests failed, source 0%) |
+| Spend for that run | 76 demo requests of the 400-a-day cap; $0.40 of shadow and judge spend by the plugin's count (primary calls are not in that figure) |
+| Bug found in production | Render kept an old `TRAFFIC_EVERY=1s` variable, which would have spent the daily cap in minutes while the console was open. Removed; the Claude default of one request every 15 s, only while watched, applies |
+
 ## Hosted deployment and live console (13 November 2026)
 
 Backend: Render web service `relayproof-api`, starter plan (0.5 CPU, 512 MB), built from

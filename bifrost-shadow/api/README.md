@@ -30,10 +30,13 @@ attaches the setup token itself and forwards only these routes:
 | POST | `/api/shadow/promote`, `/api/shadow/rollback` | As below. 30 POSTs a minute per client. |
 | GET | `/api/demo/status` | Live traffic counters, active incidents, whether scorecards are being replayed. |
 | POST | `/api/demo/incident` `{"model":"gpt-4o-mini","error_pct":60}` | Candidates only; `error_pct` 0 clears it, and it clears itself after 3 minutes. When the last incident ends, records are cleared and 300 requests replayed. |
-| POST | `/api/demo/traffic` `{"n":40}` | Up to 60 requests through the gateway, one burst at a time. |
+| POST | `/api/demo/traffic` `{"n":20}` | Requests through the gateway, one burst at a time (up to 30 on real models, 60 on the mock). |
+| POST | `/api/demo/ask` `{"prompt":"..."}` | A visitor's question to the primary with `x-bf-shadow: force`. Returns `request_id`, `answer`, `latency_ms`, `shadowed`; the candidates' records carry the same `request_id` within seconds. 20 an hour per client, 600 characters. |
 
 Everything else answers `403`; `DELETE /api/shadow/records` is not exposed. Canaries older than
-30 minutes are rolled back. A frontend can use the hosted backend the same way:
+30 minutes are rolled back. `/api/demo/status` also reports `upstream` (`anthropic` or `mock`),
+`primary_model`, `incident_models`, and `requests_today` against `daily_request_cap`; every
+request the demo sends counts toward that cap, and a burst or question past it answers `429`. A frontend can use the hosted backend the same way:
 `new ShadowClient({ baseUrl: "https://relayproof.pallabdas.me" })`, no token.
 
 ## 1. Start a backend

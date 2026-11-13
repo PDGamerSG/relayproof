@@ -14,17 +14,24 @@ tests, applied to `maximhq/bifrost@ed62e4b` by one script.
 ## Try it live
 
 - [relayproof.pallabdas.me/live](https://relayproof.pallabdas.me/live): the live console. **Trial**
-  runs on a hosted gateway (Bifrost with this plugin and a mock upstream, so no keys): watch
-  scorecards fill, open the disagreements, promote `gpt-4o-mini` to a 10% canary, break it with a
-  simulated provider incident and watch the guard roll it back. **Sign in** points the same
-  console at your own gateway with its dashboard login or setup token.
+  runs on a hosted gateway calling real Claude models: `claude-opus-5-5` answers every request,
+  `claude-sonnet-5-5` and `claude-haiku-5-5` run in its shadow, and `claude-opus-5-5` judges each
+  pair. Ask your own question and see all three answers with the judge's verdict, watch the
+  scorecards fill, open the disagreements, promote a candidate to a canary, break it with a
+  simulated provider outage and watch the guard roll it back. **Sign in** points the same console
+  at your own gateway with its dashboard login or setup token.
 - [relayproof.pallabdas.me](https://relayproof.pallabdas.me): the overview, with a simulation that
   needs no backend.
 
-The hosted backend is [`deploy/`](deploy/): one container with the gateway and mock on loopback
-and a front door that exposes only the shadow API (setup token attached server-side) and the demo
-controls. It resets itself: incidents clear after 3 minutes, canaries roll back after 30, and the
-scorecards are replayed after an incident.
+The hosted backend is [`deploy/`](deploy/): one container with the gateway on loopback, a fault
+proxy in front of `api.anthropic.com` (it fails a share of one model's calls on demand, so outages
+are simulated, never caused), and a front door that exposes only the shadow API (setup token
+attached server-side) and the demo controls. Spend on the Anthropic key is capped: 400 requests a
+UTC day for everything the demo sends, background traffic only while someone has the console
+open, 20 questions an hour per visitor, and the plugin's own $5 daily budget for shadow and judge
+calls. It resets itself: outages clear after 3 minutes, canaries roll back after 30, and the
+scorecards are replayed after an outage. Without `ANTHROPIC_API_KEY` the same container runs on
+the deterministic mock upstream.
 
 ## The problem
 
