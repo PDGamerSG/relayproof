@@ -1,6 +1,6 @@
 > Draft pull request description for `maximhq/bifrost`. It has not been posted; posting needs the team's explicit go-ahead.
 
-# feat(plugins): shadow traffic evaluation with readiness scorecards and canary promotion
+# feat(plugins): shadow traffic evaluation with readiness scorecards, gated canary promotion and automatic rollback
 
 ## Summary
 
@@ -15,8 +15,14 @@ new **Models → Shadow Traffic** dashboard page or from the API.
 - The client always receives the primary model's answer, unchanged. Candidate, judge and
   embedding calls run on a bounded worker pool as internal requests
   (`PrepareContextForInternalRequest`).
-- Readiness uses the 95% Wilson lower bound of the agreement rate, not the raw rate.
-- Promotion reuses the existing routing-rules API; the plugin only builds the rule body.
+- Readiness uses the 95% Wilson lower bound of the agreement rate, not the raw rate. Tool
+  selection and JSON structure are required gates; a failed judge call leaves a pair unscored.
+- `POST /api/shadow/promote` writes the canary routing rule through the config store and the
+  routing engine's reload, exactly as the routing-rules API does. It requires a `ready` verdict
+  (or a recorded override reason), keeps one rule per source model, and partially evaluates
+  other rules' CEL to refuse a canary an earlier rule would shadow.
+- A canary guard watches live traffic per target and, with `canary.auto_rollback`, rolls an
+  unhealthy candidate back by itself. Every promotion and rollback is logged with its evidence.
 
 Base: `ed62e4b`.
 
@@ -43,9 +49,12 @@ connects the answer to the rollout mechanism the gateway already has.
 | `plugins/shadow/judge.go` | Judge prompt with randomized A/B order, tolerant reply parsing, mapping back to primary and candidate |
 | `plugins/shadow/store.go` | Ring buffer, optional JSONL persistence with torn-line tolerance, record filters, scorecards, verdicts |
 | `plugins/shadow/api.go` | Summary, records, reset, canary-rule builder (including wildcard sources) |
+| `plugins/shadow/ledger.go` | Daily spend ledger shared across plugin reloads, persisted beside `persist_path`, with per-job reservations |
+| `plugins/shadow/rollout.go` | Rollout log, active canaries, live per-target health, the canary guard and its rollback hook |
 | `plugins/shadow/config.go` | Config types, defaults and validation |
-| `plugins/shadow/compare_test.go`, `judge_test.go`, `plugin_test.go` | Unit and component tests, benchmarks |
-| `transports/bifrost-http/handlers/shadow.go`, `shadow_test.go` | `/api/shadow/*` handler and its tests |
+| `plugins/shadow/compare_test.go`, `judge_test.go`, `plugin_test.go`, `readiness_test.go`, `ledger_test.go`, `rollout_test.go` | Unit and component tests, benchmarks |
+| `transports/bifrost-http/handlers/shadow.go`, `shadow_test.go` | `/api/shadow/*` handler (summary, records, reset, canary-rule, promote, rollback, rollouts, export) and its tests |
+| `transports/bifrost-http/handlers/shadow_rollout.go`, `shadow_rollout_test.go` | Server-side promotion and rollback: verdict gate, merge into one rule per source, CEL overlap check, the rollback hook; tests include effective traffic shares with two candidates |
 | `ui/app/workspace/shadow/` | Dashboard page: counter tiles, scorecard, disagreements sheet, promote dialog, not-enabled view |
 | `ui/lib/store/apis/shadowApi.ts`, `ui/lib/types/shadow.ts`, `ui/lib/utils/shadow.ts`, `ui/lib/utils/shadow.test.ts` | RTK Query endpoints, types, helpers and their vitest cases |
 | `docs/features/shadow-traffic.mdx` | Feature page |
@@ -59,7 +68,7 @@ New test files sit next to new source files only. Tests for existing code go int
 
 | Change | Files | What |
 |---|---|---|
-| Plugin registration and wiring | `transports/bifrost-http/lib/config.go`, `transports/bifrost-http/server/plugins.go`, `transports/bifrost-http/server/server.go`, `transports/go.mod` | Adds `shadow` to the built-in plugin names and to `loadBuiltinPlugin`. Registers it only when its config is present and enabled, at built-in order 10, after the semantic cache (a cache hit short-circuits before sampling); otherwise marks it disabled. `wireShadowPlugin` runs on bootstrap and on plugin reload and passes the client's `ChatCompletionRequest` and `EmbeddingRequest` plus a price function backed by `ModelCatalog.CalculateCostForUsage`. The handler resolves the plugin per request, like the cache handler, so enabling or reloading through `/api/plugins` needs no restart. `go.mod` requires `plugins/shadow v0.1.0` with a `replace` to `../plugins/shadow` until the module is tagged. |
+| Plugin registration and wiring | `transports/bifrost-http/lib/config.go`, `transports/bifrost-http/server/plugins.go`, `transports/bifrost-http/server/server.go`, `transports/go.mod` | Adds `shadow` to the built-in plugin names and to `loadBuiltinPlugin`. Registers it only when its config is present and enabled, at built-in order 10, after the semantic cache (a cache hit short-circuits before sampling); otherwise marks it disabled. `wireShadowPlugin` runs on bootstrap and on plugin reload and passes the client's `ChatCompletionRequest` and `EmbeddingRequest`, a price function backed by `ModelCatalog.CalculateCostForUsage`, and the canary guard's rollback hook. The shadow handler gets a routing-rule writer built from the config store and the server's `ReloadRoutingRule`/`RemoveRoutingRule` (nil without a config store, in which case promotion answers 503). `github.com/google/cel-go` moves from indirect to direct. The handler resolves the plugin per request, like the cache handler, so enabling or reloading through `/api/plugins` needs no restart. `go.mod` requires `plugins/shadow v0.1.0` with a `replace` to `../plugins/shadow` until the module is tagged. |
 | Config schema | `transports/config.schema.json`, `transports/bifrost-http/lib/validator_test.go` | A `name: "shadow"` branch in the plugins `allOf` describing every config field with its default and range, `shadow` added to the built-in names in the plugin `name` description, and two tests: `TestValidateConfigSchema_ShadowPlugin` (a full valid config, a wildcard source, and twelve malformed configs that must fail) and `TestValidateConfigSchema_ShadowCoversEverySetting` (by reflection, every field of `shadow.Config`, `Thresholds`, `JudgeConfig` and `EmbeddingConfig` is in the schema and nothing else is). |
 | Docs navigation | `docs/docs.json` | Adds `features/shadow-traffic` after `features/complexity-router`. |
 | Dashboard API plumbing | `ui/lib/store/apis/baseApi.ts`, `ui/lib/store/apis/index.ts` | `ShadowSummary` and `ShadowRecords` tag types (invalidated together on reset) and the `shadowApi` export. |
@@ -296,11 +305,16 @@ worker and the mock upstream in the E2E environment; that is a follow-up.
   never executed, and multi-turn agents are evaluated one turn at a time. Only the first choice
   of an `n > 1` response is compared.
 - The daily budget depends on prices: a model with neither a catalog price nor a manual override
-  counts as free. It is checked before work starts, so jobs already running can overshoot it.
+  counts as free. Jobs reserve a moving-average cost before they start; the cap holds within
+  that estimate.
 - `daily_budget_usd` defaults to unlimited and `store_payloads` defaults to `true`. Open
   question for maintainers: whether either default should be stricter.
-- The API and dashboard allow promoting a candidate that is not `ready`; the dialog warns. Open
-  question: whether promotion should require `ready`.
+- `POST /api/shadow/promote` requires `ready` or an override reason. The dashboard dialog in this
+  PR still creates the rule through the routing-rules API; follow-up: switch it to the promote
+  endpoint and show live canary health.
+- Canary health, the spend ledger and the rollout log are per node. The conflict check knows
+  only provider, model and request type, so rules that depend on other request data are
+  reported as warnings rather than refused.
 - Request-path follow-up from the cost section: a gateway-level latency measurement.
 - `transports/go.mod` carries a `replace` for `plugins/shadow` until the module is tagged.
 
@@ -308,7 +322,7 @@ worker and the mock upstream in the E2E environment; that is a follow-up.
 
 ```bash
 cd plugins/shadow && go test -race ./... && go test -run xxx -bench . -benchmem
-cd transports && go test -race -run Shadow ./bifrost-http/handlers/ ./bifrost-http/lib/
+cd transports && go test -race -run 'Shadow|CELOverlap' ./bifrost-http/handlers/ ./bifrost-http/lib/
 cd ui && npx vitest run lib/utils/shadow.test.ts && npm run typecheck && npm run i18n:check
 cd examples/shadow-demo && BIFROST_BIN=/path/to/bifrost-http ./run.sh
 ```
