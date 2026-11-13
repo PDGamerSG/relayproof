@@ -293,6 +293,9 @@ export function LiveApp() {
         <PromoteDialog
           pair={promoting}
           current={canaryShare(promoting)}
+          // With real models every request costs money, so a larger share gets
+          // the guard its minimum number of canary requests sooner.
+          defaultShare={status?.upstream && status.upstream !== "mock" ? 0.25 : 0.1}
           onClose={() => setPromoting(undefined)}
           onDone={(text) => {
             setPromoting(undefined);
@@ -314,7 +317,11 @@ function Walkthrough({ summary, rollouts, status }: { summary?: Summary; rollout
   const steps = [
     { done: (status?.asked ?? 0) > 0, text: "Ask your own question.", href: "#ask" },
     { done: ready, text: "Wait for a candidate to reach Ready.", href: "#scorecards" },
-    { done: promoted, text: "Promote it to a 10% canary.", href: "#scorecards" },
+    {
+      done: promoted,
+      text: status?.upstream && status.upstream !== "mock" ? "Promote it to a 25% canary." : "Promote it to a 10% canary.",
+      href: "#scorecards",
+    },
     { done: broken, text: "Simulate an incident on that model.", href: "#rollout" },
     { done: rolledBack, text: "Watch the guard roll it back.", href: "#history" },
   ];

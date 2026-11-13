@@ -8,18 +8,21 @@ const SHARES = [0.05, 0.1, 0.25, 0.5];
 export function PromoteDialog({
   pair,
   current,
+  defaultShare = 0.1,
   onClose,
   onDone,
 }: {
   pair: PairSummary;
   current?: number;
+  /** Share preselected for a new canary. */
+  defaultShare?: number;
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
   const { client } = useConnection();
   const ready = pair.verdict === "ready";
   const candidate = modelId(pair.candidate);
-  const [weight, setWeight] = useState(current ?? 0.1);
+  const [weight, setWeight] = useState(current ?? defaultShare);
   const [reason, setReason] = useState("");
   const [plan, setPlan] = useState<Promotion>();
   const [planError, setPlanError] = useState<string>();
