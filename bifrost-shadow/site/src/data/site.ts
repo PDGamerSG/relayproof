@@ -21,8 +21,6 @@ export const PINNED_COMMIT = "ed62e4b";
 
 export const NAV = [
   { href: "#how", label: "How it works" },
-  { href: "#scorecard", label: "Scorecard" },
   { href: "#evidence", label: "Evidence" },
-  { href: "#guards", label: "Guards" },
   { href: "#start", label: "Quick start" },
 ] as const;

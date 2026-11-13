@@ -45,7 +45,7 @@ export function Nav() {
   return (
     <header className="nav" data-open={open}>
       <div className="nav__bar">
-        <a className="nav__brand" href="#top" onClick={() => setOpen(false)}>
+        <a className="nav__brand" href="./" aria-label="RelayProof home" onClick={() => setOpen(false)}>
           <Mark />
           <span>RelayProof</span>
         </a>
@@ -59,14 +59,11 @@ export function Nav() {
         </nav>
 
         <div className="nav__end">
-          <a className="nav__source" href="live.html">
-            Live console
-          </a>
           <a className="nav__source" href={LINKS.repo}>
-            Source
+            GitHub
           </a>
-          <a className="btn btn--sun btn--small" href="#start" onClick={() => setOpen(false)}>
-            Run the demo
+          <a className="btn btn--sun btn--small" href="live.html" onClick={() => setOpen(false)}>
+            Try it live
           </a>
           <button
             type="button"
@@ -87,8 +84,7 @@ export function Nav() {
             {item.label}
           </a>
         ))}
-        <a href="live.html">Live console</a>
-        <a href={LINKS.repo}>Source on GitHub</a>
+        <a href={LINKS.repo}>GitHub</a>
       </nav>
     </header>
   );
