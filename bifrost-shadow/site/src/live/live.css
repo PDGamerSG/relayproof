@@ -826,3 +826,11 @@ ul.lv-warn {
   background: rgb(255 194 26 / 0.14);
   color: var(--moon);
 }
+.lv-meter__legend {
+  position: relative;
+}
+.lv-meter__need {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--amber);
+}

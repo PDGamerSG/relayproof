@@ -111,7 +111,7 @@ export function PromoteDialog({
 
         {!ready && (
           <label className="lv-field">
-            <span className="small">Override reason (recorded in the rollout log)</span>
+            <span className="small">Override reason, at least 8 characters (recorded in the rollout log)</span>
             <textarea
               rows={2}
               value={reason}

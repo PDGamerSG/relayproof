@@ -373,7 +373,8 @@ function PairCard({
   onInspect: () => void;
 }) {
   const fails = Math.max(0, pair.scored + pair.errors - pair.passes);
-  const axis = (f: number) => `${(Math.min(1, Math.max(0, f)) * 100).toFixed(2)}%`;
+  // The meter shows 50% to 100%, where verdicts are decided.
+  const axis = (f: number) => `${(Math.min(1, Math.max(0, (f - 0.5) / 0.5)) * 100).toFixed(2)}%`;
   const bases = Object.entries(pair.pass_basis_counts ?? {}).filter(([, n]) => (n ?? 0) > 0);
   return (
     <article className="lv-card" data-verdict={pair.verdict}>
@@ -401,8 +402,10 @@ function PairCard({
           <span className="lv-meter__bar" style={{ left: axis(minAgreement) }} />
         </div>
         <p className="lv-meter__legend small muted num">
-          <span>0%</span>
-          <span>needs {pct(minAgreement, 0)}</span>
+          <span>50%</span>
+          <span className="lv-meter__need" style={{ left: axis(minAgreement) }}>
+            needs {pct(minAgreement, 0)}
+          </span>
           <span>100%</span>
         </p>
       </div>
