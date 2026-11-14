@@ -1,17 +1,26 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
-import { count, modelId, pct } from "./backend";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { count, modelId, pct, saveBlob, useConnection } from "./backend";
 import {
   DEFAULT_TOLERANCE,
   MIN_PER_ARM,
+  calibration,
   excludesZero,
   judgedRecords,
   judgeFamilyLinks,
   judgeHealth,
+  judgePreference,
+  kappaStrength,
   modelFamily,
   positionBias,
+  scoreGap,
   scoreGaps,
   verbosity,
+  type Calibration,
   type FamilyLink,
+  type HumanLabel,
+  type Judged,
+  type Kappa,
+  type Preference,
   type JudgeHealth,
   type PositionArm,
   type PositionBias,
@@ -19,11 +28,12 @@ import {
   type Verbosity,
 } from "./judgeStats";
 import { candidateKey, type RecordsState } from "./records";
-import type { Summary } from "./shadowClient";
+import type { Answer, ShadowRecord, Summary } from "./shadowClient";
 import "./judge.css";
 
 const ZHENG = "https://arxiv.org/abs/2306.05685";
 const PANICKSSERY = "https://arxiv.org/abs/2404.13076";
+const LANDIS_KOCH = "https://doi.org/10.2307/2529310";
 
 type Status = "ok" | "watch" | "warn" | "wait" | "note";
 
@@ -60,6 +70,10 @@ function Cite({ href, children }: { href: string; children: ReactNode }) {
 
 /** Judge check: how far to trust the LLM judge behind the scorecards. */
 export function JudgeCheck({ data, summary }: { data: RecordsState; summary?: Summary }) {
+  const conn = useConnection();
+  const where = conn.base || conn.label;
+  const store = useLabelStore(where);
+  const agreement = useMemo(() => calibration(store.list), [store.list]);
   const tolerance = summary?.thresholds.quality_tolerance ?? DEFAULT_TOLERANCE;
   const judged = useMemo(() => judgedRecords(data.records), [data.records]);
 
@@ -72,7 +86,10 @@ export function JudgeCheck({ data, summary }: { data: RecordsState; summary?: Su
     const list = [...seen.values()];
     // Name the experiment only when one model is a candidate in more than one.
     const dup = new Set(list.filter((c, i) => list.findIndex((d) => d.model === c.model) !== i).map((c) => c.model));
-    return list.map((c) => ({ ...c, label: dup.has(c.model) ? `${c.model} (${c.experiment})` : c.model }));
+    // A fixed order, so the filter does not reshuffle as records roll over.
+    return list
+      .map((c) => ({ ...c, label: dup.has(c.model) ? `${c.model} (${c.experiment})` : c.model }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [judged]);
 
   const [scope, setScope] = useState("all");
@@ -149,11 +166,18 @@ export function JudgeCheck({ data, summary }: { data: RecordsState; summary?: Su
 
         <p className="lv-judge__basis small muted">
           Judge <span className="model">{judgeModel ?? "not reported yet"}</span>, quality tolerance{" "}
-          <b className="num">{plural(tolerance, "point")}</b>. Based on the newest {plural(judged.length, "judged comparison")}
-          {data.total > data.records.length && <> of {count(data.total)} the gateway holds</>}.
+          <b className="num">{plural(tolerance, "point")}</b>. Based on the {plural(judged.length, "judged comparison")} among the newest{" "}
+          {count(data.records.length)} loaded{data.total > data.records.length && <> (the gateway holds {count(data.total)})</>}.
         </p>
 
-        <Glance overall={overall} links={links.links} judgeModel={judgeModel} maxJudgeErrorRate={summary?.thresholds.max_judge_error_rate} />
+        <Glance
+          overall={overall}
+          links={links.links}
+          judgeModel={judgeModel}
+          maxJudgeErrorRate={summary?.thresholds.max_judge_error_rate}
+          agreement={agreement}
+          onLabel={() => document.getElementById("judge-cal")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        />
 
         {links.links.length > 0 && judgeModel && <FamilyNote judgeModel={judgeModel} links={links.links} />}
 
@@ -176,6 +200,8 @@ export function JudgeCheck({ data, summary }: { data: RecordsState; summary?: Su
           <HealthPanel h={view.health} limit={summary?.thresholds.max_judge_error_rate} />
         </div>
       </section>
+
+      <Calibrate key={where} records={judged} tolerance={tolerance} store={store} agreement={agreement} where={conn.label} judgeModel={judgeModel} />
     </>
   );
 }
@@ -186,6 +212,17 @@ interface GlanceItem {
   label: string;
   status: Status;
   text: string;
+  action?: { label: string; run: () => void };
+}
+
+function agreementStatus(c: Calibration): { status: Status; text: string } {
+  if (c.n < 10) return { status: "wait", text: c.n === 0 ? "Label 10 pairs yourself for a first read." : `${plural(c.n, "label")} so far; 10 give a first read.` };
+  const k = c.three.kappa;
+  if (k === undefined) return { status: "note", text: `${pct(c.three.agreement, 0)} agreement; kappa needs labels in more than one class.` };
+  return {
+    status: k >= 0.61 ? "ok" : k >= 0.4 ? "watch" : "warn",
+    text: `${pct(c.three.agreement, 0)} agreement with you, kappa ${k.toFixed(2)} (${kappaStrength(k)}).`,
+  };
 }
 
 function positionStatus(p: PositionBias): { status: Status; text: string } {
@@ -229,11 +266,15 @@ function Glance({
   links,
   judgeModel,
   maxJudgeErrorRate,
+  agreement,
+  onLabel,
 }: {
   overall: { position: PositionBias; length: Verbosity; gaps: ScoreGaps; health: JudgeHealth };
   links: FamilyLink[];
   judgeModel?: string;
   maxJudgeErrorRate?: number;
+  agreement: Calibration;
+  onLabel: () => void;
 }) {
   const { position, length, gaps, health } = overall;
   const items: GlanceItem[] = [
@@ -257,6 +298,7 @@ function Glance({
               : "watch",
       text: health.errors === 0 ? `None in ${plural(health.attempts, "call")}.` : `${pct(health.rate)} of ${plural(health.attempts, "call")} failed.`,
     },
+    { label: "Your labels", ...agreementStatus(agreement), action: { label: agreement.n === 0 ? "Start labelling" : "Label more", run: onLabel } },
   ];
   return (
     <ul className="lv-judge__glance" aria-label="At a glance">
@@ -268,6 +310,11 @@ function Glance({
             <span className="sr-only">: {STATUS_WORD[i.status]}.</span>
           </p>
           <p className="small">{i.text}</p>
+          {i.action && (
+            <button type="button" className="lv-judge__glance-go small" onClick={i.action.run}>
+              {i.action.label}
+            </button>
+          )}
         </li>
       ))}
     </ul>
@@ -767,5 +814,626 @@ function HealthPanel({ h, limit }: { h: JudgeHealth; limit?: number }) {
         </div>
       )}
     </Panel>
+  );
+}
+
+// ---------- you be the judge ----------
+
+const STORE_PREFIX = "relayproof.judge-labels.v1:";
+
+type Labels = Record<string, HumanLabel>;
+
+interface LabelStore {
+  labels: Labels;
+  /** Oldest first. */
+  list: HumanLabel[];
+  /** False when this browser refused to store the labels. */
+  saved: boolean;
+  put: (label: HumanLabel) => void;
+  remove: (id: string) => void;
+  clear: () => void;
+}
+
+const isPreference = (x: unknown): x is Preference => x === "primary" || x === "same" || x === "candidate";
+
+function readLabels(key: string): Labels {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as { labels?: Record<string, Partial<HumanLabel>> } | null;
+    const out: Labels = {};
+    for (const [id, l] of Object.entries(parsed?.labels ?? {})) {
+      if (!l || !isPreference(l.human) || !l.judge || !Number.isFinite(l.judge.primary_score) || !Number.isFinite(l.judge.candidate_score)) continue;
+      out[id] = { ...(l as HumanLabel), id, tolerance: Number.isFinite(l.tolerance) ? (l.tolerance as number) : DEFAULT_TOLERANCE };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writeLabels(key: string, labels: Labels): boolean {
+  try {
+    if (Object.keys(labels).length === 0) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, JSON.stringify({ version: 1, labels }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function storageWorks(): boolean {
+  try {
+    const probe = `${STORE_PREFIX}probe`;
+    window.localStorage.setItem(probe, "1");
+    window.localStorage.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Labels for one gateway, kept in this browser when it allows; the page works without storage. */
+function useLabelStore(where: string): LabelStore {
+  const key = STORE_PREFIX + where;
+  const [state, setState] = useState(() => ({ key, labels: readLabels(key), saved: storageWorks() }));
+  let s = state;
+  if (s.key !== key) {
+    // Another gateway: its own labels.
+    s = { key, labels: readLabels(key), saved: storageWorks() };
+    setState(s);
+  }
+  const labels = s.labels;
+  const commit = useCallback((next: Labels) => setState({ key, labels: next, saved: writeLabels(key, next) }), [key]);
+  const list = useMemo(() => Object.values(labels).sort((a, b) => a.labelled_at.localeCompare(b.labelled_at)), [labels]);
+  return {
+    labels,
+    list,
+    saved: s.saved,
+    put: (label) => commit({ ...labels, [label.id]: label }),
+    remove: (id) => {
+      const next = { ...labels };
+      delete next[id];
+      commit(next);
+    },
+    clear: () => commit({}),
+  };
+}
+
+/** Whether a record shows its candidate as answer A: a hash of its id, so the order holds across polls and reloads. */
+function candidateAsA(id: string): boolean {
+  let h = 0x811c9dc5;
+  const s = `relayproof:${id}`;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  // Final mix (murmur3) so the low bit depends on every character.
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return (h & 1) === 1;
+}
+
+/** Pairs with the same request and candidate are labelled once. */
+const group = (experiment: string, candidate: string, prompt: string | undefined, id: string) =>
+  prompt?.trim() ? `${experiment}|${candidate}|${prompt.trim()}` : `id:${id}`;
+const recordGroup = (r: ShadowRecord) => group(r.experiment, modelId(r.candidate), r.prompt, r.id);
+const labelGroup = (l: HumanLabel) => group(l.experiment, l.candidate, l.prompt, l.id);
+
+/** Failing pairs first, then close calls, then the rest; newest first within each. */
+function urgency(r: Judged, tolerance: number): number {
+  if (!r.pass) return 0;
+  const gap = scoreGap(r.judge);
+  return gap !== 0 && Math.abs(gap) <= tolerance + 1 ? 1 : 2;
+}
+
+function buildQueue(records: Judged[], labels: Labels, skipped: string[], tolerance: number): Judged[] {
+  const done = new Set(Object.values(labels).map(labelGroup));
+  const best = new Map<string, { r: Judged; rank: number; at: number }>();
+  for (const r of records) {
+    if (labels[r.id] || r.candidate_error || !r.primary_answer || !r.candidate_answer) continue;
+    const g = recordGroup(r);
+    if (done.has(g)) continue;
+    const skip = skipped.indexOf(g);
+    const rank = skip >= 0 ? 3 + skip : urgency(r, tolerance);
+    const at = Date.parse(r.created_at);
+    const prev = best.get(g);
+    if (!prev || rank < prev.rank || (rank === prev.rank && at > prev.at)) best.set(g, { r, rank, at });
+  }
+  return [...best.values()].sort((a, b) => a.rank - b.rank || b.at - a.at).map((e) => e.r);
+}
+
+const PREF_WORDS: Record<Preference, string> = {
+  primary: "the primary better",
+  same: "the two about the same",
+  candidate: "the candidate better",
+};
+
+/** Long text is cut to a fixed height with a toggle; the toggle appears only when something is hidden. */
+function Clamp({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const [overflow, setOverflow] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const id = useId();
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setOverflow(el.scrollHeight > el.clientHeight + 2);
+    check();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
+  return (
+    <>
+      <div id={id} ref={ref} className="lv-judge-clamp" data-clamped={!open} data-overflow={!open && overflow}>
+        {children}
+      </div>
+      {(overflow || open) && (
+        <button type="button" className="lv-judge-more small" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
+          {open ? "Show less" : `Show all of ${label}`}
+        </button>
+      )}
+    </>
+  );
+}
+
+function AnswerBody({ answer, label }: { answer?: Answer; label: string }) {
+  if (!answer) return <p className="muted small">Not stored.</p>;
+  const tools = (answer.tool_calls ?? []).map((t) => `${t.name}(${t.arguments})`).join("\n");
+  return (
+    <Clamp label={label}>
+      {answer.text && <p className="lv-judge-ans__text">{answer.text}</p>}
+      {tools && <pre className="lv-judge-ans__tool">{tools}</pre>}
+      {!answer.text && !tools && <p className="muted small">(empty answer)</p>}
+    </Clamp>
+  );
+}
+
+function AnswerBox({ letter, answer, role, model }: { letter: "A" | "B"; answer?: Answer; role?: "primary" | "candidate"; model?: string }) {
+  return (
+    <section className="lv-judge-ans" data-role={role} aria-label={`Answer ${letter}`}>
+      <p className="lv-judge-ans__head small">
+        <b>Answer {letter}</b>
+        {role && (
+          <span className="lv-judge-ans__who">
+            {role === "candidate" ? "candidate" : "primary"} <span className="model">{model}</span>
+          </span>
+        )}
+      </p>
+      <AnswerBody answer={answer} label={`answer ${letter}`} />
+    </section>
+  );
+}
+
+const GATE_TEXT: Partial<Record<string, string>> = {
+  tool_selection: "the candidate called a different tool",
+  json_schema: "the candidate's JSON has a different shape",
+};
+
+function Reveal({ label, record }: { label: HumanLabel; record: Judged }) {
+  const v = record.judge;
+  const judge = judgePreference(v, label.tolerance);
+  const agree = judge === label.human;
+  const humanOk = label.human !== "primary";
+  const judgeOk = judge !== "primary";
+  const verdict = agree
+    ? "You agree with the judge."
+    : humanOk && judgeOk
+      ? "Nearly: you both accept the candidate, but rate it differently."
+      : humanOk
+        ? "You disagree: the judge failed a candidate answer you found acceptable."
+        : "You disagree: the judge passed a candidate answer you rated worse.";
+  // The judge's own A and B follow its randomized order, not the one shown here.
+  const lettersDiffer = label.candidate_as_a !== v.candidate_shown_first && /\b(response|answer)\s+[AB]\b/i.test(v.reason ?? "");
+  const gate = record.pass_basis && record.pass_basis !== "judge" ? (GATE_TEXT[record.pass_basis] ?? record.pass_basis.replace("_", " ")) : undefined;
+  return (
+    <div className="lv-judge-reveal__body" data-agree={agree ? "yes" : humanOk === judgeOk ? "near" : "no"}>
+      <p className="lv-judge-reveal__verdict">{verdict}</p>
+      <p className="small">
+        You rated {PREF_WORDS[label.human]}. The judge scored the candidate <b className="num">{v.candidate_score}</b> and the primary{" "}
+        <b className="num">{v.primary_score}</b> out of 10, which rates {PREF_WORDS[judge]}, so the pair {judgeOk ? "passes" : "fails"} on the
+        judge (the candidate may trail by {plural(label.tolerance, "point")}).
+      </p>
+      {v.reason && (
+        <blockquote className="lv-judge-reveal__reason small">
+          &ldquo;{v.reason}&rdquo;
+          {lettersDiffer && <span className="muted"> The judge saw the answers the other way round, so its A is B here.</span>}
+        </blockquote>
+      )}
+      <p className="small muted">
+        The judge read the candidate {v.candidate_shown_first ? "first" : "second"}.
+        {gate && <> The scorecard failed this pair before the judge counted: {gate}.</>}
+      </p>
+    </div>
+  );
+}
+
+function Calibrate({
+  records,
+  tolerance,
+  store,
+  agreement,
+  where,
+  judgeModel,
+}: {
+  records: Judged[];
+  tolerance: number;
+  store: LabelStore;
+  agreement: Calibration;
+  where: string;
+  judgeModel?: string;
+}) {
+  const [skipped, setSkipped] = useState<string[]>([]);
+  const [held, setHeld] = useState<Judged>();
+  const [revealed, setRevealed] = useState<HumanLabel>();
+  const [onScreen, setOnScreen] = useState(true);
+  const queue = useMemo(() => buildQueue(records, store.labels, skipped, tolerance), [records, store.labels, skipped, tolerance]);
+  // The pair on screen stays put while polls reshuffle the queue.
+  const current = held && (revealed?.id === held.id || !store.labels[held.id]) ? held : queue[0];
+  useEffect(() => {
+    if (!revealed && current && current.id !== held?.id) setHeld(current);
+  }, [current, held, revealed]);
+
+  const pairRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const firstVoteRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+  const focusNext = useRef<"pair" | "next" | "vote">(undefined);
+  useEffect(() => {
+    const target = focusNext.current;
+    focusNext.current = undefined;
+    if (target === "next") nextRef.current?.focus();
+    else if (target === "vote") firstVoteRef.current?.focus();
+    else if (target === "pair") headingRef.current?.focus();
+  }, [current?.id, revealed]);
+
+  const hasPair = Boolean(current);
+  useEffect(() => {
+    const el = pairRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasPair]);
+
+  const candA = current ? candidateAsA(current.id) : false;
+
+  const vote = (pick: "a" | "same" | "b") => {
+    if (!current || revealed) return;
+    const human: Preference = pick === "same" ? "same" : (pick === "a") === candA ? "candidate" : "primary";
+    const label: HumanLabel = {
+      id: current.id,
+      experiment: current.experiment,
+      primary: modelId(current.primary),
+      candidate: modelId(current.candidate),
+      prompt: current.prompt,
+      human,
+      judge: {
+        primary_score: current.judge.primary_score,
+        candidate_score: current.judge.candidate_score,
+        winner: current.judge.winner,
+        reason: current.judge.reason,
+      },
+      tolerance,
+      candidate_as_a: candA,
+      labelled_at: new Date().toISOString(),
+    };
+    store.put(label);
+    setHeld(current);
+    setRevealed(label);
+    focusNext.current = "next";
+  };
+  const next = () => {
+    setRevealed(undefined);
+    setHeld(undefined);
+    focusNext.current = "pair";
+  };
+  const skip = () => {
+    if (!current || revealed) return;
+    const g = recordGroup(current);
+    setSkipped((list) => [...list.filter((x) => x !== g), g]);
+    setHeld(undefined);
+    focusNext.current = "pair";
+  };
+  const undo = () => {
+    if (!revealed) return;
+    store.remove(revealed.id);
+    setRevealed(undefined);
+    focusNext.current = "vote";
+  };
+  const clear = () => {
+    store.clear();
+    setRevealed(undefined);
+    setHeld(undefined);
+    setSkipped([]);
+  };
+
+  // Shortcuts: 1, 2, 3 vote, S skips, N moves on. Only while the pair is on screen and no field has focus.
+  const onKey = useRef<(e: KeyboardEvent) => void>(undefined);
+  useEffect(() => {
+    onKey.current = (e) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.repeat || !onScreen || !current) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest?.("input, textarea, select, [contenteditable='true'], dialog")) return;
+      const k = e.key.toLowerCase();
+      const keys: Record<string, () => void> = revealed ? { n: next } : { "1": () => vote("a"), "2": () => vote("same"), "3": () => vote("b"), s: skip };
+      const act = keys[k];
+      if (!act) return;
+      e.preventDefault();
+      act();
+    };
+  });
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => onKey.current?.(e);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const withAnswers = records.filter((r) => r.primary_answer && r.candidate_answer).length;
+  const a = current ? (candA ? current.candidate_answer : current.primary_answer) : undefined;
+  const b = current ? (candA ? current.primary_answer : current.candidate_answer) : undefined;
+  const roleA = candA ? "candidate" : "primary";
+  const roleB = candA ? "primary" : "candidate";
+  const modelOf = (role: "primary" | "candidate") => (current ? current[role].model : undefined);
+
+  return (
+    <section className="wrap lv-section lv-judge lv-judge-cal" id="judge-cal" aria-labelledby="judge-cal-h">
+      <div className="lv-head">
+        <h2 className="lv-h2" id="judge-cal-h">
+          You be the judge
+        </h2>
+        <p className="muted small">
+          Read the request and two answers without knowing which model wrote which, and pick the better one. After each vote you see what the
+          judge said. Twenty or so labels give a first read of how closely the judge matches your own standard.
+        </p>
+      </div>
+
+      <div className="lv-judge-cal__layout">
+        <div className="lv-judge-cal__main">
+          {!current ? (
+            <p className="lv-empty">
+              {withAnswers === 0
+                ? "No judged pair with stored answers yet. The gateway keeps answers when store_payloads is on."
+                : "You have labelled every judged pair loaded here. New traffic adds more as it is judged."}
+            </p>
+          ) : (
+            <article className="lv-judge-pair" ref={pairRef} aria-labelledby="judge-pair-h">
+              <header className="lv-judge-pair__head">
+                <h3 className="lv-judge__h3" id="judge-pair-h" tabIndex={-1} ref={headingRef}>
+                  Which answer is better?
+                </h3>
+                <p className="small muted num">
+                  {revealed ? `${count(queue.length)} left` : `${count(queue.length)} left, this one included`}
+                </p>
+              </header>
+
+              <div className="lv-judge-pair__prompt">
+                <p className="lv-judge-ans__head small">
+                  <b>Request</b>
+                </p>
+                {current.prompt ? (
+                  <Clamp key={current.id} label="the request">
+                    <p className="lv-judge-ans__text">{current.prompt}</p>
+                  </Clamp>
+                ) : (
+                  <p className="muted small">Not stored.</p>
+                )}
+              </div>
+
+              <div className="lv-judge-pair__answers" key={current.id}>
+                <AnswerBox letter="A" answer={a} role={revealed ? roleA : undefined} model={modelOf(roleA)} />
+                <AnswerBox letter="B" answer={b} role={revealed ? roleB : undefined} model={modelOf(roleB)} />
+              </div>
+
+              <div className="lv-judge-reveal" aria-live="polite">
+                {revealed && <Reveal label={revealed} record={current} />}
+              </div>
+
+              {revealed ? (
+                <div className="lv-judge-pair__actions">
+                  <button type="button" className="btn" ref={nextRef} onClick={next} aria-keyshortcuts="N">
+                    Next pair <kbd aria-hidden="true">N</kbd>
+                  </button>
+                  <button type="button" className="btn btn--ghost btn--small" onClick={undo}>
+                    Undo my vote
+                  </button>
+                </div>
+              ) : (
+                <div className="lv-judge-pair__vote" role="group" aria-label="Your verdict">
+                  <button type="button" className="btn btn--ghost" ref={firstVoteRef} onClick={() => vote("a")} aria-keyshortcuts="1">
+                    <kbd aria-hidden="true">1</kbd> A is better
+                  </button>
+                  <button type="button" className="btn btn--ghost" onClick={() => vote("same")} aria-keyshortcuts="2">
+                    <kbd aria-hidden="true">2</kbd> About the same
+                  </button>
+                  <button type="button" className="btn btn--ghost" onClick={() => vote("b")} aria-keyshortcuts="3">
+                    <kbd aria-hidden="true">3</kbd> B is better
+                  </button>
+                  <button type="button" className="lv-judge-pair__skip small" onClick={skip} aria-keyshortcuts="S">
+                    Skip <kbd aria-hidden="true">S</kbd>
+                  </button>
+                </div>
+              )}
+
+              <p className="lv-judge-keys small muted">
+                Keys: <kbd>1</kbd> A is better, <kbd>2</kbd> about the same, <kbd>3</kbd> B is better, <kbd>S</kbd> skip, <kbd>N</kbd> next pair.
+                They work while the pair is on screen.
+              </p>
+            </article>
+          )}
+        </div>
+
+        <Tally c={agreement} store={store} where={where} judgeModel={judgeModel} onClear={clear} />
+      </div>
+    </section>
+  );
+}
+
+function KappaLine({ k }: { k: Kappa }) {
+  if (k.n === 0 || k.agreement === undefined) return <small>no labels yet</small>;
+  if (k.kappa === undefined) return <small>kappa needs labels in more than one class</small>;
+  if (k.n < 10)
+    return (
+      <small>
+        kappa <b>{k.kappa.toFixed(2)}</b> so far; too few labels to read much into
+      </small>
+    );
+  return (
+    <small>
+      kappa <b>{k.kappa.toFixed(2)}</b>, {kappaStrength(k.kappa)}
+      {k.low !== undefined && k.high !== undefined && (
+        <>
+          ; 95% interval {signed(k.low, 2)} to {signed(k.high, 2)}
+        </>
+      )}
+    </small>
+  );
+}
+
+const MATRIX_LABEL: Record<Preference, string> = { primary: "Primary better", same: "About the same", candidate: "Candidate better" };
+const PREFS: Preference[] = ["primary", "same", "candidate"];
+
+function Tally({ c, store, where, judgeModel, onClear }: { c: Calibration; store: LabelStore; where: string; judgeModel?: string; onClear: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const clearRef = useRef<HTMLButtonElement>(null);
+  // Where focus goes when the confirmation closes: the heading after clearing, the button after keeping.
+  const refocus = useRef<"heading" | "clear">(undefined);
+  useEffect(() => {
+    if (confirming) return;
+    const target = refocus.current;
+    refocus.current = undefined;
+    if (target === "heading") headingRef.current?.focus();
+    else if (target === "clear") clearRef.current?.focus();
+  }, [confirming]);
+  const exportLabels = () => {
+    const body = {
+      exported_at: new Date().toISOString(),
+      gateway: where,
+      judge_model: judgeModel,
+      agreement: { n: c.n, three_class: c.three, acceptable: c.acceptable, matrix: c.matrix, judge_passed_you_failed: c.lenient, judge_failed_you_passed: c.strict },
+      labels: store.list,
+    };
+    saveBlob(new Blob([JSON.stringify(body, null, 2)], { type: "application/json" }), `relayproof-judge-labels-${new Date().toISOString().slice(0, 10)}.json`);
+  };
+  return (
+    <aside className="lv-judge-tally" aria-labelledby="judge-tally-h">
+      <h3 className="lv-judge__h3" id="judge-tally-h" tabIndex={-1} ref={headingRef}>
+        You against the judge
+      </h3>
+      <p className="lv-judge-tally__n num">
+        {count(c.n)} <small>{c.n === 1 ? "pair labelled" : "pairs labelled"}</small>
+      </p>
+
+      <dl className="lv-judge__facts lv-judge-tally__facts num">
+        <div>
+          <dt>Same call, three ways</dt>
+          <dd>
+            {pct(c.three.agreement, 0)}
+            <KappaLine k={c.three} />
+          </dd>
+        </div>
+        <div>
+          <dt>Same pass or fail</dt>
+          <dd>
+            {pct(c.acceptable.agreement, 0)}
+            <KappaLine k={c.acceptable} />
+          </dd>
+        </div>
+      </dl>
+
+      {c.n > 0 && (
+        <>
+          <p className="small">
+            The judge passed <b className="num">{count(c.lenient)}</b> {c.lenient === 1 ? "pair" : "pairs"} you rated worse, and failed{" "}
+            <b className="num">{count(c.strict)}</b> you found acceptable. The first number is the costly one: those answers would have reached
+            your users.
+          </p>
+          <table className="lv-judge-matrix num">
+            <caption className="small muted">Rows are your call, columns the judge&rsquo;s.</caption>
+            <thead>
+              <tr>
+                <td />
+                {PREFS.map((p) => (
+                  <th key={p} scope="col">
+                    {MATRIX_LABEL[p]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {PREFS.map((you) => (
+                <tr key={you}>
+                  <th scope="row">{MATRIX_LABEL[you]}</th>
+                  {PREFS.map((judge) => (
+                    <td key={judge} data-diag={you === judge} data-zero={c.matrix[you][judge] === 0}>
+                      {count(c.matrix[you][judge])}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      <p className="lv-judge__explain small">
+        Raw agreement flatters a judge that calls most pairs even: two raters who always say &ldquo;about the same&rdquo; agree every time and
+        tell you nothing. Cohen&rsquo;s kappa removes the agreement expected by chance; 0 is chance and 1 is perfect, and 0.61 or more is commonly
+        read as substantial and under 0.40 as weak (<Cite href={LANDIS_KOCH}>Landis and Koch 1977</Cite>). Failing pairs and close calls come
+        first, so early labels lean toward hard cases.
+      </p>
+
+      <div className="lv-judge-tally__actions">
+        <button type="button" className="btn btn--ghost btn--small" onClick={exportLabels} disabled={c.n === 0}>
+          Export labels (JSON)
+        </button>
+        {!confirming ? (
+          <button type="button" className="btn btn--ghost btn--small" ref={clearRef} onClick={() => setConfirming(true)} disabled={c.n === 0}>
+            Clear labels
+          </button>
+        ) : (
+          <span className="lv-judge-tally__confirm" role="group" aria-label="Confirm clearing labels">
+            <span className="small">Delete {plural(c.n, "label")} from this browser?</span>
+            <button
+              type="button"
+              className="btn btn--small"
+              autoFocus
+              onClick={() => {
+                onClear();
+                refocus.current = "heading";
+                setConfirming(false);
+              }}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              onClick={() => {
+                refocus.current = "clear";
+                setConfirming(false);
+              }}
+            >
+              Keep
+            </button>
+          </span>
+        )}
+      </div>
+      <p className="small muted">
+        {store.saved ? (
+          <>
+            Labels stay in this browser for <span className="model">{where}</span>; nothing is sent anywhere.
+          </>
+        ) : (
+          <>This browser is not keeping labels (storage is blocked), so export them before you leave the page.</>
+        )}
+      </p>
+    </aside>
   );
 }
