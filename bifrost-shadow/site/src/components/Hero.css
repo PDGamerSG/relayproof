@@ -1,22 +1,24 @@
 .hero {
-  padding-top: clamp(128px, 15vw, 196px);
+  padding-top: clamp(36px, 5vw, 72px);
   padding-bottom: var(--section-y);
-  overflow-x: clip;
+}
+
+.hero__intro {
+  display: grid;
+  gap: 24px;
 }
 
 .hero__title {
-  font-size: var(--step-5);
-  margin-left: -0.035em;
+  font-size: var(--display-1);
+  max-width: 17ch;
+  text-wrap: balance;
 }
 
-.hero__below {
+.hero__side {
   display: grid;
-  gap: 32px;
-  /* Room for the last line's shadow to land before the copy starts. */
-  margin-top: max(30px, var(--step-5) * 0.44);
-  animation: hero-rise 900ms var(--ease-out) 620ms both;
+  gap: 24px;
+  align-content: end;
 }
-
 .hero__lede {
   color: var(--ink);
 }
@@ -27,37 +29,31 @@
 .hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
-  align-items: center;
+  gap: 14px;
+}
+.hero__aside {
+  margin-top: -8px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
 }
 
-.hero__sim {
-  margin-top: clamp(56px, 7vw, 96px);
-  animation: hero-rise 1100ms var(--ease-out) 820ms both;
+.hero__spec {
+  margin-top: clamp(40px, 5vw, 64px);
 }
 
-@keyframes hero-rise {
-  from {
-    opacity: 0;
-    transform: translateY(22px);
-  }
-}
-
-@media (min-width: 960px) {
-  .hero__below {
+@media (min-width: 1000px) {
+  .hero__intro {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: 48px;
+    gap: 56px;
     align-items: end;
   }
-  .hero__actions {
-    justify-content: flex-end;
-    padding-bottom: 6px;
+  .hero__lede {
+    font-size: var(--step-1);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero__below,
-  .hero__sim {
-    animation: none;
+@media (max-width: 480px) {
+  .hero__actions .btn {
+    flex: 1 1 100%;
   }
 }

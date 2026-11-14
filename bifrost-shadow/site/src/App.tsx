@@ -12,11 +12,11 @@ import { ScrollProvider } from "./lib/scroll";
 export function App() {
   return (
     <ScrollProvider>
-      <a className="skip" href="#why">
+      <a className="skip" href="#main">
         Skip to content
       </a>
       <Nav />
-      <main>
+      <main id="main">
         <Hero />
         <Problem />
         <HowItWorks />

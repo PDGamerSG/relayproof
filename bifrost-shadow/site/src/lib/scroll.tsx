@@ -17,25 +17,7 @@ export function useScrollLock(locked: boolean) {
   }, [locked, lock]);
 }
 
-/**
- * Light follows the scroll: every element marked data-cast leans its shadow further and
- * stretches it as the element rises up the viewport, as if the sun were setting behind the page.
- */
-function castShadows() {
-  const nodes = document.querySelectorAll<HTMLElement>("[data-cast]");
-  const vh = window.innerHeight;
-  const reads = Array.from(nodes, (node) => {
-    const rect = node.getBoundingClientRect();
-    return { node, mid: (rect.top + rect.height / 2) / vh, near: rect.bottom > -200 && rect.top < vh + 200 };
-  });
-  for (const { node, mid, near } of reads) {
-    if (!near) continue;
-    const u = 1 - Math.min(1, Math.max(0, mid));
-    node.style.setProperty("--skew", `${(34 + u * 26).toFixed(2)}deg`);
-    node.style.setProperty("--len", (0.46 + u * 0.4).toFixed(3));
-  }
-}
-
+/** Smooth scrolling, unless the reader asked for reduced motion. Anchors honour scroll-margin-top. */
 export function ScrollProvider({ children }: { children: ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
   const locks = useRef(0);
@@ -55,15 +37,11 @@ export function ScrollProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    castShadows();
     if (reduced) return;
 
-    const lenis = new Lenis({ autoRaf: true, anchors: true, lerp: 0.11 });
+    const lenis = new Lenis({ autoRaf: true, anchors: true, lerp: 0.12 });
     lenisRef.current = lenis;
-    lenis.on("scroll", castShadows);
-    window.addEventListener("resize", castShadows);
     return () => {
-      window.removeEventListener("resize", castShadows);
       lenis.destroy();
       lenisRef.current = null;
     };
