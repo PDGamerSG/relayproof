@@ -9,8 +9,9 @@ const OUTCOME_LABEL = { pass: "agrees", fail: "disagrees", error: "failed", unsc
 /** The newest requests through the gateway, one row per request, with each candidate's outcome. */
 export function Feed({ data, now, limit = 8 }: { data: RecordsState; now: number; limit?: number }) {
   const requests = useMemo(() => {
+    // Group every loaded record, newest first, so a request's slower candidates are not cut off.
     const byId = new Map<string, ShadowRecord[]>();
-    for (let i = data.records.length - 1; i >= 0 && byId.size <= limit; i--) {
+    for (let i = data.records.length - 1; i >= 0; i--) {
       const r = data.records[i];
       const list = byId.get(r.request_id);
       if (list) list.push(r);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { wilsonLowerBound } from "../lib/stats";
 import { ago, count, modelId, ms, pct } from "./backend";
 import { wordDiff } from "./diff";
@@ -73,6 +73,15 @@ export function Explorer({ data, summary }: { data: RecordsState; summary?: Summ
     setSelectedState(id);
     window.history.replaceState(null, "", id ? `#comparisons/${id}` : "#comparisons");
   };
+  // A link to another comparison while this tab is open.
+  useEffect(() => {
+    const onHash = () => {
+      const [tab, id] = window.location.hash.slice(1).split("/");
+      if (tab === "comparisons") setSelectedState(id || undefined);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const candidates = useMemo(() => [...new Set(data.records.map((r) => modelId(r.candidate)))].sort(), [data.records]);
   const bases = useMemo(
@@ -300,7 +309,16 @@ export function Explorer({ data, summary }: { data: RecordsState; summary?: Summ
 
         <div className="lv-x__detail">
           {current ? (
-            <RequestView record={current} siblings={siblings} onClose={() => setSelected(undefined)} />
+            <RequestView
+              record={current}
+              siblings={siblings}
+              onClose={() => {
+                const id = current.id;
+                setSelected(undefined);
+                // On narrow screens the list was hidden; put focus back on the row that opened it.
+                requestAnimationFrame(() => document.getElementById(`x-row-${id}`)?.focus());
+              }}
+            />
           ) : (
             <div className="lv-x__hint">
               <p>
@@ -335,6 +353,8 @@ function AnswerBody({ answer }: { answer?: Answer }) {
 }
 
 function DiffBody({ before, after }: { before?: Answer; after?: Answer }) {
+  // Without both answers there is nothing to compare against.
+  if (!before || !after) return <AnswerBody answer={after} />;
   const segments = wordDiff(answerText(before), answerText(after));
   if (!segments) return <AnswerBody answer={after} />;
   return (
@@ -360,7 +380,13 @@ const inSentence = (label: string) => (/^[A-Z]{2}/.test(label) ? label : label.c
 function RequestView({ record, siblings, onClose }: { record: ShadowRecord; siblings: ShadowRecord[]; onClose: () => void }) {
   const [showDiff, setShowDiff] = useState(true);
   const [copied, setCopied] = useState(false);
+  const back = useRef<HTMLButtonElement>(null);
   const primary = siblings[0] ?? record;
+
+  // Below the two-column width the list hides when a comparison opens, so focus moves to its back button.
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 999px)").matches) back.current?.focus();
+  }, [record.id]);
   const ordered = [record, ...siblings.filter((s) => s.id !== record.id)];
 
   const copy = async () => {
@@ -376,7 +402,7 @@ function RequestView({ record, siblings, onClose }: { record: ShadowRecord; sibl
   return (
     <article className="lv-x__req" aria-label="Selected request">
       <header className="lv-x__req-head">
-        <button type="button" className="btn btn--ghost btn--small lv-x__back" onClick={onClose}>
+        <button ref={back} type="button" className="btn btn--ghost btn--small lv-x__back" onClick={onClose}>
           Back to the list
         </button>
         <p className="small muted num">

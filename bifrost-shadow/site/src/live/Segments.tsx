@@ -15,7 +15,7 @@ const isTool = (r: ShadowRecord) => Boolean(r.primary_answer?.tool_calls?.length
 const isJson = (r: ShadowRecord) => !isTool(r) && r.comparison?.json_match !== undefined;
 
 const SEGMENTS: Segment[] = [
-  { id: "tool", label: "Tool calls", hint: "the primary called a tool", test: isTool },
+  { id: "tool", label: "Tool calls", hint: "either model called a tool", test: isTool },
   { id: "json", label: "JSON output", hint: "JSON mode or a JSON answer", test: isJson },
   { id: "short", label: "Short answers", hint: "primary answered in 20 tokens or fewer", test: (r) => !isTool(r) && !isJson(r) && r.primary_output_tokens <= 20 },
   {

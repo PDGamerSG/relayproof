@@ -38,7 +38,9 @@ export function Trend({
   const H = height;
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
-  const yMin = 0.5;
+  // The axis starts at 50%, where verdicts are decided, unless the curves go lower.
+  const lowest = Math.min(...series.slice(Math.min(series.length - 1, 4)).map((p) => p.agreement));
+  const yMin = lowest < 0.5 ? 0 : 0.5;
   const last = series[series.length - 1];
   const x = (i: number) => PAD.left + (series.length === 1 ? plotW : (i / (series.length - 1)) * plotW);
   const y = (v: number) => PAD.top + (1 - (Math.max(yMin, Math.min(1, v)) - yMin) / (1 - yMin)) * plotH;
@@ -56,8 +58,9 @@ export function Trend({
   const marks = eventsFor(events, pair.experiment, modelId(pair.candidate))
     .map((e) => {
       const at = Date.parse(e.at);
+      if (at < series[0].at) return undefined; // before the loaded window
       const i = series.findIndex((p) => p.at >= at);
-      return i < 0 ? undefined : { e, i };
+      return { e, i: i < 0 ? series.length - 1 : i };
     })
     .filter((m): m is { e: RolloutEvent; i: number } => m !== undefined);
   const partial = data.total > data.records.length;
@@ -76,7 +79,7 @@ export function Trend({
             <rect x={PAD.left} y={PAD.top - 2} width={plotW} height={plotH + 4} />
           </clipPath>
         </defs>
-        {[0.5, 0.75, 1].map((v) => (
+        {(yMin === 0 ? [0, 0.5, 1] : [0.5, 0.75, 1]).map((v) => (
           <g key={v}>
             <line className="lv-trend__grid" x1={PAD.left} x2={W - PAD.right} y1={y(v)} y2={y(v)} />
             <text className="lv-trend__axis" x={PAD.left - 8} y={y(v) + 4} textAnchor="end">

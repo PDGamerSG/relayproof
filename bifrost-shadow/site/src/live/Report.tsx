@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { VERDICT_LABEL } from "../lib/stats";
 import { count, modelId, ms, pct, saveBlob, useConnection, type DemoStatus } from "./backend";
-import { agreementSeries, candidateKey, comparisonsToClear, eventsFor, type RecordsState } from "./records";
+import { agreementSeries, candidateKey, comparisonsToClear, counts, eventsFor, type RecordsState } from "./records";
 import type { PairSummary, RolloutEvent, Rollouts, ShadowRecord, Summary } from "./shadowClient";
 import { Trend } from "./Trend";
 import "./report.css";
@@ -51,7 +51,14 @@ interface Facts {
   more?: number;
 }
 
-function analyse(pair: PairSummary, summary: Summary, records: ShadowRecord[], rollouts: Rollouts | undefined, volume: number): Facts {
+function analyse(
+  pair: PairSummary,
+  summary: Summary,
+  records: ShadowRecord[],
+  rollouts: Rollouts | undefined,
+  volume: number,
+  canaryShare: number,
+): Facts {
   const t = summary.thresholds;
   const key = candidateKey(pair);
   const mine = records.filter((r) => candidateKey(r) === key);
@@ -62,12 +69,14 @@ function analyse(pair: PairSummary, summary: Summary, records: ShadowRecord[], r
   const more = pair.verdict === "promising" || pair.verdict === "collecting" ? comparisonsToClear(pair.passes, scored, t.min_agreement) : undefined;
   const monthlyNow = volume * pair.avg_primary_cost_usd;
   const monthlyAfter = volume * pair.avg_candidate_cost_usd;
-  const canaryShare = 0.1;
+  const monthlyDiff = monthlyNow - monthlyAfter;
 
   let advice: string;
   switch (pair.verdict) {
     case "ready":
-      advice = `Promote it to a ${pct(canaryShare, 0)} canary with the guard on, then raise the share while live health holds. Switching fully would save ${money(monthlyNow - monthlyAfter)} a month at ${count(volume)} requests.`;
+      advice = `Promote it to a ${pct(canaryShare, 0)} canary with the guard on, then raise the share while live health holds. Switching fully would ${
+        monthlyDiff >= 0 ? `save ${money(monthlyDiff)}` : `cost ${money(-monthlyDiff)} more`
+      } a month at ${count(volume)} requests.`;
       break;
     case "promising":
       advice =
@@ -86,7 +95,7 @@ function analyse(pair: PairSummary, summary: Summary, records: ShadowRecord[], r
   }
 
   const worst = mine
-    .filter((r) => !r.pass && (r.candidate_error || r.judge || r.pass_basis))
+    .filter((r) => counts(r) && (Boolean(r.candidate_error) || !r.pass))
     .sort((a, b) => {
       const ga = a.judge ? a.judge.candidate_score - a.judge.primary_score : -11;
       const gb = b.judge ? b.judge.candidate_score - b.judge.primary_score : -11;
@@ -169,12 +178,15 @@ export function Report({
   data,
   summary,
   rollouts,
+  status,
 }: {
   data: RecordsState;
   summary?: Summary;
   rollouts?: Rollouts;
   status?: DemoStatus;
 }) {
+  // The share the promote dialog suggests: larger when every request costs real money.
+  const canaryShare = status?.upstream && status.upstream !== "mock" ? 0.25 : 0.1;
   const conn = useConnection();
   const pairs = summary?.pairs ?? [];
   const [chosen, setChosen] = useState<string>();
@@ -191,8 +203,8 @@ export function Report({
 
   const pair = pairs.find((p) => candidateKey(p) === chosen);
   const facts = useMemo(
-    () => (pair && summary ? analyse(pair, summary, data.records, rollouts, volume) : undefined),
-    [pair, summary, data.records, rollouts, volume],
+    () => (pair && summary ? analyse(pair, summary, data.records, rollouts, volume, canaryShare) : undefined),
+    [pair, summary, data.records, rollouts, volume, canaryShare],
   );
 
   if (!summary) return <p className="wrap lv-section lv-empty">Loading the scorecards…</p>;
@@ -323,7 +335,9 @@ export function Report({
             <dd>
               {money(pair.avg_primary_cost_usd)} to {money(pair.avg_candidate_cost_usd)}
             </dd>
-            <dd className="lv-rp__note">{pct(pair.savings_pct / 100)} cheaper</dd>
+            <dd className="lv-rp__note">
+              {pair.savings_pct >= 0 ? `${pct(pair.savings_pct / 100)} cheaper` : `${pct(-pair.savings_pct / 100)} dearer`}
+            </dd>
           </div>
         </dl>
 
