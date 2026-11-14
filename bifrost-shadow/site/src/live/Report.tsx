@@ -209,6 +209,16 @@ function toMarkdown(f: Facts, summary: Summary, gateway: string, volume: number)
   return lines.join("\n");
 }
 
+function candidateFromHash(): string | undefined {
+  const [tab, part] = window.location.hash.slice(1).split("/");
+  if (tab !== "report" || !part) return undefined;
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * The readiness report: one page per candidate that answers "can we switch?",
  * with the evidence behind the answer. It prints cleanly, and copies as
@@ -229,16 +239,30 @@ export function Report({
   const canaryShare = status?.upstream && status.upstream !== "mock" ? 0.25 : 0.1;
   const conn = useConnection();
   const pairs = summary?.pairs ?? [];
-  const [chosen, setChosen] = useState<string>();
+  // "#report/<candidate key>" opens the report for one candidate, so a report can be linked.
+  const [chosen, setChosenState] = useState<string | undefined>(candidateFromHash);
+  const setChosen = (key: string) => {
+    setChosenState(key);
+    window.history.replaceState(null, "", `#report/${encodeURIComponent(key)}`);
+  };
   const [volume, setVolume] = useState(1_000_000);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"markdown" | "link">();
+
+  useEffect(() => {
+    const onHash = () => {
+      const key = candidateFromHash();
+      if (key) setChosenState(key);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   // Default to the most promising candidate: ready first, then by lower bound.
   useEffect(() => {
     if (chosen && pairs.some((p) => candidateKey(p) === chosen)) return;
     const rank = (p: PairSummary) => (p.verdict === "ready" ? 2 : p.verdict === "promising" ? 1 : 0) + p.agreement_lower_bound;
     const best = [...pairs].sort((a, b) => rank(b) - rank(a))[0];
-    if (best) setChosen(candidateKey(best));
+    if (best) setChosenState(candidateKey(best));
   }, [pairs, chosen]);
 
   const pair = pairs.find((p) => candidateKey(p) === chosen);
@@ -265,10 +289,20 @@ export function Report({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(markdown());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      setCopied("markdown");
+      setTimeout(() => setCopied(undefined), 1800);
     } catch {
       saveBlob(new Blob([markdown()], { type: "text/markdown" }), `relayproof-${slug}.md`);
+    }
+  };
+  const copyLink = async () => {
+    const url = `${window.location.origin}${window.location.pathname}#report/${encodeURIComponent(candidateKey(pair))}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied("link");
+      setTimeout(() => setCopied(undefined), 1800);
+    } catch {
+      window.prompt("Copy this link", url);
     }
   };
 
@@ -311,7 +345,10 @@ export function Report({
             Print or save as PDF
           </button>
           <button type="button" className="btn btn--ghost btn--small" onClick={copy}>
-            {copied ? "Copied" : "Copy as Markdown"}
+            {copied === "markdown" ? "Copied" : "Copy as Markdown"}
+          </button>
+          <button type="button" className="btn btn--ghost btn--small" onClick={copyLink}>
+            {copied === "link" ? "Link copied" : "Copy link"}
           </button>
         </div>
       </form>
