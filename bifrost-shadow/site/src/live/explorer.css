@@ -317,3 +317,12 @@
     width: 100%;
   }
 }
+.lv-x__hint kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--lit);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}

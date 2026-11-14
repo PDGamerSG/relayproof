@@ -124,6 +124,30 @@ export function Explorer({ data, summary }: { data: RecordsState; summary?: Summ
   const current = selected ? data.records.find((r) => r.id === selected) : undefined;
   const siblings = current ? data.records.filter((r) => r.request_id === current.request_id && r.experiment === current.experiment) : [];
 
+  // j and k step through the list, as in a mail client; Escape closes the open comparison.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (e.key === "Escape") {
+        if (selected) setSelected(undefined);
+        return;
+      }
+      if (e.key !== "j" && e.key !== "k") return;
+      const i = filtered.findIndex((r) => r.id === selected);
+      const next = i < 0 ? 0 : e.key === "j" ? Math.min(filtered.length - 1, i + 1) : Math.max(0, i - 1);
+      const r = filtered[next];
+      if (!r) return;
+      e.preventDefault();
+      if (next >= shown) setShown((n) => n + PAGE);
+      setSelected(r.id);
+      requestAnimationFrame(() => document.getElementById(`x-row-${r.id}`)?.scrollIntoView({ block: "nearest" }));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   const clear = () => {
     setCandidate("all");
     setOutcome("all");
@@ -241,7 +265,13 @@ export function Explorer({ data, summary }: { data: RecordsState; summary?: Summ
               const g = gap(r);
               return (
                 <li key={r.id}>
-                  <button type="button" className="lv-x__row" aria-pressed={r.id === selected} onClick={() => setSelected(r.id)}>
+                  <button
+                    type="button"
+                    id={`x-row-${r.id}`}
+                    className="lv-x__row"
+                    aria-pressed={r.id === selected}
+                    onClick={() => setSelected(r.id)}
+                  >
                     <span className="lv-x__outcome" data-outcome={o}>
                       {OUTCOME_LABEL[o]}
                     </span>
@@ -277,7 +307,10 @@ export function Explorer({ data, summary }: { data: RecordsState; summary?: Summ
                 <b>Pick a comparison</b> to see the request the way the gateway saw it: the answer your user got, every candidate&rsquo;s answer
                 with the changed words marked, and the judge&rsquo;s scores and reason.
               </p>
-              <p className="small muted">Try the order &ldquo;worst judge gap first&rdquo; to find where a candidate falls short.</p>
+              <p className="small muted">
+                Try the order &ldquo;worst judge gap first&rdquo; to find where a candidate falls short. Keys: <kbd>j</kbd> and <kbd>k</kbd>{" "}
+                step through the list, <kbd>Esc</kbd> closes a comparison.
+              </p>
             </div>
           )}
         </div>
