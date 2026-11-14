@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { VERDICT_LABEL } from "../lib/stats";
 import { count, modelId, ms, pct, saveBlob, useConnection, type DemoStatus } from "./backend";
+import { judgeFamilyLinks, positionBias, verbosity } from "./judgeStats";
 import { agreementSeries, candidateKey, comparisonsToClear, counts, eventsFor, type RecordsState } from "./records";
 import type { PairSummary, RolloutEvent, Rollouts, ShadowRecord, Summary } from "./shadowClient";
 import { Trend } from "./Trend";
@@ -49,6 +50,41 @@ interface Facts {
   events: RolloutEvent[];
   ratePerHour?: number;
   more?: number;
+  /** What the judge check says about the verdicts behind this candidate. */
+  judgeNotes: string[];
+}
+
+/** Plain-language findings from the judge check, for this candidate's comparisons only. */
+function judgeNotes(pair: PairSummary, summary: Summary, mine: ShadowRecord[]): string[] {
+  if (!summary.judge_model || pair.judged === 0) return [];
+  const tolerance = summary.thresholds.quality_tolerance;
+  const notes: string[] = [];
+  const pos = positionBias(mine, tolerance);
+  if (!pos.enough) notes.push(`Answer order: too few verdicts to tell (${count(pos.first.n)} with the candidate first, ${count(pos.second.n)} second; 30 each needed).`);
+  else if (pos.flagged)
+    notes.push(
+      `Answer order: the judge leans toward the ${pos.favours ?? "first"} slot. The plugin shows the candidate first in a random half of pairs, so the lean averages out of the agreement rate.`,
+    );
+  else notes.push(`Answer order: no clear effect over ${count(pos.first.n + pos.second.n)} verdicts.`);
+  const corr = verbosity(mine, tolerance).correlation;
+  if (corr) {
+    const r = Math.abs(corr.r) < 0.005 ? "0.00" : corr.r.toFixed(2);
+    const clear = corr.low > 0 || corr.high < 0;
+    notes.push(
+      clear
+        ? `Answer length: scores ${corr.r > 0 ? "rise" : "fall"} with the candidate's relative length (r = ${r}).`
+        : `Answer length: no clear link to the score (r = ${r}).`,
+    );
+  }
+  const links = judgeFamilyLinks(summary.judge_model, [
+    { model: modelId(pair.source), role: "primary" },
+    { model: modelId(pair.candidate), role: "candidate" },
+  ]);
+  if (links.length)
+    notes.push(
+      `Model family: the judge is ${links.map((l) => `the ${l.relation} as the ${l.role}`).join(" and ")}. Judges can favour their own family's answers (Panickssery et al. 2024), so a judge from another family is a stricter referee.`,
+    );
+  return notes;
 }
 
 function analyse(
@@ -115,6 +151,7 @@ function analyse(
     events: eventsFor(rollouts?.events, pair.experiment, modelId(pair.candidate)),
     ratePerHour,
     more,
+    judgeNotes: judgeNotes(pair, summary, mine),
   };
 }
 
@@ -145,6 +182,9 @@ function toMarkdown(f: Facts, summary: Summary, gateway: string, volume: number)
     p.json_match_rate !== undefined ? `- JSON structure match ${pct(p.json_match_rate)}.` : "",
     `- Savings ${pct(p.savings_pct / 100)}, ${money(p.savings_per_million_usd)} per million requests.`,
   ].filter((l) => l !== "");
+  if (f.judgeNotes.length) {
+    lines.push("", "## How far to trust the judge", "", ...f.judgeNotes.map((n) => `- ${n}`));
+  }
   if (f.worst.length) {
     lines.push("", "## Worst disagreements", "");
     for (const r of f.worst) {
@@ -378,6 +418,22 @@ export function Report({
             {pair.json_match_rate !== undefined && <> JSON structure matched {pct(pair.json_match_rate)}.</>}
           </p>
         </section>
+
+        {facts.judgeNotes.length > 0 && (
+          <section className="lv-rp__block">
+            <h3 className="lv-rp__h">How far to trust the judge</h3>
+            <ul className="lv-rp__notes">
+              {facts.judgeNotes.map((n) => (
+                <li key={n}>{n}</li>
+              ))}
+            </ul>
+            <p className="small">
+              <a className="link lv-rp__open" href="#judge">
+                Open the full judge check
+              </a>
+            </p>
+          </section>
+        )}
 
         <section className="lv-rp__block">
           <h3 className="lv-rp__h">Where it falls short</h3>
