@@ -26,12 +26,29 @@ export function Dialog({ open, onClose, variant, title, subtitle, children }: Di
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  // Fallback for browsers that close the dialog without a close event: the toggle event still fires.
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog || !open) return;
+    const onToggle = () => {
+      if (!dialog.open) onClose();
+    };
+    dialog.addEventListener("toggle", onToggle);
+    return () => dialog.removeEventListener("toggle", onToggle);
+  }, [open, onClose]);
+
   return (
     <dialog
       ref={ref}
       className={`dialog dialog--${variant}`}
       aria-labelledby={titleId}
       onClose={onClose}
+      // Escape: let React close it, so the state cannot outlive the dialog where a
+      // browser skips the close event.
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
       // A click that lands on the dialog element itself is a click on the backdrop.
       onClick={(e) => e.target === ref.current && onClose()}
     >
