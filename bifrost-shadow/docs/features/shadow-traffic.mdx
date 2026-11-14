@@ -16,7 +16,7 @@ Shadow traffic answers the question with your own traffic and no user impact. Th
 - the candidate's **error rate** and **latency** next to the primary's;
 - the **cost per request**, the saving, and a monthly projection at your current request rate;
 - a **verdict** (`ready`, `promising`, `not_ready`, `collecting`) and every disagreement, side by side;
-- a one-click **Promote to canary** that creates a weighted [routing rule](/features/governance/routing) sending a slice of the primary's traffic to the candidate.
+- a one-click **Promote to canary** that creates a weighted [routing rule](/features/governance/routing) sending a slice of the primary's traffic to the candidate, watched by a **canary guard** that rolls it back on its own if it misbehaves and, with a **guarded ramp**, raises its share step by step while it stays healthy.
 
 The client always gets the primary model's answer, unchanged. Shadow calls run on a bounded worker pool after the response, never on the request path.
 
@@ -246,6 +246,70 @@ With `canary.auto_rollback: true` the guard rolls an unhealthy canary back on it
 
 The rollout log and the watched canaries survive plugin reloads and, with `persist_path`, restarts (`<persist_path>.rollouts.json`).
 
+### Guarded ramp
+
+A canary at a fixed 10% still has to be raised by hand. Add `ramp` to the promotion and the canary guard raises it for you, one step at a time, while the canary stays healthy:
+
+```bash
+curl -s -X POST http://localhost:8080/api/shadow/promote -H "Content-Type: application/json" -d '{
+  "experiment": "gpt-4o cost-down",
+  "candidate": "openai/gpt-4o-mini",
+  "weight": 0.1,
+  "ramp": { "steps": [0.1, 0.25, 0.5, 1], "min_requests": 50, "hold_seconds": 300 }
+}'
+```
+
+The canary starts at the first step. On every check (every 5 seconds) the guard looks at each ramping canary:
+
+1. **Unhealthy** (the same limits as any canary): with `canary.auto_rollback` it is rolled back and the ramp ends. Without it the ramp holds at its step; nothing moves until the canary is healthy again or an operator acts.
+2. **Step done**: the step has served `min_requests` candidate requests, `hold_seconds` have passed since it started, and the canary is `healthy`. The guard writes the next weight into the same routing rule, through the same merge a promotion uses (other candidates keep their shares, the source serves the rest), and records a `ramp` event by `canary_guard` with the new weight, the health the finished step rested on, and the new ramp state. Live statistics restart, so every step is judged on its own traffic.
+3. **Last step**: the event is `ramp_complete` instead of `ramp`, and `ramp.completed` is `true`. The canary stays watched and is still rolled back if it turns unhealthy, but it moves no further. A last step of `1` is a full cutover: the rule then routes every source request to the candidate.
+
+| Field | Default | Description |
+|---|---|---|
+| `ramp.steps` | required | 2 to 20 shares of source traffic, strictly ascending (compared at the four decimals routing rules keep), each from `0.0001` to `1`. The first is the promoted weight: leave `weight` out or send the same value. |
+| `ramp.min_requests` | `canary.min_requests` | Live candidate requests each step must serve before the guard moves on. It cannot be lower than `canary.min_requests`, since the guard judges health only after that many. |
+| `ramp.hold_seconds` | `60` | Minimum time at each step, `0` to `604800` (7 days). An explicit `0` is kept: the step then ends as soon as it has enough healthy requests. |
+
+A ramp that breaks a rule above is refused with `400` and a message naming the field, as is a ramp whose last step would not fit next to the shares other candidates of the same source already hold (for example a ramp to 100% while another candidate has 20%). A dry run returns the plan with `ramp` filled in.
+
+`GET /api/shadow/rollouts` shows where each ramp stands:
+
+```json
+"ramp": {
+  "steps": [0.1, 0.25, 0.5, 1],
+  "current_step": 1,
+  "step_started_at": "2026-11-15T01:21:07.869+05:30",
+  "step_requests": 12,
+  "min_requests": 50,
+  "hold_seconds": 300,
+  "next_weight": 0.5,
+  "completed": false,
+  "reason": "step 2 of 4 (25%): 12 of 50 candidate requests"
+}
+```
+
+| Field | Description |
+|---|---|
+| `current_step` | Index into `steps` of the weight served now (the canary's `weight`). |
+| `step_started_at` | When the canary reached the current step; the hold counts from here. |
+| `step_requests` | Live candidate requests at this step. The canary's `health` covers this step only. |
+| `next_weight` | The next step's weight; absent once the ramp is complete. |
+| `completed` | The canary reached the last step. |
+| `reason` | What the ramp waits for: requests, the rest of the hold, a health verdict, or why it holds. |
+
+Promotion events that start a ramp, and `ramp` and `ramp_complete` events, carry the same `ramp` object as it was after the action. A canary without a ramp has no `ramp` field anywhere, exactly as before.
+
+How a ramp ends or changes:
+
+- **Promoting the same candidate again** replaces its ramp (the new ramp starts at its first step, on fresh statistics), or cancels it when the new promotion has none: the weight is then whatever that promotion sets, the statistics gathered so far are kept, and the guard moves it no further. The promotion's `warnings` say which.
+- **A rollback**, by an operator or by the guard, ends the canary and its ramp.
+- **An override.** A canary promoted with `override_reason` is ramped on live health only, the same way it is guarded.
+- **Restarts.** With `persist_path` the ramp is saved with the canary, so a restarted gateway resumes it at the same step. The step's request count starts again from zero; its hold time does not. A plugin reload keeps the ramp without interruption.
+- **A rule changed by hand.** The guard only edits the source's existing canary rule. If that rule, or the candidate's target in it, was removed outside the shadow API, the ramp holds and the gateway logs why; a rollback closes the canary.
+
+The model is the one progressive delivery tools use. The ramp's `steps` play the part of [Argo Rollouts](https://argo-rollouts.readthedocs.io/en/stable/features/canary/) `setWeight` steps and [Flagger](https://docs.flagger.app/usage/deployment-strategies)'s `stepWeights`; `hold_seconds` is Argo's `pause.duration` or Flagger's analysis `interval`; `min_requests` is the minimum number of contexts a [LaunchDarkly guarded rollout](https://launchdarkly.com/docs/home/releases/creating-guarded-rollouts) needs at each step before it advances; and the canary guard's health check is the analysis. As in all three, a failed check stops the rollout: Argo aborts it, Flagger rolls it back, and LaunchDarkly rolls it back or, without automatic rollback, pauses it. Here too rolling back is a choice (`canary.auto_rollback`); without it the ramp holds. Unlike Flagger, failed checks are not counted toward a `threshold`: the guard already acts only on a 95% lower bound, so one unhealthy verdict rolls the canary back.
+
 `GET /api/shadow/canary-rule` still returns a bare routing-rule body for `POST /api/routing/rules`, without the checks above.
 
 ---
@@ -258,9 +322,9 @@ The rollout log and the watched canaries survive plugin reloads and, with `persi
 | `GET` | `/api/shadow/records` | Comparisons, newest first. Query: `experiment`, `candidate` (`provider/model`), `outcome` (`pass`, `fail`, `error`), `limit` (default 50, max 500), `offset`. |
 | `GET` | `/api/shadow/records/{id}` | One comparison with both answers, metrics and the judge verdict. |
 | `DELETE` | `/api/shadow/records` | Clear records and counters and restart `started_at` (audited). Today's spend, the rollout log and canaries are kept, so a reset never lifts the daily budget. |
-| `POST` | `/api/shadow/promote` | Promote a candidate to a canary (audited). Body: `experiment`, `candidate`, `weight` (default `0.1`), `priority`, `override_reason`, `dry_run`. `409` when not ready or when an earlier rule would shadow the canary; `503` without a config store. |
+| `POST` | `/api/shadow/promote` | Promote a candidate to a canary (audited). Body: `experiment`, `candidate`, `weight` (default `0.1`, or `ramp.steps[0]`), `priority`, `override_reason`, `dry_run`, `ramp` (`steps`, `min_requests`, `hold_seconds`; see [Guarded ramp](#guarded-ramp)). `400` for an invalid ramp; `409` when not ready or when an earlier rule would shadow the canary; `503` without a config store. |
 | `POST` | `/api/shadow/rollback` | Remove a candidate from its canary rule (audited). Body: `experiment`, `candidate`, `reason`. |
-| `GET` | `/api/shadow/rollouts` | Active canaries with live health, and the rollout log, newest first. |
+| `GET` | `/api/shadow/rollouts` | Active canaries with live health and, when ramping, `ramp`; the rollout log, newest first (`promote`, `rollback`, `auto_rollback`, `ramp`, `ramp_complete`). |
 | `GET` | `/api/shadow/export` | `format=json` (summary, records, rollouts) or `format=csv` with `kind=scorecards` or `kind=records`. Record filters apply. |
 | `GET` | `/api/shadow/canary-rule` | A routing-rule body for `POST /api/routing/rules`. Query: `experiment`, `candidate`, `weight` from `0.0001` to `1` (default `0.1`), `priority` (default `10`). |
 
@@ -292,11 +356,11 @@ With a canary active, `PostLLMHook` also counts live responses for the canary's 
 ## Limitations
 
 - Chat completions only (`/v1/chat/completions` and the SDK integrations that map to it, streaming included). Responses API, embeddings, images and audio are not mirrored.
-- Records, spend, canary health and the rollout log live in each gateway node. In a cluster, each node reports on the traffic it served and enforces its own daily budget; routing rules written by promotion are shared through the config store.
+- Records, spend, canary health and the rollout log live in each gateway node. In a cluster, each node reports on the traffic it served and enforces its own daily budget; routing rules written by promotion are shared through the config store. A ramp is driven by the node it was promoted on, from that node's traffic.
 - The conflict check evaluates other rules for a chat request to the source model with only provider, model and request type known. Rules that depend on headers, keys, teams, budgets or complexity are reported as warnings, not refused.
 - A candidate is compared with the primary, not with ground truth. A judge measures "as good as the primary", which is the question a cost-down switch needs answered.
 - Multi-turn agents that execute tools are evaluated one turn at a time: each sampled turn compares the candidate's tool selection and arguments with the primary's. The candidate's tool calls are never executed.
 
 ## Try it without API keys
 
-`examples/shadow-demo` runs a deterministic mock upstream, a Bifrost gateway with the plugin, and a load generator. It shows the weak candidate refused, promotes the ready one to a 10% canary, checks the split, simulates a provider incident and checks that the canary guard rolls it back. `dev.sh` in the same directory keeps a seeded gateway running for frontend work. See its README.
+`examples/shadow-demo` runs a deterministic mock upstream, a Bifrost gateway with the plugin, and a load generator. It shows the weak candidate refused, promotes the ready one to a 10% canary, checks the split, simulates a provider incident and checks that the canary guard rolls it back, then promotes it again with a ramp that the guard takes from 10% to 100% on its own. `dev.sh` in the same directory keeps a seeded gateway running for frontend work. See its README.

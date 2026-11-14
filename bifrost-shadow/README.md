@@ -65,6 +65,7 @@ client ──► Bifrost ──► primary model ──► answer to client (unc
                                                                         ▼
                                             canary guard: live error rate and latency per target
                                             ──► automatic rollback when the candidate misbehaves
+                                            ──► optional ramp: 10% → 25% → 50% → 100% while healthy
 ```
 
 - **Mirror** a sample of chat completions (streaming included) to any number of candidates per
@@ -88,6 +89,11 @@ client ──► Bifrost ──► primary model ──► answer to client (unc
   candidate's error rate (95% lower bound), latency or shadow verdict crosses a limit, the
   gateway rolls it back by itself and logs why. Every promotion and rollback is kept with the
   evidence it rested on.
+- **Ramp it up** (optional): promote with `"ramp": {"steps": [0.1, 0.25, 0.5, 1]}` and the guard
+  raises the share one step at a time, each step judged on its own traffic once it has served
+  `min_requests` candidate requests and held `hold_seconds`, the way Argo Rollouts, Flagger and
+  LaunchDarkly guarded rollouts step a canary. An unhealthy step rolls back as usual; each step is
+  logged as a `ramp` event (`ramp_complete` for the last), and a restart resumes the ramp.
 - **Export** scorecards and records as CSV or JSON for review.
 - **Stay safe**: bounded queue and workers, a daily budget that holds across reloads and
   restarts and reserves the cost of running jobs, per-request opt-out header (the
@@ -117,11 +123,14 @@ canary health                healthy: live error rate 0.0% over 20 requests
 provider incident            gpt-4o-mini fails 60% of requests (mock upstream switch)
 canary guard                 rolled back: live error rate 19.2% (95% lower bound 8.5%) exceeds 5.0%
 after rollback               gpt-4o-mini served 0 of 100 requests, 0 failed
+guarded ramp                 promoted again with steps 10% → 50% → 100%: the guard moved it to
+                             50% after 8 s and to 100% 5 s later; 50 of 50 requests then served
+                             by gpt-4o-mini
 ```
 
 Sampling is random, so numbers move between runs; the verdicts do not. Five user requests
-failed during the simulated incident before the guard acted. The whole script takes under two
-minutes.
+failed during the simulated incident before the guard acted. The whole script, ramp included,
+took 2 min 4 s on the last run.
 
 ## Dashboard
 

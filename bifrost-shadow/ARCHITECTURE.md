@@ -73,7 +73,7 @@ cache (`patches/0001`), so a cache hit short-circuits before the request is samp
 | JSONL file (optional) | none | One line per record | `2 × max_records` lines: past that the file is rewritten (temp file and rename) with the newest `max_records` records | Compaction or reset. At startup only the last `max_records` lines stay in the ring buffer |
 | Traffic counters | experiment index | Count and first timestamp as atomics in a cache-line-padded slot, so eligible requests never take a lock | One per experiment | Reset |
 | Spend | none | Spend ledger: today's total, in-flight reservations, cost estimate; process-wide per persist path | `<persist_path>.spend.json`, rewritten atomically after each job | Rolls over at UTC midnight. Reset, reloads and restarts keep it, so none of them lifts the budget |
-| Rollout book | experiment + candidate | Active canaries (rule, weight, since; per-target counts and the last 512 latencies) and the rollout log | 500 events; one canary per pair; `<persist_path>.rollouts.json` without live statistics | A rollback (manual or automatic) ends a canary; reset keeps both |
+| Rollout book | experiment + candidate | Active canaries (rule, weight, since, optional ramp of at most 20 steps; per-target counts and the last 512 latencies) and the rollout log | 500 events; one canary per pair; `<persist_path>.rollouts.json` with the ramps, without live statistics | A rollback (manual or automatic) ends a canary and its ramp; reset keeps both |
 
 No stream-sized data is stored in `BifrostContext`; the context carries only the
 `x-bf-shadow` mode. This follows the `AGENTS.md` rule for per-request state.
@@ -165,6 +165,17 @@ promotions cannot both read and rewrite the same rule.
    promotion is audited and recorded in the rollout log with the scorecard as evidence.
    `dry_run` stops before the write and returns the plan.
 
+The merge, the conflict check and the rule write (steps 3 to 5, without the rollout log) are
+`planShareEdit` and `saveShareEdit`; the canary guard's ramp uses the same two functions to move
+a candidate's share (see below), restricted to the existing rule.
+
+**Ramp.** With `ramp` in the body, `PlanRamp` (`rollout.go`) validates it first (2 to 20 strictly
+ascending steps at four decimals, the first equal to `weight`, `min_requests` at least
+`canary.min_requests`, `hold_seconds` from 0 to 7 days) and the promotion starts at `steps[0]`.
+The merge also checks the ramp's last step against the other candidates' shares, so a ramp that
+could never finish is refused. The promote event carries the ramp; the book stores it on the
+canary.
+
 **Rollback** (`rollbackShadowCanary`) removes the candidate's target from the source's canary
 rule and gives its share back to the source; a rule left with only the source is deleted. The
 HTTP route records a `rollback` event; a canary whose rule was already removed by hand is
@@ -188,10 +199,22 @@ Promoted candidates are watched on live traffic (`rollout.go`):
   was promoted with an override) when the pair's shadow verdict has turned `not_ready`;
   otherwise `healthy`. Using the lower bound keeps one failed request in a handful from rolling
   back a healthy candidate.
-- **Action.** A goroutine checks every 5 s. With `canary.auto_rollback` on, an unhealthy canary is
-  rolled back through a `RollbackFunc` the gateway wires (`NewShadowRollbackHook`, the same code
-  as the rollback route), at most once at a time per canary, and an `auto_rollback` event with
-  the triggering health is recorded.
+- **Action.** A goroutine checks every 5 s (`guardPass`). With `canary.auto_rollback` on, an
+  unhealthy canary is rolled back through a `RollbackFunc` the gateway wires
+  (`NewShadowRollbackHook`, the same code as the rollback route), at most once at a time per
+  canary, and an `auto_rollback` event with the triggering health is recorded.
+- **Ramp.** For a canary promoted with a ramp, `rampDue` decides whether the current step is
+  done: at least `min_requests` candidate requests at this step, `hold_seconds` since
+  `step_started_at`, and health `healthy` (an unhealthy canary is rolled back, or with
+  `auto_rollback` off holds its step). A done step moves on through a `RampFunc` the gateway wires
+  (`NewShadowRampHook`): under the promotion lock it re-checks that the canary is the one judged
+  (same state, weight, step and step start), sets the candidate's share in the existing canary
+  rule with the promotion merge, never creating a rule, and then records a `ramp` event
+  (`ramp_complete` for the last step) with the health the step rested on. Recording the event
+  replaces the canary's `CanaryRamp` (ramps are never edited in place) and resets its live
+  statistics, so each step is judged on its own traffic. A promotion of the same pair replaces
+  or cancels the ramp; a rollback ends it. The ramp is persisted with the canary, so a restart
+  resumes at the same step, with the step's request count back at zero.
 - **State.** The rollout log (last 500 events) and the active canaries live in a `rolloutBook`
   shared per process and persist path, like the spend ledger, so a settings update or reload
   keeps watching. With `persist_path` they are written atomically to
@@ -201,7 +224,8 @@ Promoted candidates are watched on live traffic (`rollout.go`):
 
 `patches/0001` adds the plugin to the built-in list and, on bootstrap and on every plugin reload,
 calls `SetExecutors` with the client's `ChatCompletionRequest` and `EmbeddingRequest` and a price
-function backed by the model catalog, and `SetRollbackHook` with the canary guard's rollback.
+function backed by the model catalog, `SetRollbackHook` with the canary guard's rollback, and
+`SetRampHook` with its ramp step.
 Promotion, rollback and the guard write routing rules through `NewShadowRoutingRules`: the config
 store first, then the routing engine's in-memory rules (`ReloadRoutingRule`/`RemoveRoutingRule`,
 the same calls the routing-rules API makes). Without a config store that is nil and promotion

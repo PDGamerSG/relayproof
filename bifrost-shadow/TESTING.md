@@ -3,6 +3,25 @@
 What was run to check Bifrost Shadow, on which platform, and what came back. Every result
 below was observed, not estimated. Base: `maximhq/bifrost@ed62e4b`, Go 1.27.4, Node 26.
 
+## Guarded ramp (15 November 2026)
+
+macOS arm64 (10 cores), Go 1.27.3, the pinned upstream. The hosted demo and the shared local
+stack on :8080 were not touched; the end-to-end runs used a separate gateway on :8180 and a mock
+on :18180.
+
+| Check | Command or setup | Result |
+|---|---|---|
+| Plugin (106 top-level tests, 11 new in `ramp_test.go`) | `cd plugins/shadow && go test -race -count=2 -cover ./...` | pass, 89.8% statement coverage |
+| Gateway handlers (27 tests, 6 new in `shadow_ramp_test.go`) and schema | `cd transports && go test -race -count=2 -run 'Shadow\|CELOverlap' ./bifrost-http/handlers/ ./bifrost-http/lib/` | pass |
+| Vet and demo tools | `go vet` on the plugin, `handlers`, `lib`, `server`; demo `GOWORK=off go vet ./... && go test -race ./...` (new front door test: a promote body with `ramp` reaches the gateway byte for byte) | clean, pass |
+| Patches | all five applied with `git apply --check` to the patched files extracted from pristine `ed62e4b`; `SKIP_UI=1 scripts/setup.sh` | apply cleanly; setup's tests pass and the gateway builds |
+| TypeScript client | strict `tsc` as in CI; `cmp` with `site/src/live/shadowClient.ts` | clean, identical |
+| Key-free demo with the new ramp segment | `PORT=8180 MOCK_ADDR=127.0.0.1:18180 examples/shadow-demo/run.sh` | exit 0 in 2 min 4 s. After the rollback, `gpt-4o-mini` was promoted again with steps 10%, 50%, 100% (`min_requests` 10, `hold_seconds` 2): `ramp` to 50% 8 s after the promotion, `ramp_complete` at 100% 5 s later, then 50 of 50 requests served by `gpt-4o-mini` |
+| Restart resumes a ramp | the same gateway, ramp 10%, 50%, 100% with `hold_seconds` 15; stopped and restarted at step 2 | before: step 2, weight 0.5, `step_started_at` 01:21:07.869513; after: the same step, weight and start, `step_requests` back to 0; the guard then finished it (`ramp_complete` 18 s into the step, after 59 candidate requests) |
+| Validation over HTTP | descending steps, `min_requests` 3 below `canary.min_requests` 10, `hold_seconds` -5 | `400` each, with the field and limit in the message |
+| Contract | promote response and three `/rollouts` payloads (at step 2, after the restart, complete) checked field by field against `api/openapi.yaml` | every field declared, types match; event actions within the enum |
+| Backward compatibility | promotion without `ramp`: response and `/rollouts` bodies (handler test), canary JSON (plugin test) | no `ramp` key anywhere |
+
 ## Real Claude models on the hosted demo (14 November 2026)
 
 The hosted backend switched to `claude-opus-5-5` (primary), `claude-sonnet-5-5` and

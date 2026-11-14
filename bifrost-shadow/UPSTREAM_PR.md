@@ -23,6 +23,10 @@ new **Models → Shadow Traffic** dashboard page or from the API.
   other rules' CEL to refuse a canary an earlier rule would shadow.
 - A canary guard watches live traffic per target and, with `canary.auto_rollback`, rolls an
   unhealthy candidate back by itself. Every promotion and rollback is logged with its evidence.
+- An optional guarded ramp (`ramp` in the promote body: `steps`, `min_requests`,
+  `hold_seconds`) lets the guard raise the canary's share step by step while it stays healthy,
+  like Argo Rollouts canary steps or Flagger's `stepWeights`. Each step is judged on its own
+  traffic and written into the same rule; `ramp` and `ramp_complete` events record it.
 
 Base: `ed62e4b`.
 
@@ -50,11 +54,11 @@ connects the answer to the rollout mechanism the gateway already has.
 | `plugins/shadow/store.go` | Ring buffer, optional JSONL persistence with torn-line tolerance, record filters, scorecards, verdicts |
 | `plugins/shadow/api.go` | Summary, records, reset, canary-rule builder (including wildcard sources) |
 | `plugins/shadow/ledger.go` | Daily spend ledger shared across plugin reloads, persisted beside `persist_path`, with per-job reservations |
-| `plugins/shadow/rollout.go` | Rollout log, active canaries, live per-target health, the canary guard and its rollback hook |
+| `plugins/shadow/rollout.go` | Rollout log, active canaries, live per-target health, the canary guard with its rollback and ramp hooks, ramp validation (`PlanRamp`) |
 | `plugins/shadow/config.go` | Config types, defaults and validation |
 | `plugins/shadow/compare_test.go`, `judge_test.go`, `plugin_test.go`, `readiness_test.go`, `ledger_test.go`, `rollout_test.go` | Unit and component tests, benchmarks |
 | `transports/bifrost-http/handlers/shadow.go`, `shadow_test.go` | `/api/shadow/*` handler (summary, records, reset, canary-rule, promote, rollback, rollouts, export) and its tests |
-| `transports/bifrost-http/handlers/shadow_rollout.go`, `shadow_rollout_test.go` | Server-side promotion and rollback: verdict gate, merge into one rule per source, CEL overlap check, the rollback hook; tests include effective traffic shares with two candidates |
+| `transports/bifrost-http/handlers/shadow_rollout.go`, `shadow_rollout_test.go`, `shadow_ramp_test.go` | Server-side promotion and rollback: verdict gate, merge into one rule per source, CEL overlap check, the rollback and ramp hooks; tests include effective traffic shares with two candidates and a ramp driven by the guard |
 | `ui/app/workspace/shadow/` | Dashboard page: counter tiles, scorecard, disagreements sheet, promote dialog, not-enabled view |
 | `ui/lib/store/apis/shadowApi.ts`, `ui/lib/types/shadow.ts`, `ui/lib/utils/shadow.ts`, `ui/lib/utils/shadow.test.ts` | RTK Query endpoints, types, helpers and their vitest cases |
 | `docs/features/shadow-traffic.mdx` | Feature page |
@@ -68,7 +72,7 @@ New test files sit next to new source files only. Tests for existing code go int
 
 | Change | Files | What |
 |---|---|---|
-| Plugin registration and wiring | `transports/bifrost-http/lib/config.go`, `transports/bifrost-http/server/plugins.go`, `transports/bifrost-http/server/server.go`, `transports/go.mod` | Adds `shadow` to the built-in plugin names and to `loadBuiltinPlugin`. Registers it only when its config is present and enabled, at built-in order 10, after the semantic cache (a cache hit short-circuits before sampling); otherwise marks it disabled. `wireShadowPlugin` runs on bootstrap and on plugin reload and passes the client's `ChatCompletionRequest` and `EmbeddingRequest`, a price function backed by `ModelCatalog.CalculateCostForUsage`, and the canary guard's rollback hook. The shadow handler gets a routing-rule writer built from the config store and the server's `ReloadRoutingRule`/`RemoveRoutingRule` (nil without a config store, in which case promotion answers 503). `github.com/google/cel-go` moves from indirect to direct. The handler resolves the plugin per request, like the cache handler, so enabling or reloading through `/api/plugins` needs no restart. `go.mod` requires `plugins/shadow v0.1.0` with a `replace` to `../plugins/shadow` until the module is tagged. |
+| Plugin registration and wiring | `transports/bifrost-http/lib/config.go`, `transports/bifrost-http/server/plugins.go`, `transports/bifrost-http/server/server.go`, `transports/go.mod` | Adds `shadow` to the built-in plugin names and to `loadBuiltinPlugin`. Registers it only when its config is present and enabled, at built-in order 10, after the semantic cache (a cache hit short-circuits before sampling); otherwise marks it disabled. `wireShadowPlugin` runs on bootstrap and on plugin reload and passes the client's `ChatCompletionRequest` and `EmbeddingRequest`, a price function backed by `ModelCatalog.CalculateCostForUsage`, and the canary guard's rollback and ramp hooks. The shadow handler gets a routing-rule writer built from the config store and the server's `ReloadRoutingRule`/`RemoveRoutingRule` (nil without a config store, in which case promotion answers 503). `github.com/google/cel-go` moves from indirect to direct. The handler resolves the plugin per request, like the cache handler, so enabling or reloading through `/api/plugins` needs no restart. `go.mod` requires `plugins/shadow v0.1.0` with a `replace` to `../plugins/shadow` until the module is tagged. |
 | Config schema | `transports/config.schema.json`, `transports/bifrost-http/lib/validator_test.go` | A `name: "shadow"` branch in the plugins `allOf` describing every config field with its default and range, `shadow` added to the built-in names in the plugin `name` description, and two tests: `TestValidateConfigSchema_ShadowPlugin` (a full valid config, a wildcard source, and twelve malformed configs that must fail) and `TestValidateConfigSchema_ShadowCoversEverySetting` (by reflection, every field of `shadow.Config`, `Thresholds`, `JudgeConfig` and `EmbeddingConfig` is in the schema and nothing else is). |
 | Docs navigation | `docs/docs.json` | Adds `features/shadow-traffic` after `features/complexity-router`. |
 | Dashboard API plumbing | `ui/lib/store/apis/baseApi.ts`, `ui/lib/store/apis/index.ts` | `ShadowSummary` and `ShadowRecords` tag types (invalidated together on reset) and the `shadowApi` export. |
@@ -126,7 +130,9 @@ call. `extra_params` reach the candidate when the caller opted into passing them
 
 API: `GET /api/shadow/summary`, `GET /api/shadow/records`, `GET /api/shadow/records/{id}`,
 `DELETE /api/shadow/records` (audited; keeps today's spend so a reset never lifts the budget),
-`GET /api/shadow/canary-rule`. All answer `404` while the plugin is not enabled.
+`GET /api/shadow/canary-rule`, `POST /api/shadow/promote` (optionally with a `ramp`),
+`POST /api/shadow/rollback`, `GET /api/shadow/rollouts`, `GET /api/shadow/export`. All answer
+`404` while the plugin is not enabled.
 
 ## Cost on the request flow
 

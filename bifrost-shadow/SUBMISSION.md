@@ -95,7 +95,7 @@ subsystem.
 | Pairwise comparison against the served answer | Not present in the gateway | New: LLM judge with randomized order, exact matching, embeddings, tool-selection and JSON-structure gates, agent tool-call metrics |
 | Readiness verdict | Not present | New: 95% Wilson lower bound against `min_agreement`, error-rate and judge-health gates; failed evaluations never count as passes |
 | Promotion to canary | Not present | New: verdict-gated promotion with an audited override, one rule per source, CEL conflict check against existing rules, dry run |
-| Canary monitoring and rollback | Not present | New: live error rate and latency per target, automatic rollback with the triggering evidence in a rollout log |
+| Canary monitoring and rollback | Not present | New: live error rate and latency per target, automatic rollback with the triggering evidence in a rollout log, and an optional guarded ramp that raises the canary step by step while it stays healthy |
 
 Mirroring traffic is not a new idea, and Maxim, the company behind Bifrost, offers a separate
 evaluation product that covers offline and production evaluation broadly. Bifrost Shadow is
