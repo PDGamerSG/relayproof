@@ -149,10 +149,16 @@ export function Performance({ data, summary }: { data: RecordsState; summary?: S
           Performance
         </h1>
         <p className="muted small">
-          Is the cheaper model also fast and cheap enough on this traffic, and does shadowing pay for itself? Everything here is measured
-          on the {partial ? `newest ${count(data.records.length)} of ${count(data.total)}` : count(data.records.length)} comparisons
-          {perf.requests > 0 && <> from {count(perf.requests)} requests</>}
-          {perf.first !== undefined && perf.last !== undefined && perf.last > perf.first && <> over {span(perf.last - perf.first)}</>}.
+          Is the cheaper model also fast and cheap enough on this traffic, and does shadowing pay for itself?
+          {data.records.length > 0 && (
+            <>
+              {" "}
+              Everything here is measured on the{" "}
+              {partial ? `newest ${count(data.records.length)} of ${count(data.total)}` : count(data.records.length)} comparisons from{" "}
+              {count(perf.requests)} {perf.requests === 1 ? "request" : "requests"}
+              {perf.first !== undefined && perf.last !== undefined && perf.last > perf.first && <> over {span(perf.last - perf.first)}</>}.
+            </>
+          )}
         </p>
       </div>
       {data.loaded && data.error && <p className="lv-pf__stale small">Showing the last comparisons loaded; refreshing failed: {data.error}</p>}
@@ -1168,9 +1174,11 @@ function placeLabels(items: { key: string; name: string; sub: string; cx: number
   const overlaps = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
   // Labels side by side read as one line, so they keep a wide berth from each other.
   const roomy = (b: Box): Box => ({ left: b.left - 16, right: b.right + 16, top: b.top - 2, bottom: b.bottom + 2 });
-  const dots: Box[] = items.map((p) => ({ left: p.cx - 8, right: p.cx + 8, top: p.cy - 8, bottom: p.cy + 8 }));
+  const dots = items.map((p) => ({ key: p.key, left: p.cx - 8, right: p.cx + 8, top: p.cy - 8, bottom: p.cy + 8 }));
   const taken: Box[] = [];
   return items.map((p) => {
+    // The spots are already offset from the label's own point; only the others are in the way.
+    const others = dots.filter((d) => d.key !== p.key);
     // Mono name at 12px and sub at 11.5px, measured roughly.
     const w = Math.max(p.name.length * 7.3, p.sub.length * 6.1) + 4;
     const beside = [
@@ -1196,7 +1204,7 @@ function placeLabels(items: { key: string; name: string; sub: string; cx: number
     const cost = (b: Box) =>
       (b.left < bounds.left || b.right > bounds.right || b.top < bounds.top || b.bottom > bounds.bottom + 14 ? 100 : 0) +
       taken.filter((t) => overlaps(roomy(t), b)).length * 10 +
-      dots.filter((d) => overlaps(d, b)).length;
+      others.filter((d) => overlaps(d, b)).length;
     const spot = spots.reduce((best, s) => (cost(boxOf(s)) < cost(boxOf(best)) ? s : best));
     taken.push(boxOf(spot));
     return { key: p.key, name: p.name, sub: p.sub, ...spot };
@@ -1220,7 +1228,8 @@ function Frontier({ primary, primaryCost, points, minAgreement }: { primary: Ser
     return PAD.left + f * plotW;
   };
   const lowest = Math.min(minAgreement, ...points.map((p) => p.lower));
-  const yMin = lowest >= 0.5 ? 0.5 : Math.max(0, Math.floor((lowest - 0.05) * 10) / 10);
+  // Start just under the bar or the weakest candidate, so near-perfect candidates do not crowd the top edge.
+  const yMin = Math.max(0, Math.floor((lowest - 0.05) * 10) / 10);
   const y = (f: number) => PAD.top + (1 - (Math.max(f, yMin) - yMin) / (1 - yMin)) * plotH;
   const yTicks = niceTicks(yMin, 1, 4);
 
