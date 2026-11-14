@@ -85,7 +85,8 @@ html:has(dialog[open]) {
 .lv:focus {
   outline: none;
 }
-.lv-bar__foot {
+.lv-bar__foot,
+.lv-tabs__group {
   display: none;
 }
 .lv-tabs__icon {
@@ -176,6 +177,16 @@ html:has(dialog[open]) {
   }
   .lv-tabs__badge {
     margin-left: auto;
+  }
+  .lv-tabs__group {
+    display: block;
+    margin: 14px 0 4px 14px;
+    font-size: 0.75rem;
+    font-weight: 650;
+    color: var(--ink-3);
+  }
+  .lv-tabs__group:first-child {
+    margin-top: 2px;
   }
   .lv-bar__foot {
     display: grid;

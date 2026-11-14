@@ -1,16 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { LINKS } from "../data/site";
 import { Mark } from "../components/Icons";
 import { ago, ConnectionContext, count, errorText, modelId, ms, pct, trialConnection, type Connection, type DemoStatus } from "./backend";
 import { AskPanel } from "./Ask";
+import { CommandPalette } from "./CommandPalette";
 import { ConnectPanel } from "./Connect";
 import { DisagreementsDialog, PromoteDialog } from "./Dialogs";
+import { DriftWatch } from "./DriftWatch";
 import { Explorer } from "./Explorer";
 import { Feed } from "./Feed";
 import { JudgeCheck } from "./JudgeCheck";
+import { Performance } from "./Performance";
+import { PolicyLab } from "./PolicyLab";
 import { useRecords, type RecordsState } from "./records";
 import { Report } from "./Report";
 import { Segments } from "./Segments";
+import { Setup } from "./Setup";
 import { CanaryPanel, Downloads, History, IncidentPanel } from "./Rollout";
 import { poll, type PairSummary, type RolloutEvent, type Rollouts, type Summary, type Verdict } from "./shadowClient";
 import { Trend } from "./Trend";
@@ -40,13 +45,17 @@ function useNow(): number {
   return now;
 }
 
+/** Tabs in the order of the job: watch the evidence, decide on it, act on it. */
 const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "ask", label: "Ask", trialOnly: true },
-  { id: "comparisons", label: "Comparisons" },
-  { id: "judge", label: "Judge check" },
-  { id: "rollout", label: "Rollout" },
-  { id: "report", label: "Report" },
+  { id: "overview", label: "Overview", group: "Watch" },
+  { id: "ask", label: "Ask", group: "Watch", trialOnly: true },
+  { id: "comparisons", label: "Comparisons", group: "Watch" },
+  { id: "performance", label: "Performance", group: "Watch" },
+  { id: "judge", label: "Judge check", group: "Decide" },
+  { id: "policy", label: "Policy lab", group: "Decide" },
+  { id: "report", label: "Report", group: "Decide" },
+  { id: "rollout", label: "Rollout", group: "Act" },
+  { id: "setup", label: "Set up", group: "Act" },
 ] as const;
 
 export type TabId = (typeof TABS)[number]["id"];
@@ -59,6 +68,9 @@ const TAB_ICON: Record<TabId, string> = {
   judge: "M8 2v11.5M4.5 13.5h7M3 4.5h10M3 4.5 1.5 8.5a1.6 1.6 0 0 0 3 0zM13 4.5l-1.5 4a1.6 1.6 0 0 0 3 0z",
   rollout: "M2.5 13.5 6.5 9l2.5 2.5 4.5-6M10 5.5h3.5V9",
   report: "M4 1.5h5.5l3 3v10H4zM9.5 1.5v3h3M6 8h4.5M6 10.5h4.5",
+  performance: "M8 14a6 6 0 1 1 6-6M8 8l3-3M2.5 14h11",
+  policy: "M2.5 4h11M2.5 8h11M2.5 12h11M5.5 2.5v3M10.5 6.5v3M7 10.5v3",
+  setup: "M3 2.5h10v11H3zM5.5 5.5l2 2-2 2M8.5 10h2",
 };
 
 /** Older links pointed at sections of the single-page console. */
@@ -99,7 +111,7 @@ export function LiveApp() {
   const [inspecting, setInspecting] = useState<PairSummary>();
   const noticeId = useRef(0);
   // Records feed the trend charts, the explorer, the judge check and the report.
-  const data = useRecords(conn, tab !== "rollout");
+  const data = useRecords(conn, tab !== "rollout" && tab !== "setup");
 
   const notify = useCallback<Notify>((tone, text) => {
     const id = ++noticeId.current;
@@ -177,14 +189,17 @@ export function LiveApp() {
             </p>
           </div>
           <nav className="lv-tabs" aria-label="Console">
-            {tabs.map((t) => (
-              <a key={t.id} href={`#${t.id}`} aria-current={active === t.id ? "page" : undefined}>
-                <svg className="lv-tabs__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                  <path d={TAB_ICON[t.id]} />
-                </svg>
-                {t.label}
-                {badge[t.id] && <span className="lv-tabs__badge num">{badge[t.id]}</span>}
-              </a>
+            {tabs.map((t, i) => (
+              <Fragment key={t.id}>
+                {t.group !== tabs[i - 1]?.group && <p className="lv-tabs__group">{t.group}</p>}
+                <a href={`#${t.id}`} aria-current={active === t.id ? "page" : undefined}>
+                  <svg className="lv-tabs__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d={TAB_ICON[t.id]} />
+                  </svg>
+                  {t.label}
+                  {badge[t.id] && <span className="lv-tabs__badge num">{badge[t.id]}</span>}
+                </a>
+              </Fragment>
             ))}
           </nav>
           <p className="lv-bar__foot small">
@@ -304,6 +319,8 @@ export function LiveApp() {
                   </div>
                 </section>
 
+                <DriftWatch data={data} summary={summary} events={rollouts?.events} />
+
                 <Segments data={data} summary={summary} />
               </>
             )}
@@ -317,7 +334,13 @@ export function LiveApp() {
 
             {active === "comparisons" && <Explorer data={data} summary={summary} />}
 
+            {active === "performance" && <Performance data={data} summary={summary} />}
+
             {active === "judge" && <JudgeCheck data={data} summary={summary} />}
+
+            {active === "policy" && <PolicyLab data={data} summary={summary} />}
+
+            {active === "setup" && <Setup data={data} summary={summary} />}
 
             {active === "rollout" && (
               <>
@@ -391,6 +414,8 @@ export function LiveApp() {
           </footer>
         </div>
       </div>
+
+      <CommandPalette tabs={tabs.map((t) => ({ id: t.id, label: t.label }))} data={data} summary={summary} />
 
       <div className="lv-toasts" aria-live="polite">
         {notices.map((n) => (
