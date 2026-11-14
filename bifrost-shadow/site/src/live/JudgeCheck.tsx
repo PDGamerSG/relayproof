@@ -122,7 +122,7 @@ export function JudgeCheck({ data, summary }: { data: RecordsState; summary?: Su
       models.push({ model: modelId(r.primary), role: "primary" });
       models.push({ model: modelId(r.candidate), role: "candidate" });
     }
-    return { links: judgeFamilyLinks(judgeModel, models), total: new Set(models.map((m) => `${m.role}|${m.model}`)).size };
+    return judgeFamilyLinks(judgeModel, models);
   }, [summary, judged, judgeModel]);
 
   const heading = (
@@ -172,14 +172,14 @@ export function JudgeCheck({ data, summary }: { data: RecordsState; summary?: Su
 
         <Glance
           overall={overall}
-          links={links.links}
+          links={links}
           judgeModel={judgeModel}
           maxJudgeErrorRate={summary?.thresholds.max_judge_error_rate}
           agreement={agreement}
           onLabel={() => document.getElementById("judge-cal")?.scrollIntoView({ behavior: "smooth", block: "start" })}
         />
 
-        {links.links.length > 0 && judgeModel && <FamilyNote judgeModel={judgeModel} links={links.links} />}
+        {links.length > 0 && judgeModel && <FamilyNote judgeModel={judgeModel} links={links} />}
 
         {candidates.length > 1 && (
           <fieldset className="lv-judge__scope">
@@ -218,7 +218,8 @@ interface GlanceItem {
 function agreementStatus(c: Calibration): { status: Status; text: string } {
   if (c.n < 10) return { status: "wait", text: c.n === 0 ? "Label 10 pairs yourself for a first read." : `${plural(c.n, "label")} so far; 10 give a first read.` };
   const k = c.three.kappa;
-  if (k === undefined) return { status: "note", text: `${pct(c.three.agreement, 0)} agreement; kappa needs labels in more than one class.` };
+  if (k === undefined || c.three.levels?.includes(1))
+    return { status: "note", text: `${pct(c.three.agreement, 0)} agreement; kappa needs more than one kind of answer from each of you.` };
   return {
     status: k >= 0.61 ? "ok" : k >= 0.4 ? "watch" : "warn",
     text: `${pct(c.three.agreement, 0)} agreement with you, kappa ${k.toFixed(2)} (${kappaStrength(k)}).`,
@@ -1277,6 +1278,14 @@ function Calibrate({
 function KappaLine({ k }: { k: Kappa }) {
   if (k.n === 0 || k.agreement === undefined) return <small>no labels yet</small>;
   if (k.kappa === undefined) return <small>kappa needs labels in more than one class</small>;
+  // Pairs are [you, judge]. A rater with one answer leaves kappa at 0, whatever the agreement.
+  const flat = k.levels?.[1] === 1 ? "the judge" : k.levels?.[0] === 1 ? "you" : undefined;
+  if (flat)
+    return (
+      <small>
+        kappa <b>{k.kappa.toFixed(2)}</b>: {flat} gave the same answer every time, so this agreement is what chance alone would give
+      </small>
+    );
   if (k.n < 10)
     return (
       <small>

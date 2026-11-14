@@ -455,10 +455,6 @@
     grid-template-columns: minmax(0, 1fr) 360px;
     align-items: start;
   }
-  .lv-judge-tally {
-    position: sticky;
-    top: 112px;
-  }
 }
 .lv-judge-cal__main {
   min-width: 0;
@@ -767,4 +763,13 @@
 }
 .lv-judge-tally__confirm > span {
   flex-basis: 100%;
+}
+
+/* Touch screens have no keys to press. */
+@media (hover: none) and (pointer: coarse) {
+  .lv-judge-keys,
+  .lv-judge-pair__vote kbd,
+  .lv-judge-pair__actions kbd {
+    display: none;
+  }
 }

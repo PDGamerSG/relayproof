@@ -418,6 +418,8 @@ export interface Kappa {
   /** Approximate 95% interval for kappa (Cohen 1960 standard error). */
   low?: number;
   high?: number;
+  /** Distinct labels each rater used; kappa cannot leave 0 while either used one. */
+  levels?: [number, number];
 }
 
 /** Cohen's kappa for two raters' labels on the same items: agreement corrected for chance. */
@@ -433,12 +435,13 @@ export function cohenKappa<T extends string | number | boolean>(pairs: ReadonlyA
     b.set(y, (b.get(y) ?? 0) + 1);
   }
   const agreement = same / n;
+  const levels: [number, number] = [a.size, b.size];
   let chance = 0;
   for (const [k, ca] of a) chance += (ca / n) * ((b.get(k) ?? 0) / n);
-  if (chance >= 1) return { n, agreement, chance };
+  if (chance >= 1) return { n, agreement, chance, levels };
   const kappa = (agreement - chance) / (1 - chance);
   const se = Math.sqrt((agreement * (1 - agreement)) / (n * (1 - chance) ** 2));
-  return { n, agreement, chance, kappa, low: Math.max(-1, kappa - Z_95 * se), high: Math.min(1, kappa + Z_95 * se) };
+  return { n, agreement, chance, kappa, low: Math.max(-1, kappa - Z_95 * se), high: Math.min(1, kappa + Z_95 * se), levels };
 }
 
 /** Landis and Koch's words for a kappa value. */
