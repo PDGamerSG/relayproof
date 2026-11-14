@@ -31,6 +31,7 @@ type ShadowReader interface {
 	PairScorecard(experiment, candidate string) (shadow.PairSummary, error)
 	RecordRollout(ev shadow.RolloutEvent) (shadow.RolloutEvent, error)
 	Rollouts() shadow.Rollouts
+	PlanRamp(req shadow.RampRequest, weight *float64) (*shadow.CanaryRamp, float64, error)
 }
 
 // ShadowResolver returns the currently loaded shadow plugin, or nil. It is called
@@ -208,8 +209,11 @@ func (h *ShadowHandler) getCanaryRule(ctx *fasthttp.RequestCtx) {
 type shadowPromoteRequest struct {
 	Experiment string `json:"experiment"`
 	Candidate  string `json:"candidate"`
-	// Weight is the candidate's share of source traffic (default 0.1).
+	// Weight is the candidate's share of source traffic (default 0.1, or the
+	// ramp's first step).
 	Weight *float64 `json:"weight,omitempty"`
+	// Ramp optionally lets the canary guard raise the weight step by step.
+	Ramp *shadow.RampRequest `json:"ramp,omitempty"`
 	// Priority applies to a new canary rule only (default: first free from 10).
 	Priority *int `json:"priority,omitempty"`
 	// OverrideReason is required to promote a candidate that is not "ready".
@@ -255,6 +259,14 @@ func (h *ShadowHandler) promote(ctx *fasthttp.RequestCtx) {
 	if req.Priority != nil && *req.Priority < 0 {
 		SendError(ctx, fasthttp.StatusBadRequest, "priority must be a non-negative integer")
 		return
+	}
+	if req.Ramp != nil {
+		ramp, start, err := p.PlanRamp(*req.Ramp, req.Weight)
+		if err != nil {
+			SendError(ctx, fasthttp.StatusBadRequest, err.Error())
+			return
+		}
+		in.weight, in.ramp = start, ramp
 	}
 
 	shadowRolloutMu.Lock()

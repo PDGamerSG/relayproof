@@ -71,6 +71,10 @@ func (f *fakeShadow) RecordRollout(ev shadow.RolloutEvent) (shadow.RolloutEvent,
 
 func (f *fakeShadow) Rollouts() shadow.Rollouts { return shadow.Rollouts{} }
 
+func (f *fakeShadow) PlanRamp(shadow.RampRequest, *float64) (*shadow.CanaryRamp, float64, error) {
+	return nil, 0, shadow.ErrInvalidRamp
+}
+
 func shadowCtx(query string) *fasthttp.RequestCtx {
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("/api/shadow/x?" + query)

@@ -62,7 +62,7 @@ index 408705c37..a78cde72f 100644
  	// no earlier routing plugin (governance routing rules, governance VK LB, enterprise LB)
  	// already set one. CEL rules can still match on provider == "" because this runs last.
 diff --git a/transports/bifrost-http/server/server.go b/transports/bifrost-http/server/server.go
-index 08342ca83..a65f7bc2e 100644
+index 08342ca83..a6ac340a0 100644
 --- a/transports/bifrost-http/server/server.go
 +++ b/transports/bifrost-http/server/server.go
 @@ -43,6 +43,7 @@ import (
@@ -120,14 +120,14 @@ index 08342ca83..a65f7bc2e 100644
  	// Wire the routing plugin's semantic-classification embedding path. The
  	// executor cannot be passed at Init: the plugin is built while the bifrost
  	// client is still being assembled.
-@@ -4092,3 +4112,27 @@ func (s *BifrostHTTPServer) cleanupAfterServeError() {
+@@ -4092,3 +4112,29 @@ func (s *BifrostHTTPServer) cleanupAfterServeError() {
  		s.skillsServingHandler.Close()
  	}
  }
 +
 +// wireShadowPlugin gives the shadow plugin the client calls it issues, a
 +// pricing function backed by the model catalog (pricing overrides included),
-+// and the rollback its canary guard uses.
++// and the rollback and ramp steps its canary guard takes.
 +func (s *BifrostHTTPServer) wireShadowPlugin(p *shadow.Plugin) {
 +	var price shadow.PriceFunc
 +	if s.Config.ModelCatalog != nil {
@@ -137,7 +137,9 @@ index 08342ca83..a65f7bc2e 100644
 +		}
 +	}
 +	p.SetExecutors(s.Client.ChatCompletionRequest, s.Client.EmbeddingRequest, price)
-+	p.SetRollbackHook(handlers.NewShadowRollbackHook(p, s.shadowRoutingRules()))
++	rules := s.shadowRoutingRules()
++	p.SetRollbackHook(handlers.NewShadowRollbackHook(p, rules))
++	p.SetRampHook(handlers.NewShadowRampHook(p, rules))
 +}
 +
 +// shadowRoutingRules is the routing-rule store shadow promotion writes to, or

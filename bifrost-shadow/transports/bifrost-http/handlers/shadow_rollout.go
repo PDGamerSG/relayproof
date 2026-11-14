@@ -276,9 +276,11 @@ type shadowPromotion struct {
 	Warnings []string                            `json:"warnings"`
 	// Conflicts are enabled rules that would stop the canary from ever seeing
 	// source traffic. A promotion with conflicts is refused.
-	Conflicts []string             `json:"conflicts,omitempty"`
-	Evidence  shadow.PairSummary   `json:"evidence"`
-	Event     *shadow.RolloutEvent `json:"event,omitempty"`
+	Conflicts []string           `json:"conflicts,omitempty"`
+	Evidence  shadow.PairSummary `json:"evidence"`
+	// Ramp is the promotion's ramp, as it starts: present only when one was asked for.
+	Ramp  *shadow.CanaryRamp   `json:"ramp,omitempty"`
+	Event *shadow.RolloutEvent `json:"event,omitempty"`
 }
 
 // shadowPromoteInput is a promotion request after validation.
@@ -289,36 +291,46 @@ type shadowPromoteInput struct {
 	priority       *int
 	overrideReason string
 	dryRun         bool
+	// ramp is the validated ramp (weight is its first step), or nil.
+	ramp *shadow.CanaryRamp
 }
 
-// promoteShadowCandidate gives a candidate a share of its source model's live
-// traffic through a weighted routing rule.
+// shareEdit sets one candidate's share of its source model's traffic in the
+// source's canary rule. Promotion and the canary guard's ramp both make it.
+type shareEdit struct {
+	experiment string
+	candidate  string
+	weight     float64
+	// priority applies to a new rule only.
+	priority *int
+	// peak is the highest share the candidate will reach (a ramp's last step).
+	// It is checked against the other candidates' shares now, so a ramp cannot
+	// be accepted that could never finish.
+	peak float64
+	// existingOnly edits the source's canary rule, which must already route
+	// the candidate, and never creates one (the guard's ramp).
+	existingOnly bool
+}
+
+// planShareEdit plans a share change: it merges the candidate's share into the
+// source's canary rule (or a new rule), and checks every other enabled rule.
+// It fills out.Action, out.Rule, out.Warnings and out.Conflicts, and returns
+// the canary plan. Nothing is written.
 //
-// A candidate whose verdict is not "ready" is refused unless the operator gives
-// an override reason, which is recorded with the evidence. If a shadow canary
-// rule for the same source exists, the candidate is merged into it rather than
-// added as a second rule: the routing engine stops at the first matching
-// terminal rule, so a second rule for the same source would never serve
-// traffic. Enabled rules that match every request for the source and run first
-// are conflicts and refuse the promotion; rules that may match some requests
-// are reported as warnings.
-func promoteShadowCandidate(ctx context.Context, p ShadowReader, store ShadowRoutingRules, in shadowPromoteInput) (*shadowPromotion, error) {
-	evidence, err := p.PairScorecard(in.experiment, in.candidate)
+// If a shadow canary rule for the same source exists, the candidate is merged
+// into it rather than added as a second rule: the routing engine stops at the
+// first matching terminal rule, so a second rule for the same source would
+// never serve traffic. Enabled rules that match every request for the source
+// and run first are conflicts (errShadowRuleConflict); rules that may match
+// some requests are reported as warnings.
+func planShareEdit(ctx context.Context, p ShadowReader, store ShadowRoutingRules, e shareEdit, out *shadowPromotion) (*shadow.CanaryRule, error) {
+	plan, err := p.BuildCanaryRule(e.experiment, e.candidate, e.weight)
 	if err != nil {
 		return nil, err
 	}
-	out := &shadowPromotion{DryRun: in.dryRun, Evidence: evidence, Warnings: []string{}}
-	override := evidence.Verdict != shadow.VerdictReady
-	if override && strings.TrimSpace(in.overrideReason) == "" {
-		return out, fmt.Errorf("%w: verdict is %s (%s); pass override_reason to promote anyway", errShadowNotReady, evidence.Verdict, evidence.VerdictReason)
-	}
-	plan, err := p.BuildCanaryRule(in.experiment, in.candidate, in.weight)
-	if err != nil {
-		return out, err
-	}
 	existingRules, err := store.ListRoutingRules(ctx)
 	if err != nil {
-		return out, fmt.Errorf("%w: list routing rules: %w", errShadowStore, err)
+		return plan, fmt.Errorf("%w: list routing rules: %w", errShadowStore, err)
 	}
 
 	var current *configstoreTables.TableRoutingRule
@@ -330,36 +342,50 @@ func promoteShadowCandidate(ctx context.Context, p ShadowReader, store ShadowRou
 	}
 
 	var rule configstoreTables.TableRoutingRule
+	shares := map[string]shadowShare{}
 	if current != nil {
 		rule = *current
 		out.Action = "update"
-		if in.priority != nil && *in.priority != rule.Priority {
-			out.Warnings = append(out.Warnings, fmt.Sprintf("kept the existing canary rule's priority %d; the requested priority %d applies only to a new rule", rule.Priority, *in.priority))
+		if e.priority != nil && *e.priority != rule.Priority {
+			out.Warnings = append(out.Warnings, fmt.Sprintf("kept the existing canary rule's priority %d; the requested priority %d applies only to a new rule", rule.Priority, *e.priority))
 		}
+		shares = canaryShares(current, plan.Source)
 	} else {
 		out.Action = "create"
 		rule = configstoreTables.TableRoutingRule{
 			ID:            uuid.NewString(),
 			CelExpression: plan.CelExpression,
 			Scope:         "global",
-			Priority:      freeGlobalPriority(existingRules, in.priority),
+			Priority:      freeGlobalPriority(existingRules, e.priority),
 		}
 	}
-	shares := map[string]shadowShare{}
-	if current != nil {
-		shares = canaryShares(current, plan.Source)
+	if e.existingOnly {
+		if _, ok := shares[plan.Candidate.String()]; !ok {
+			return plan, fmt.Errorf("%w: no canary rule routes %s traffic to %s", errShadowNoCanary, plan.Source, plan.Candidate)
+		}
 	}
-	shares[plan.Candidate.String()] = shadowShare{ref: plan.Candidate, weight: in.weight}
+	if e.peak > e.weight {
+		others := 0.0
+		for k, s := range shares {
+			if k != plan.Candidate.String() {
+				others += shadow.Round4(s.weight)
+			}
+		}
+		if shadow.Round4(e.peak)+others > 1+1e-9 {
+			return plan, fmt.Errorf("%w: the ramp's last step (%g%%) and the other candidates' %g%% of %s traffic add up to more than 100%%", errShadowBadShares, shadow.Round4(e.peak*100), shadow.Round4(others*100), plan.Source)
+		}
+	}
+	shares[plan.Candidate.String()] = shadowShare{ref: plan.Candidate, weight: e.weight}
 	targets, names, err := buildCanaryTargets(plan.Source, shares)
 	if err != nil {
-		return out, err
+		return plan, err
 	}
 	enabled := true
 	rule.Enabled = &enabled
 	rule.ChainRule = false
 	rule.Targets = targets
 	rule.Name = canaryRuleName(plan.Source, names)
-	rule.Description = fmt.Sprintf("Created by shadow traffic evaluation from experiment %q. Candidates get %s of %s traffic; the source serves the rest.", in.experiment, strings.Join(shareList(targets, plan.Source), ", "), plan.Source)
+	rule.Description = fmt.Sprintf("Created by shadow traffic evaluation from experiment %q. Candidates get %s of %s traffic; the source serves the rest.", e.experiment, strings.Join(shareList(targets, plan.Source), ", "), plan.Source)
 
 	for i := range existingRules {
 		other := &existingRules[i]
@@ -387,21 +413,61 @@ func promoteShadowCandidate(ctx context.Context, p ShadowReader, store ShadowRou
 	}
 	out.Rule = &rule
 	if len(out.Conflicts) > 0 {
-		return out, fmt.Errorf("%w: %s", errShadowRuleConflict, strings.Join(out.Conflicts, "; "))
+		return plan, fmt.Errorf("%w: %s", errShadowRuleConflict, strings.Join(out.Conflicts, "; "))
 	}
 	if err := validateShadowRule(&rule); err != nil {
+		return plan, err
+	}
+	return plan, nil
+}
+
+// saveShareEdit writes a planned share change to the routing-rule store.
+func saveShareEdit(ctx context.Context, store ShadowRoutingRules, out *shadowPromotion) error {
+	var err error
+	if out.Action == "update" {
+		err = store.UpdateRoutingRule(ctx, out.Rule)
+	} else {
+		err = store.CreateRoutingRule(ctx, out.Rule)
+	}
+	if err != nil {
+		return fmt.Errorf("%w: save routing rule: %w", errShadowStore, err)
+	}
+	return nil
+}
+
+// promoteShadowCandidate gives a candidate a share of its source model's live
+// traffic through a weighted routing rule (see planShareEdit for the merge and
+// the conflict check).
+//
+// A candidate whose verdict is not "ready" is refused unless the operator gives
+// an override reason, which is recorded with the evidence. With a ramp the
+// canary starts at the ramp's first step and the canary guard raises it; a
+// promotion of a canary that is ramping replaces its ramp, or cancels it when
+// the promotion has none.
+func promoteShadowCandidate(ctx context.Context, p ShadowReader, store ShadowRoutingRules, in shadowPromoteInput) (*shadowPromotion, error) {
+	evidence, err := p.PairScorecard(in.experiment, in.candidate)
+	if err != nil {
+		return nil, err
+	}
+	out := &shadowPromotion{DryRun: in.dryRun, Evidence: evidence, Warnings: []string{}, Ramp: in.ramp}
+	override := evidence.Verdict != shadow.VerdictReady
+	if override && strings.TrimSpace(in.overrideReason) == "" {
+		return out, fmt.Errorf("%w: verdict is %s (%s); pass override_reason to promote anyway", errShadowNotReady, evidence.Verdict, evidence.VerdictReason)
+	}
+	edit := shareEdit{experiment: in.experiment, candidate: in.candidate, weight: in.weight, priority: in.priority, peak: in.weight}
+	if in.ramp != nil {
+		edit.peak = in.ramp.Steps[len(in.ramp.Steps)-1]
+	}
+	plan, err := planShareEdit(ctx, p, store, edit, out)
+	if err != nil {
 		return out, err
 	}
+	out.Warnings = append(out.Warnings, rampWarnings(p, in.experiment, plan.Candidate, in.ramp)...)
 	if in.dryRun {
 		return out, nil
 	}
-	if current != nil {
-		err = store.UpdateRoutingRule(ctx, &rule)
-	} else {
-		err = store.CreateRoutingRule(ctx, &rule)
-	}
-	if err != nil {
-		return out, fmt.Errorf("%w: save routing rule: %w", errShadowStore, err)
+	if err := saveShareEdit(ctx, store, out); err != nil {
+		return out, err
 	}
 	ev, err := p.RecordRollout(shadow.RolloutEvent{
 		Action:     shadow.RolloutPromote,
@@ -409,17 +475,44 @@ func promoteShadowCandidate(ctx context.Context, p ShadowReader, store ShadowRou
 		Source:     plan.Source,
 		Candidate:  plan.Candidate,
 		Weight:     shadow.Round4(in.weight),
-		RuleID:     rule.ID,
-		RuleName:   rule.Name,
+		RuleID:     out.Rule.ID,
+		RuleName:   out.Rule.Name,
 		Override:   override,
 		Reason:     strings.TrimSpace(in.overrideReason),
 		Evidence:   &evidence,
+		Ramp:       in.ramp,
 	})
 	if err != nil {
 		out.Warnings = append(out.Warnings, "the routing rule was saved but the rollout log was not: "+err.Error())
 	}
 	out.Event = &ev
+	if ev.Ramp != nil {
+		out.Ramp = ev.Ramp // as recorded: the first step starts with the event
+	}
 	return out, nil
+}
+
+// rampWarnings says what a promotion does to a ramp: that it cancels or
+// replaces the canary's running ramp, and that without auto_rollback an
+// unhealthy step holds a new ramp instead of rolling it back.
+func rampWarnings(p ShadowReader, experiment string, candidate shadow.ModelRef, ramp *shadow.CanaryRamp) []string {
+	var out []string
+	rollouts := p.Rollouts()
+	for _, c := range rollouts.Canaries {
+		if c.Experiment != experiment || c.Candidate.String() != candidate.String() || c.Ramp == nil || c.Ramp.Completed {
+			continue
+		}
+		at := fmt.Sprintf("step %d of %d (%g%%)", c.Ramp.CurrentStep+1, len(c.Ramp.Steps), shadow.Round4(c.Ramp.Steps[c.Ramp.CurrentStep]*100))
+		if ramp == nil {
+			out = append(out, fmt.Sprintf("this cancels the canary's ramp at %s: the guard will not raise its weight again", at))
+		} else {
+			out = append(out, fmt.Sprintf("this replaces the canary's ramp at %s; the new ramp starts at %g%%", at, shadow.Round4(ramp.Steps[0]*100)))
+		}
+	}
+	if ramp != nil && !rollouts.AutoRollback {
+		out = append(out, "canary.auto_rollback is off: an unhealthy step holds the ramp where it is instead of rolling the canary back")
+	}
+	return out
 }
 
 // validateShadowRule runs the same checks the routing-rules API runs.
@@ -537,6 +630,37 @@ func NewShadowRollbackHook(p ShadowReader, store ShadowRoutingRules) shadow.Roll
 		// the watch is left to close.
 		if done != nil {
 			return done()
+		}
+		return nil
+	}
+}
+
+// NewShadowRampHook returns the function the plugin's canary guard calls to
+// move a ramping canary to its next step. Like the rollback hook it holds the
+// promotion lock throughout, so the guard's current check, the rule edit and
+// the guard's done callback (which records the ramp event) cannot interleave
+// with a promotion or a rollback. The new share is written through the same
+// merge promotion uses, into the source's existing canary rule only: other
+// candidates keep their shares and the source serves the rest.
+func NewShadowRampHook(p ShadowReader, store ShadowRoutingRules) shadow.RampFunc {
+	if p == nil || store == nil {
+		return nil
+	}
+	return func(ctx context.Context, experiment, candidate string, weight float64, current func() bool, done func(ruleID, ruleName string) error) error {
+		shadowRolloutMu.Lock()
+		defer shadowRolloutMu.Unlock()
+		if current != nil && !current() {
+			return shadow.ErrCanaryChanged
+		}
+		out := &shadowPromotion{Warnings: []string{}}
+		if _, err := planShareEdit(ctx, p, store, shareEdit{experiment: experiment, candidate: candidate, weight: weight, peak: weight, existingOnly: true}, out); err != nil {
+			return err
+		}
+		if err := saveShareEdit(ctx, store, out); err != nil {
+			return err
+		}
+		if done != nil {
+			return done(out.Rule.ID, out.Rule.Name)
 		}
 		return nil
 	}
