@@ -47,6 +47,7 @@ type fakeBackend struct {
 	incidents []string
 	chats     int
 	rollbacks []map[string]string
+	promotes  []string // raw promote bodies, as the gateway received them
 	since     time.Time
 	resets    int
 
@@ -83,6 +84,13 @@ func (f *fakeBackend) handler() http.Handler {
 		f.rollbacks = append(f.rollbacks, body)
 		f.mu.Unlock()
 		_, _ = io.WriteString(w, `{"action":"delete"}`)
+	})
+	mux.HandleFunc("/api/shadow/promote", func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		f.mu.Lock()
+		f.promotes = append(f.promotes, r.Header.Get("X-Bifrost-Setup-Token")+" "+string(raw))
+		f.mu.Unlock()
+		_, _ = io.WriteString(w, `{"action":"create","dry_run":true}`)
 	})
 	mux.HandleFunc("DELETE /api/shadow/records", func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
@@ -452,5 +460,27 @@ func TestIncidentModelsAreConfigurable(t *testing.T) {
 	}
 	if got := post("anthropic/claude-sonnet-5-5"); got != http.StatusOK {
 		t.Errorf("listed model: status %d", got)
+	}
+}
+
+// A promotion with a ramp is forwarded as sent: the door does not parse
+// promote bodies, and its 64 KiB limit is far above any ramp.
+func TestPromoteWithRampReachesTheGatewayUnchanged(t *testing.T) {
+	f := &fakeBackend{}
+	_, srv := newTestDoor(t, f, options{})
+	body := `{"experiment":"gpt-4o cost-down","candidate":"openai/gpt-4o-mini","weight":0.1,` +
+		`"ramp":{"steps":[0.1,0.25,0.5,1],"min_requests":20,"hold_seconds":60},"dry_run":true}`
+	resp, err := http.Post(srv.URL+"/api/shadow/promote", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status %d", resp.StatusCode)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.promotes) != 1 || f.promotes[0] != "secret-token "+body {
+		t.Fatalf("gateway saw %q, want the body unchanged with the door's token", f.promotes)
 	}
 }

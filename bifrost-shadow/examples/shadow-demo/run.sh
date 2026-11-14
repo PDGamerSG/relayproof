@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # End-to-end shadow traffic demo: mock upstream -> Bifrost gateway (shadow plugin)
 # -> load generator -> scorecard -> gated promotion to a canary -> live canary
-# health -> simulated provider incident -> automatic rollback.
+# health -> simulated provider incident -> automatic rollback -> a guarded ramp
+# that the canary guard takes from 10% to 100% on its own.
 #
 #   BIFROST_BIN=/path/to/bifrost-http ./run.sh            # default 300 requests
 #   BIFROST_BIN=... REQUESTS=600 PORT=8081 ./run.sh
@@ -154,6 +155,45 @@ if [ "$mini" -ne 0 ]; then
   exit 1
 fi
 echo "all traffic is back on gpt-4o"
+
+echo
+echo "==> guarded ramp: promote $CANDIDATE again, and let the canary guard take it from 10% to 100%"
+# Each step needs 10 healthy candidate requests and a 2 s hold; the guard checks every 5 s.
+RAMP='{"steps":[0.1,0.5,1],"min_requests":10,"hold_seconds":2}'
+status="$(promote "{\"experiment\":\"$EXPERIMENT\",\"candidate\":\"$CANDIDATE\",\"ramp\":$RAMP,\"dry_run\":true}")"
+echo "HTTP $status: dry run $(json_field '"steps", d["ramp"]["steps"], "min_requests", d["ramp"]["min_requests"], "hold_seconds", d["ramp"]["hold_seconds"]' <"$work/promote.json" 2>/dev/null || cat "$work/promote.json")"
+status="$(promote "{\"experiment\":\"$EXPERIMENT\",\"candidate\":\"$CANDIDATE\",\"ramp\":$RAMP}")"
+if [ "$status" -ge 300 ]; then
+  echo "ramped promotion failed: HTTP $status $(cat "$work/promote.json")"
+  exit 1
+fi
+# ramp_state prints "<completed>|<weight>: <what the ramp waits for>".
+ramp_state() {
+  api "$GATEWAY/api/shadow/rollouts" | json_field 'next(("%s|%g%%: %s" % (c["ramp"]["completed"], round(c["weight"] * 100, 2), c["ramp"]["reason"]) for c in d["canaries"] if c["candidate"]["model"] == "gpt-4o-mini" and c.get("ramp")), "gone|no ramping canary")'
+}
+last=""
+complete=""
+for _ in $(seq 1 60); do
+  count_served 40 >/dev/null
+  state="$(ramp_state)"
+  if [ "${state#*|}" != "$last" ]; then echo "  ${state#*|}"; fi
+  last="${state#*|}"
+  case "${state%%|*}" in
+    True) complete=1; break ;;
+    gone) echo "the ramping canary disappeared"; exit 1 ;;
+  esac
+  sleep 1
+done
+if [ -z "$complete" ]; then
+  echo "the ramp did not complete"
+  exit 1
+fi
+read -r mini failed <<<"$(count_served 50)"
+echo "after the ramp: gpt-4o-mini served $mini of 50 requests, $failed failed"
+if [ "$mini" -ne 50 ]; then
+  echo "expected a full cutover at the ramp's last step"
+  exit 1
+fi
 
 echo
 echo "==> rollout log"

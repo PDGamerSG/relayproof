@@ -45,7 +45,11 @@ through a rollout:
 7. the mock's incident switch makes `gpt-4o-mini` fail 60% of requests, the canary guard
    (`canary.auto_rollback` in the config) rolls it back, and 100 more requests are all
    served by `gpt-4o`;
-8. the rollout log is printed.
+8. a guarded ramp: `gpt-4o-mini` is promoted again with
+   `"ramp": {"steps": [0.1, 0.5, 1], "min_requests": 10, "hold_seconds": 2}`, and the canary
+   guard raises it to 50% and then 100% on its own while it stays healthy; 50 more requests are
+   all served by `gpt-4o-mini`;
+9. the rollout log is printed.
 
 Tune it with `REQUESTS`, `CONCURRENCY`, `PORT`, `MOCK_ADDR` and `CANARY_WEIGHT`.
 
@@ -79,6 +83,21 @@ gpt-4o-mini served 0 of 100 requests, 0 failed
 ```
 
 Five user requests failed during the simulated incident before the guard acted.
+
+The ramp at the end (15 November 2026, macOS arm64, 2 min 4 s for the whole script; 13 s from the
+ramped promotion to `ramp_complete`):
+
+```
+==> guarded ramp: promote openai/gpt-4o-mini again, and let the canary guard take it from 10% to 100%
+HTTP 200: dry run steps [0.1, 0.5, 1] min_requests 10 hold_seconds 2
+  10%: step 1 of 3 (10%): 4 of 10 candidate requests
+  50%: step 2 of 3 (50%) passed: moving to 100% at the guard's next check
+  100%: complete: the canary reached the last step, 100%
+after the ramp: gpt-4o-mini served 50 of 50 requests, 0 failed
+2026-11-15T01:16:18  promote        gpt-4o-mini   weight=0.1    by api
+2026-11-15T01:16:26  ramp           gpt-4o-mini   weight=0.5    by canary_guard
+2026-11-15T01:16:31  ramp_complete  gpt-4o-mini   weight=1      by canary_guard
+```
 
 Sampling is random, so the numbers move a little between runs; the verdicts do not.
 `$/1M REQ` is the saving per million requests at the prices in `gateway/config.json`.
