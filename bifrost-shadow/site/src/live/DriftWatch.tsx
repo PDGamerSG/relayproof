@@ -12,11 +12,15 @@ const STATUS_LABEL: Record<DriftStatus, string> = {
   thin: "Too little data",
 };
 
-const EVENT_LABEL: Record<RolloutEvent["action"], string> = {
+/** Keyed by string so actions the gateway adds later still get a label (their own name). */
+const EVENT_LABEL: Record<string, string> = {
   promote: "promoted",
   rollback: "rolled back",
   auto_rollback: "guard rolled back",
+  ramp: "ramped up",
+  ramp_complete: "ramp complete",
 };
+const eventLabel = (e: RolloutEvent) => EVENT_LABEL[e.action] ?? e.action.replace(/_/g, " ");
 
 /** Percentage points with a real minus sign: 0.081 -> "+8.1". */
 function points(diff: number, digits = 1): string {
@@ -264,7 +268,7 @@ function Spark({ drift: d, minAgreement, events }: { drift: Drift; minAgreement:
   const label =
     `Rolling agreement over ${d.rollWidth} comparisons, now ${pct(last.agreement, 0)}` +
     (d.before && d.recent ? `; earlier window ${pct(d.before.agreement, 0)}, newest ${pct(d.recent.agreement, 0)}` : "") +
-    (marks.length ? `; ${marks.map((m) => EVENT_LABEL[m.e.action]).join(", ")} along the way.` : ".");
+    (marks.length ? `; ${marks.map((m) => eventLabel(m.e)).join(", ")} along the way.` : ".");
 
   return (
     <figure className="lv-drift__spark">
@@ -291,8 +295,8 @@ function Spark({ drift: d, minAgreement, events }: { drift: Drift; minAgreement:
           <g key={e.id} className="lv-drift__event" data-action={e.action}>
             <line x1={edge(k)} x2={edge(k)} y1={PAD.top - 4} y2={PAD.top + plotH} />
             <title>
-              {EVENT_LABEL[e.action]}
-              {e.action === "promote" ? ` to ${pct(e.weight, 0)}` : ""}
+              {eventLabel(e)}
+              {e.action === "rollback" || e.action === "auto_rollback" ? "" : ` to ${pct(e.weight, 0)}`}
             </title>
           </g>
         ))}
