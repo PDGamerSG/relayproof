@@ -58,18 +58,6 @@ export const IconClose = () => (
   </Icon>
 );
 
-export const IconArrowDown = () => (
-  <Icon>
-    <path d="M9 3.5v11M4.5 10 9 14.5 13.5 10" />
-  </Icon>
-);
-
-export const IconExternal = () => (
-  <Icon width="14" height="14">
-    <path d="M7 4.5H4.5v9h9V11M10 4.5h3.5V8M13.5 4.5 8.5 9.5" />
-  </Icon>
-);
-
 export const IconMenu = () => (
   <Icon>
     <path d="M3 6h12M3 12h12" />
