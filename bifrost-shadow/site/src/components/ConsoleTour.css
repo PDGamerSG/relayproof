@@ -1,0 +1,96 @@
+/* The console's tabs as three stages of one job. */
+
+.tour {
+  border-top: 1px solid var(--line-2);
+}
+
+.tour__groups {
+  display: grid;
+  gap: 40px;
+}
+@media (min-width: 900px) {
+  .tour__groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+  }
+  .tour__group + .tour__group {
+    border-left: 1px solid var(--line-2);
+  }
+  .tour__group {
+    padding-inline: 28px;
+  }
+  .tour__group:first-child {
+    padding-left: 0;
+  }
+  .tour__group:last-child {
+    padding-right: 0;
+  }
+}
+
+.tour__name {
+  font-size: var(--step-3);
+  font-stretch: 76%;
+  font-weight: 780;
+  line-height: 1;
+  padding-top: 14px;
+  border-top: 3px solid var(--ink);
+}
+.tour__job {
+  margin: 8px 0 18px;
+  color: var(--ink-2);
+}
+
+.tour__stops {
+  display: grid;
+  gap: 2px;
+}
+.tour__stop {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 12px 12px 10px;
+  margin-inline: -10px;
+  border-radius: var(--radius-m);
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+.tour__stop:hover {
+  background: var(--lit);
+}
+.tour__stop:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+}
+.tour__icon {
+  margin-top: 2px;
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.tour__stop:hover .tour__icon {
+  stroke: var(--ink);
+}
+.tour__text {
+  display: grid;
+  gap: 2px;
+}
+.tour__text b {
+  font-weight: 680;
+}
+.tour__stop:hover .tour__text b {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+.tour__text span {
+  font-size: var(--step-0);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour__stop {
+    transition: none;
+  }
+}

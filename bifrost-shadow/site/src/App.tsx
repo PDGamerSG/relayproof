@@ -1,4 +1,5 @@
 import { Closing } from "./components/Closing";
+import { ConsoleTour } from "./components/ConsoleTour";
 import { Evidence } from "./components/Evidence";
 import { Guards } from "./components/Guards";
 import { Hero } from "./components/Hero";
@@ -25,6 +26,7 @@ export function App() {
         <Scorecard />
         <Evidence />
         <Guards />
+        <ConsoleTour />
         <QuickStart />
       </main>
       <Closing />
