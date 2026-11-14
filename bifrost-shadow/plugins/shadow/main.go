@@ -188,6 +188,7 @@ type Plugin struct {
 	// rollouts holds the rollout log and active canaries, shared the same way.
 	rollouts       *rolloutBook
 	rollbackHook   atomic.Pointer[RollbackFunc]
+	rampHook       atomic.Pointer[RampFunc]
 	canaryInterval time.Duration
 
 	trafficSlots []trafficSlot // one per config.Experiments entry, same order

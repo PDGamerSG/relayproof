@@ -23,7 +23,22 @@ const (
 	RolloutPromote      = "promote"       // a canary rule was created or its weight changed
 	RolloutRollback     = "rollback"      // an operator removed the candidate from its canary rule
 	RolloutAutoRollback = "auto_rollback" // the canary guard removed it
+	// RolloutRamp: the canary guard moved a ramping canary to its next step.
+	RolloutRamp = "ramp"
+	// RolloutRampComplete: the canary guard moved a ramping canary to its last
+	// step. It replaces the ramp event for that step; the ramp is then done.
+	RolloutRampComplete = "ramp_complete"
 )
+
+// Ramp limits and defaults.
+const (
+	DefaultRampHoldSeconds = 60
+	MaxRampHoldSeconds     = 7 * 24 * 60 * 60
+	MaxRampSteps           = 20
+)
+
+// ErrInvalidRamp wraps every reason a promotion's ramp is refused.
+var ErrInvalidRamp = errors.New("shadow: invalid ramp")
 
 // Canary health states.
 const (
@@ -99,9 +114,83 @@ type RolloutEvent struct {
 	Actor string `json:"actor"`
 	// Evidence is the candidate's scorecard at the time of the action.
 	Evidence *PairSummary `json:"evidence,omitempty"`
-	// Health is the canary's live health at the time of a rollback.
+	// Health is the canary's live health at the time of a rollback or a ramp step.
 	Health *CanaryHealth `json:"health,omitempty"`
+	// Ramp is the canary's ramp after the action: the plan on a promotion that
+	// starts one, the new step on ramp and ramp_complete events.
+	Ramp *CanaryRamp `json:"ramp,omitempty"`
 }
+
+// RampRequest is the optional ramp of a promotion: the weights the canary
+// guard moves the canary through, and what each step has to show first.
+type RampRequest struct {
+	// Steps are the candidate's successive shares of source traffic: strictly
+	// ascending, each from MinCanaryWeight to 1, 2 to MaxRampSteps of them. The
+	// first is the promoted weight.
+	Steps []float64 `json:"steps"`
+	// MinRequests is how many live candidate requests a step must serve before
+	// the guard moves on. Default and minimum: canary.min_requests.
+	MinRequests *int `json:"min_requests,omitempty"`
+	// HoldSeconds is the minimum time at each step (default
+	// DefaultRampHoldSeconds, at most MaxRampHoldSeconds).
+	HoldSeconds *int `json:"hold_seconds,omitempty"`
+}
+
+// CanaryRamp is a canary's progressive ramp: the weights it moves through and
+// the step it is at. The guard moves it to the next step once the current one
+// has served MinRequests candidate requests, HoldSeconds have passed and the
+// canary is healthy; live statistics restart at every step, so each step is
+// judged on its own traffic. Values are never changed in place: a new step is
+// a new CanaryRamp.
+type CanaryRamp struct {
+	Steps []float64 `json:"steps"`
+	// CurrentStep indexes Steps: the weight the canary serves now.
+	CurrentStep int `json:"current_step"`
+	// StepStartedAt is when the canary reached the current step.
+	StepStartedAt time.Time `json:"step_started_at"`
+	// StepRequests counts live candidate requests at the current step. It is
+	// filled in live views only and restarts with the process.
+	StepRequests int64 `json:"step_requests"`
+	MinRequests  int   `json:"min_requests"`
+	HoldSeconds  int   `json:"hold_seconds"`
+	// NextWeight is the next step's weight; absent once the ramp is complete.
+	NextWeight float64 `json:"next_weight,omitempty"`
+	// Completed is set when the canary reached the last step. The guard keeps
+	// watching it (and rolls it back if it turns unhealthy) but moves it no further.
+	Completed bool `json:"completed"`
+	// Reason says what the ramp is waiting for. Live views only.
+	Reason string `json:"reason,omitempty"`
+}
+
+func (r *CanaryRamp) clone() *CanaryRamp {
+	if r == nil {
+		return nil
+	}
+	cp := *r
+	cp.Steps = append([]float64(nil), r.Steps...)
+	return &cp
+}
+
+// valid reports whether the ramp can be indexed safely.
+func (r *CanaryRamp) valid() bool {
+	return len(r.Steps) >= 2 && r.CurrentStep >= 0 && r.CurrentStep < len(r.Steps)
+}
+
+// settle derives Completed and NextWeight from the current step.
+func (r *CanaryRamp) settle() {
+	r.Completed = r.CurrentStep >= len(r.Steps)-1
+	r.NextWeight = 0
+	if !r.Completed {
+		r.NextWeight = r.Steps[r.CurrentStep+1]
+	}
+}
+
+// stepLabel names the current step for reasons and logs: "step 2 of 4 (25%)".
+func (r *CanaryRamp) stepLabel() string {
+	return fmt.Sprintf("step %d of %d (%s)", r.CurrentStep+1, len(r.Steps), pct(r.Steps[r.CurrentStep]))
+}
+
+func pct(share float64) string { return fmt.Sprintf("%g%%", round4(share*100)) }
 
 // TargetHealth is live traffic served by one target of a canary rule.
 type TargetHealth struct {
@@ -137,6 +226,9 @@ type Canary struct {
 	// watches only live health: the verdict was already known and overridden.
 	Override bool         `json:"override,omitempty"`
 	Health   CanaryHealth `json:"health"`
+	// Ramp is set when the canary was promoted with a ramp: the guard then
+	// raises its weight step by step while it stays healthy.
+	Ramp *CanaryRamp `json:"ramp,omitempty"`
 }
 
 // Rollouts is the payload behind GET /api/shadow/rollouts.
@@ -155,8 +247,19 @@ type Rollouts struct {
 // so the rollout log changes in the same critical section as the rule.
 type RollbackFunc func(ctx context.Context, experiment, candidate, reason string, current func() bool, done func() error) error
 
-// ErrCanaryChanged is returned by a RollbackFunc that found the canary changed
-// since it was judged; the guard judges it again on its next pass.
+// RampFunc moves a ramping canary to its next step: it sets the candidate's
+// share of source traffic to weight in the source's existing canary routing
+// rule, merging it the way promotion does. The gateway wires it, like
+// RollbackFunc, and serializes it with promotions: under that one lock it calls
+// current first and, if current reports false, returns ErrCanaryChanged
+// without touching the rule; otherwise it edits the rule and then calls done
+// with the rule's ID and name, so the rollout log changes in the same critical
+// section as the rule. It never creates a rule: with the canary rule gone it
+// returns an error and the ramp holds.
+type RampFunc func(ctx context.Context, experiment, candidate string, weight float64, current func() bool, done func(ruleID, ruleName string) error) error
+
+// ErrCanaryChanged is returned by a RollbackFunc or RampFunc that found the
+// canary changed since it was judged; the guard judges it again on its next pass.
 var ErrCanaryChanged = errors.New("shadow: canary changed since it was judged")
 
 // targetStats accumulates live traffic for one canary target.
@@ -192,16 +295,26 @@ func (t *targetStats) health() TargetHealth {
 	return h
 }
 
-// canaryState is an active canary and its live statistics.
+// canaryState is an active canary and its live statistics. The Canary fields
+// change only in rolloutBook.record, which holds both the book's lock and mu;
+// a Ramp is replaced, never modified.
 type canaryState struct {
 	Canary
-	mu          sync.Mutex
-	source      targetStats
-	candidate   targetStats
-	rollingBack atomic.Bool
+	mu        sync.Mutex
+	source    targetStats
+	candidate targetStats
+	// busy is set while the guard rolls the canary back or moves its ramp on.
+	busy atomic.Bool
 }
 
 func (c *canaryState) key() string { return c.Experiment + "\x00" + c.Candidate.String() }
+
+// ramping reports whether the canary has a ramp the guard still has to move.
+func (c *canaryState) ramping() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.Ramp != nil && !c.Ramp.Completed
+}
 
 // observe counts one live response to a source-model request.
 func (c *canaryState) observe(served ModelRef, latencyMs int64, failed bool) {
@@ -282,6 +395,15 @@ func (b *rolloutBook) load() error {
 	for _, c := range f.Canaries {
 		st := &canaryState{Canary: c}
 		st.Health = CanaryHealth{}
+		if st.Ramp != nil {
+			// The ramp resumes at its step; the step's live count restarts.
+			if st.Ramp.valid() {
+				st.Ramp.StepRequests, st.Ramp.Reason = 0, ""
+				st.Ramp.settle()
+			} else {
+				st.Ramp = nil // a damaged entry: keep watching the canary, stop ramping it
+			}
+		}
 		b.canaries[st.key()] = st
 	}
 	return nil
@@ -351,9 +473,15 @@ func (b *rolloutBook) record(ev RolloutEvent) error {
 	switch ev.Action {
 	case RolloutPromote:
 		if existing, ok := b.canaries[key]; ok {
-			// A ramp keeps the live statistics gathered so far.
 			existing.mu.Lock()
 			existing.Weight, existing.RuleID, existing.RuleName, existing.Override = ev.Weight, ev.RuleID, ev.RuleName, ev.Override
+			// A promotion replaces any ramp. Without a ramp it cancels the old one
+			// and keeps the live statistics gathered so far; with one, the new
+			// ramp's first step is judged on its own traffic.
+			existing.Ramp = ev.Ramp.clone()
+			if ev.Ramp != nil {
+				existing.source, existing.candidate = targetStats{}, targetStats{}
+			}
 			existing.mu.Unlock()
 		} else {
 			b.canaries[key] = &canaryState{Canary: Canary{
@@ -365,7 +493,20 @@ func (b *rolloutBook) record(ev RolloutEvent) error {
 				RuleName:   ev.RuleName,
 				Since:      ev.At,
 				Override:   ev.Override,
+				Ramp:       ev.Ramp.clone(),
 			}}
+		}
+	case RolloutRamp, RolloutRampComplete:
+		if existing, ok := b.canaries[key]; ok {
+			existing.mu.Lock()
+			existing.Weight = ev.Weight
+			if ev.RuleID != "" {
+				existing.RuleID, existing.RuleName = ev.RuleID, ev.RuleName
+			}
+			existing.Ramp = ev.Ramp.clone()
+			// Each step is judged on its own traffic.
+			existing.source, existing.candidate = targetStats{}, targetStats{}
+			existing.mu.Unlock()
 		}
 	case RolloutRollback, RolloutAutoRollback:
 		delete(b.canaries, key)
@@ -390,6 +531,59 @@ func (p *Plugin) SetRollbackHook(fn RollbackFunc) {
 		return
 	}
 	p.rollbackHook.Store(&fn)
+}
+
+// SetRampHook wires the function the canary guard uses to move a ramping
+// canary to its next step. Without it a ramp never advances.
+func (p *Plugin) SetRampHook(fn RampFunc) {
+	if fn == nil {
+		p.rampHook.Store(nil)
+		return
+	}
+	p.rampHook.Store(&fn)
+}
+
+// PlanRamp validates a promotion's ramp and returns it as it starts: at its
+// first step, with defaults filled in. It also returns the weight the canary
+// starts at, steps[0]. weight is the promotion's weight, or nil when the
+// request left it out; when given it must equal steps[0].
+func (p *Plugin) PlanRamp(req RampRequest, weight *float64) (*CanaryRamp, float64, error) {
+	n := len(req.Steps)
+	if n < 2 || n > MaxRampSteps {
+		return nil, 0, fmt.Errorf("%w: ramp.steps needs 2 to %d weights, got %d", ErrInvalidRamp, MaxRampSteps, n)
+	}
+	steps := make([]float64, n)
+	for i, s := range req.Steps {
+		if err := ValidateCanaryWeight(s); err != nil {
+			return nil, 0, fmt.Errorf("%w: ramp.steps[%d] must be a number from %g to 1, got %v", ErrInvalidRamp, i, MinCanaryWeight, s)
+		}
+		// Compare the shares the routing rule will hold, not the raw numbers.
+		steps[i] = round4(s)
+		if i > 0 && steps[i] <= steps[i-1] {
+			return nil, 0, fmt.Errorf("%w: ramp.steps must be strictly ascending, but steps[%d] (%g) is not above steps[%d] (%g)", ErrInvalidRamp, i, steps[i], i-1, steps[i-1])
+		}
+	}
+	if weight != nil && round4(*weight) != steps[0] {
+		return nil, 0, fmt.Errorf("%w: the ramp starts at the promoted weight, so ramp.steps[0] (%g) must equal weight (%g); leave weight out to start at steps[0]", ErrInvalidRamp, steps[0], round4(*weight))
+	}
+	guardMin := p.canaryLimits().MinRequests
+	minRequests := guardMin
+	if req.MinRequests != nil {
+		if *req.MinRequests < guardMin {
+			return nil, 0, fmt.Errorf("%w: ramp.min_requests must be at least canary.min_requests (%d), since the guard judges a step's health only after that many candidate requests; got %d", ErrInvalidRamp, guardMin, *req.MinRequests)
+		}
+		minRequests = *req.MinRequests
+	}
+	hold := DefaultRampHoldSeconds
+	if req.HoldSeconds != nil {
+		if *req.HoldSeconds < 0 || *req.HoldSeconds > MaxRampHoldSeconds {
+			return nil, 0, fmt.Errorf("%w: ramp.hold_seconds must be from 0 to %d (7 days), got %d", ErrInvalidRamp, MaxRampHoldSeconds, *req.HoldSeconds)
+		}
+		hold = *req.HoldSeconds
+	}
+	r := &CanaryRamp{Steps: steps, StepStartedAt: p.now(), MinRequests: minRequests, HoldSeconds: hold}
+	r.settle()
+	return r, steps[0], nil
 }
 
 // PairScorecard returns the current scorecard of one experiment/candidate pair.
@@ -426,7 +620,10 @@ func (p *Plugin) lookupPair(experiment, candidate string) (*Experiment, *ModelRe
 }
 
 // RecordRollout appends an event to the rollout log. A promotion starts (or
-// re-weights) a watched canary; a rollback stops watching it.
+// re-weights) a watched canary and starts, replaces or cancels its ramp; a ramp
+// event moves the canary to the ramp's next step; a rollback stops watching it.
+// An event's ramp is normalized: a promotion's starts at step 0, and every
+// step starts at the event's time.
 func (p *Plugin) RecordRollout(ev RolloutEvent) (RolloutEvent, error) {
 	if ev.ID == "" {
 		ev.ID = uuid.NewString()
@@ -438,9 +635,37 @@ func (p *Plugin) RecordRollout(ev RolloutEvent) (RolloutEvent, error) {
 		ev.Actor = "api"
 	}
 	switch ev.Action {
-	case RolloutPromote, RolloutRollback, RolloutAutoRollback:
+	case RolloutPromote:
+	case RolloutRollback, RolloutAutoRollback:
+		ev.Ramp = nil
+	case RolloutRamp, RolloutRampComplete:
+		if ev.Ramp == nil {
+			return ev, fmt.Errorf("shadow: a %s event needs the ramp", ev.Action)
+		}
 	default:
 		return ev, fmt.Errorf("shadow: unknown rollout action %q", ev.Action)
+	}
+	if ev.Ramp != nil {
+		r := ev.Ramp.clone()
+		if ev.Action == RolloutPromote {
+			r.CurrentStep = 0
+		}
+		if !r.valid() {
+			return ev, fmt.Errorf("shadow: ramp step %d is out of range for %d steps", r.CurrentStep, len(r.Steps))
+		}
+		if round4(ev.Weight) != r.Steps[r.CurrentStep] {
+			return ev, fmt.Errorf("shadow: weight %g is not the ramp's step %d (%g)", ev.Weight, r.CurrentStep, r.Steps[r.CurrentStep])
+		}
+		r.StepStartedAt = ev.At
+		r.StepRequests, r.Reason = 0, ""
+		r.settle()
+		switch {
+		case ev.Action == RolloutRamp && r.Completed:
+			return ev, fmt.Errorf("shadow: the last ramp step is recorded as %s", RolloutRampComplete)
+		case ev.Action == RolloutRampComplete && !r.Completed:
+			return ev, fmt.Errorf("shadow: %s needs the ramp's last step", RolloutRampComplete)
+		}
+		ev.Ramp = r
 	}
 	return ev, p.rollouts.record(ev)
 }
@@ -452,8 +677,9 @@ func (p *Plugin) Rollouts() Rollouts {
 	var verdicts map[string]string
 	if list := p.rollouts.active.Load(); list != nil {
 		verdicts = p.verdictsByPair()
+		now := p.now()
 		for _, c := range *list {
-			out.Canaries = append(out.Canaries, p.canaryView(c, verdicts))
+			out.Canaries = append(out.Canaries, p.canaryView(c, verdicts, now))
 		}
 	}
 	p.rollouts.mu.Lock()
@@ -473,15 +699,50 @@ func (p *Plugin) verdictsByPair() map[string]string {
 	return m
 }
 
-// canaryView snapshots a canary with its evaluated health.
-func (p *Plugin) canaryView(c *canaryState, verdicts map[string]string) Canary {
+// canaryView snapshots a canary with its evaluated health and, for a ramping
+// canary, where its ramp stands at now.
+func (p *Plugin) canaryView(c *canaryState, verdicts map[string]string, now time.Time) Canary {
 	c.mu.Lock()
 	view := c.Canary
 	view.Health = CanaryHealth{Source: c.source.health(), Candidate: c.candidate.health()}
 	c.mu.Unlock()
 	view.Health.Verdict = verdicts[c.key()]
 	view.Health.Status, view.Health.Reason = p.judgeCanary(&view.Health, view.Override)
+	if view.Ramp != nil {
+		view.Ramp = view.Ramp.clone()
+		view.Ramp.StepRequests = view.Health.Candidate.Requests
+		_, view.Ramp.Reason = p.rampDue(&view, now)
+	}
 	return view
+}
+
+// rampDue reports whether a ramping canary's current step is done, so the
+// guard moves it to the next one, and says what it is waiting for otherwise.
+// A step is done once it has served the ramp's min_requests candidate
+// requests, its hold time has passed and the canary is healthy.
+func (p *Plugin) rampDue(view *Canary, now time.Time) (bool, string) {
+	r := view.Ramp
+	at := r.stepLabel()
+	if r.Completed {
+		return false, "complete: the canary reached the last step, " + pct(r.Steps[r.CurrentStep])
+	}
+	if view.Health.Status == CanaryUnhealthy {
+		if p.config.Canary != nil && p.config.Canary.AutoRollback {
+			return false, fmt.Sprintf("held at %s: the canary is unhealthy and the guard rolls it back", at)
+		}
+		return false, fmt.Sprintf("held at %s: the canary is unhealthy and canary.auto_rollback is off", at)
+	}
+	if r.StepRequests < int64(r.MinRequests) {
+		return false, fmt.Sprintf("%s: %d of %d candidate requests", at, r.StepRequests, r.MinRequests)
+	}
+	if left := r.StepStartedAt.Add(time.Duration(r.HoldSeconds) * time.Second).Sub(now); left > 0 {
+		secs := int64((left + time.Second - 1) / time.Second)
+		return false, fmt.Sprintf("%s: %ds left of a %ds hold", at, secs, r.HoldSeconds)
+	}
+	if view.Health.Status != CanaryHealthy {
+		return false, fmt.Sprintf("%s: waiting for the guard to judge health (%s)", at, view.Health.Reason)
+	}
+	return true, fmt.Sprintf("%s passed: moving to %s at the guard's next check", at, pct(r.NextWeight))
 }
 
 // canaryLimits returns the guard configuration in effect.
@@ -558,8 +819,8 @@ func (p *Plugin) observeCanaries(ctx *schemas.BifrostContext, resp *schemas.Bifr
 	}
 }
 
-// canaryGuard checks active canaries and rolls back unhealthy ones when
-// auto_rollback is on.
+// canaryGuard checks active canaries: it rolls back unhealthy ones when
+// auto_rollback is on, and moves ramping canaries on to their next step.
 func (p *Plugin) canaryGuard() {
 	defer p.wg.Done()
 	ticker := time.NewTicker(p.canaryInterval)
@@ -569,75 +830,173 @@ func (p *Plugin) canaryGuard() {
 		case <-p.ctx.Done():
 			return
 		case <-ticker.C:
-			p.checkCanaries()
+			p.guardPass(p.now())
 		}
 	}
 }
 
-// checkCanaries evaluates every active canary once and returns how many it
+// checkCanaries runs one guard pass now and returns how many canaries it
 // rolled back.
 func (p *Plugin) checkCanaries() int {
-	if p.config.Canary == nil || !p.config.Canary.AutoRollback {
-		return 0
-	}
+	rolled, _ := p.guardPass(p.now())
+	return rolled
+}
+
+// guardPass evaluates every active canary once, as of now. An unhealthy canary
+// is rolled back when auto_rollback is on, and is never ramped: without
+// auto_rollback its ramp holds at the current step. A healthy ramping canary
+// whose step is done moves to the next step. It returns how many canaries it
+// rolled back and how many it moved on.
+func (p *Plugin) guardPass(now time.Time) (rolled, advanced int) {
 	list := p.rollouts.active.Load()
 	if list == nil {
-		return 0
+		return 0, 0
 	}
-	hookPtr := p.rollbackHook.Load()
+	autoRollback := p.config.Canary != nil && p.config.Canary.AutoRollback
+	if !autoRollback {
+		ramping := false
+		for _, c := range *list {
+			if c.ramping() {
+				ramping = true
+				break
+			}
+		}
+		if !ramping {
+			return 0, 0 // nothing to act on: the guard only reports
+		}
+	}
 	verdicts := p.verdictsByPair()
-	rolled := 0
 	for _, c := range *list {
-		view := p.canaryView(c, verdicts)
-		if view.Health.Status != CanaryUnhealthy {
-			continue
-		}
-		if hookPtr == nil {
-			p.logger.Warn("shadow: canary %s -> %s is unhealthy (%s) but no rollback hook is wired", view.Source, view.Candidate, view.Health.Reason)
-			continue
-		}
-		if !c.rollingBack.CompareAndSwap(false, true) {
-			continue
-		}
-		reason := "canary guard: " + view.Health.Reason
-		health := view.Health
-		current := func() bool {
-			// Same canary (a rollback and re-promotion makes a new one) at the
-			// same weight and override state as when it was judged.
-			if p.rollouts.lookup(view.Experiment, view.Candidate.String()) != c {
-				return false
+		view := p.canaryView(c, verdicts, now)
+		if view.Health.Status == CanaryUnhealthy {
+			if autoRollback && p.rollBack(c, view) {
+				rolled++
 			}
-			c.mu.Lock()
-			defer c.mu.Unlock()
-			return c.Weight == view.Weight && c.Override == view.Override
-		}
-		done := func() error {
-			_, err := p.RecordRollout(RolloutEvent{
-				Action:     RolloutAutoRollback,
-				Experiment: view.Experiment,
-				Source:     view.Source,
-				Candidate:  view.Candidate,
-				RuleID:     view.RuleID,
-				RuleName:   view.RuleName,
-				Reason:     reason,
-				Actor:      "canary_guard",
-				Health:     &health,
-			})
-			return err
-		}
-		ctx, cancel := context.WithTimeout(p.ctx, 30*time.Second)
-		err := (*hookPtr)(ctx, view.Experiment, view.Candidate.String(), reason, current, done)
-		cancel()
-		if err != nil {
-			c.rollingBack.Store(false)
-			if errors.Is(err, ErrCanaryChanged) {
-				continue
-			}
-			p.logger.Warn("shadow: automatic rollback of %s failed: %v", view.Candidate, err)
 			continue
 		}
-		p.logger.Info("shadow: rolled back canary %s -> %s: %s", view.Source, view.Candidate, view.Health.Reason)
-		rolled++
+		if view.Ramp != nil && p.advanceRamp(c, view, now) {
+			advanced++
+		}
 	}
-	return rolled
+	return rolled, advanced
+}
+
+// rollBack removes an unhealthy canary through the rollback hook and reports
+// whether it did.
+func (p *Plugin) rollBack(c *canaryState, view Canary) bool {
+	hookPtr := p.rollbackHook.Load()
+	if hookPtr == nil {
+		p.logger.Warn("shadow: canary %s -> %s is unhealthy (%s) but no rollback hook is wired", view.Source, view.Candidate, view.Health.Reason)
+		return false
+	}
+	if !c.busy.CompareAndSwap(false, true) {
+		return false
+	}
+	reason := "canary guard: " + view.Health.Reason
+	health := view.Health
+	current := func() bool {
+		// Same canary (a rollback and re-promotion makes a new one) at the
+		// same weight and override state as when it was judged.
+		if p.rollouts.lookup(view.Experiment, view.Candidate.String()) != c {
+			return false
+		}
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		return c.Weight == view.Weight && c.Override == view.Override
+	}
+	done := func() error {
+		_, err := p.RecordRollout(RolloutEvent{
+			Action:     RolloutAutoRollback,
+			Experiment: view.Experiment,
+			Source:     view.Source,
+			Candidate:  view.Candidate,
+			RuleID:     view.RuleID,
+			RuleName:   view.RuleName,
+			Reason:     reason,
+			Actor:      "canary_guard",
+			Health:     &health,
+		})
+		return err
+	}
+	ctx, cancel := context.WithTimeout(p.ctx, 30*time.Second)
+	err := (*hookPtr)(ctx, view.Experiment, view.Candidate.String(), reason, current, done)
+	cancel()
+	if err != nil {
+		c.busy.Store(false)
+		if !errors.Is(err, ErrCanaryChanged) {
+			p.logger.Warn("shadow: automatic rollback of %s failed: %v", view.Candidate, err)
+		}
+		return false
+	}
+	p.logger.Info("shadow: rolled back canary %s -> %s: %s", view.Source, view.Candidate, view.Health.Reason)
+	return true
+}
+
+// advanceRamp moves a healthy ramping canary whose current step is done to the
+// next step through the ramp hook, and reports whether it did. The new step's
+// event carries the health the step rested on.
+func (p *Plugin) advanceRamp(c *canaryState, view Canary, now time.Time) bool {
+	r := view.Ramp
+	if due, _ := p.rampDue(&view, now); !due {
+		return false
+	}
+	hookPtr := p.rampHook.Load()
+	if hookPtr == nil {
+		p.logger.Warn("shadow: canary %s -> %s finished %s but no ramp hook is wired", view.Source, view.Candidate, r.stepLabel())
+		return false
+	}
+	if !c.busy.CompareAndSwap(false, true) {
+		return false
+	}
+	defer c.busy.Store(false)
+	next := &CanaryRamp{Steps: r.Steps, CurrentStep: r.CurrentStep + 1, MinRequests: r.MinRequests, HoldSeconds: r.HoldSeconds}
+	next.settle()
+	weight := next.Steps[next.CurrentStep]
+	action := RolloutRamp
+	if next.Completed {
+		action = RolloutRampComplete
+	}
+	health := view.Health
+	reason := fmt.Sprintf("canary guard: %s served %d candidate requests in %s and is healthy (%s)",
+		r.stepLabel(), r.StepRequests, now.Sub(r.StepStartedAt).Round(time.Second), view.Health.Reason)
+	current := func() bool {
+		// Same canary, still at the step that was judged: an operator's
+		// promotion or another pass of the guard since then wins.
+		if p.rollouts.lookup(view.Experiment, view.Candidate.String()) != c {
+			return false
+		}
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		return c.Weight == view.Weight && c.Override == view.Override && c.Ramp != nil &&
+			c.Ramp.CurrentStep == r.CurrentStep && c.Ramp.StepStartedAt.Equal(r.StepStartedAt)
+	}
+	done := func(ruleID, ruleName string) error {
+		_, err := p.RecordRollout(RolloutEvent{
+			At:         now,
+			Action:     action,
+			Experiment: view.Experiment,
+			Source:     view.Source,
+			Candidate:  view.Candidate,
+			Weight:     weight,
+			RuleID:     ruleID,
+			RuleName:   ruleName,
+			Override:   view.Override,
+			Reason:     reason,
+			Actor:      "canary_guard",
+			Health:     &health,
+			Ramp:       next,
+		})
+		return err
+	}
+	ctx, cancel := context.WithTimeout(p.ctx, 30*time.Second)
+	err := (*hookPtr)(ctx, view.Experiment, view.Candidate.String(), weight, current, done)
+	cancel()
+	if err != nil {
+		if !errors.Is(err, ErrCanaryChanged) {
+			p.logger.Warn("shadow: moving canary %s -> %s to %s failed, the ramp holds: %v", view.Source, view.Candidate, pct(weight), err)
+		}
+		return false
+	}
+	p.logger.Info("shadow: canary %s -> %s moved to %s (%s)", view.Source, view.Candidate, pct(weight), action)
+	return true
 }
