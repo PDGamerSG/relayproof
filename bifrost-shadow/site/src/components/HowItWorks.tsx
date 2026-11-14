@@ -1,38 +1,41 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { TrafficSim } from "./TrafficSim";
 import "./HowItWorks.css";
 
-const STEPS = [
+const STAGES = [
   {
-    title: "Match and sample",
-    body: "Each chat completion, streamed or not, is checked against the experiment's source model, the virtual-key allow-list and the x-bf-shadow header, then sampled at the experiment's rate. A request that is not sampled costs about 100 ns and no allocations.",
+    name: "Mirror",
+    body: "Once your user has the answer, a sample of requests is sent again to the cheaper models you want to try.",
   },
   {
-    title: "Capture",
-    body: "A sampled request is snapshotted once. The capture lives in the plugin, keyed by request ID, never in the request context. A stream is accumulated chunk by chunk until its final chunk.",
+    name: "Judge",
+    body: "An LLM judge scores both answers without knowing which is which. Tool calls and JSON shape are checked exactly.",
   },
   {
-    title: "Hand off",
-    body: "When the primary answer is complete, one job per candidate goes onto a bounded queue. A full queue drops the job and counts it. The answer to the caller never waits.",
+    name: "Prove",
+    body: "Each candidate keeps a scorecard. It is ready only when the 95% lower bound of its agreement clears 90%.",
   },
   {
-    title: "Replay",
-    body: "A worker sends the same messages, tools and parameters to the candidate as an internal request. It skips the plugin pipeline, is not billed to the caller's virtual key, and runs no MCP tools.",
+    name: "Promote",
+    body: "One API call gives a ready candidate a weighted share of real traffic, 10% for a start.",
   },
   {
-    title: "Compare",
-    body: "Every pair gets lexical similarity, a length ratio and a finish-reason check, plus tool-call and JSON-structure matching when they apply. An optional LLM judge scores both answers, shown in a random order to cancel position bias.",
-  },
-  {
-    title: "Decide",
-    body: "A different tool choice or a broken JSON shape fails the pair outright. Otherwise the strongest signal decides: the judge, then an exact match, then embeddings, then lexical overlap if you opted in. With no usable signal the pair stays unscored. A candidate error is a failure.",
-  },
-  {
-    title: "Report",
-    body: "The record goes into a bounded ring buffer, optionally a JSONL file, and rolls up into the candidate's scorecard.",
+    name: "Guard",
+    body: "If the canary's live error rate or latency turns bad, the gateway rolls it back by itself and logs why.",
   },
 ];
 
-/** One request from the demo run, as the plugin handles it. `step` ties a line to the step that produces it. */
+const STEPS = [
+  { title: "Match and sample", body: "The request is checked against the experiment, the virtual-key allow-list and the x-bf-shadow header, then sampled. Unsampled requests cost about 100 ns." },
+  { title: "Capture", body: "A sampled request is snapshotted once and held by request ID. A stream is collected chunk by chunk." },
+  { title: "Hand off", body: "When the answer is complete, one job per candidate goes onto a bounded queue. The caller never waits." },
+  { title: "Replay", body: "A worker sends the same messages, tools and parameters to the candidate as an internal request: no plugins, no billing to the caller, no MCP tools." },
+  { title: "Compare", body: "Lexical, length and finish-reason checks, tool-call and JSON matching, then an optional LLM judge with the two answers in random order." },
+  { title: "Decide", body: "A different tool or a broken JSON shape fails the pair. Otherwise the strongest signal decides; with none, the pair stays unscored." },
+  { title: "Report", body: "The record lands in a ring buffer, optionally a JSONL file, and rolls up into the candidate's scorecard." },
+];
+
+/** One request from the key-free demo run, as the plugin handles it. `step` ties a line to the step that produces it. */
 const TRACE: { at: string; who: string; what: string; step: number | null }[] = [
   { at: "0 ms", who: "PreLLMHook", what: 'matched "gpt-4o cost-down", sampled', step: 0 },
   { at: "", who: "capture", what: "request snapshot stored by request ID", step: 1 },
@@ -46,69 +49,94 @@ const TRACE: { at: string; who: string; what: string; step: number | null }[] = 
   { at: "", who: "scorecard", what: "llama-3.1-8b: one more disagreement", step: 6 },
 ];
 
-export function HowItWorks() {
+function Trace() {
   const [active, setActive] = useState(0);
-  const listRef = useRef<HTMLOListElement>(null);
-
-  // The step nearest the middle of the viewport is the active one.
-  useEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const items = Array.from(list.children) as HTMLElement[];
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) setActive(items.indexOf(entry.target as HTMLElement));
-        }
-      },
-      { rootMargin: "-46% 0px -46% 0px" },
-    );
-    items.forEach((item) => observer.observe(item));
-    return () => observer.disconnect();
-  }, []);
 
   return (
-    <section className="section umbra how" id="how">
+    <div className="trace-grid">
+      <figure className="trace umbra" aria-label="Trace of one sampled request">
+        <figcaption className="trace__head">
+          <span className="model">838d51f7</span>
+          <span>POST /v1/chat/completions</span>
+        </figcaption>
+        <ol className="trace__lines">
+          {TRACE.map((line) => (
+            <li key={line.who + line.what} data-on={line.step === active}>
+              <span className="trace__at">{line.at}</span>
+              <span className="trace__who">{line.who}</span>
+              <span className="trace__what">{line.what}</span>
+            </li>
+          ))}
+        </ol>
+      </figure>
+
+      <ol className="trace-steps">
+        {STEPS.map((step, i) => (
+          <li key={step.title}>
+            <button
+              type="button"
+              aria-pressed={i === active}
+              onClick={() => setActive(i)}
+              onPointerEnter={() => setActive(i)}
+              onFocus={() => setActive(i)}
+            >
+              <span className="trace-steps__n num" aria-hidden="true">
+                {i + 1}
+              </span>
+              <span>
+                <b>{step.title}</b>
+                <span className="trace-steps__body">{step.body}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+export function HowItWorks() {
+  return (
+    <section className="section how" id="how">
       <div className="wrap">
         <div className="head">
-          <h2 className="h2">The life of one sampled request</h2>
+          <h2 className="h2">Your users never wait for the test.</h2>
           <p className="lede">
-            Seven steps, none of them on the request path. The trace follows one request from the demo run: answered by gpt-4o, then
-            replayed against llama-3.1-8b in the background.
+            RelayProof runs inside the gateway, after the response has gone out. Five steps take a candidate from its first shadow call
+            to serving real traffic, and back out again if it misbehaves.
           </p>
         </div>
 
-        <div className="how__grid">
-          <figure className="trace" aria-label="Trace of one sampled request">
-            <figcaption className="trace__head">
-              <span className="model">838d51f7</span>
-              <span>POST /v1/chat/completions</span>
-            </figcaption>
-            <ol className="trace__lines">
-              {TRACE.map((line) => (
-                <li key={line.who + line.what} data-on={line.step === active} data-plain={line.step === null}>
-                  <span className="trace__at">{line.at}</span>
-                  <span className="trace__who">{line.who}</span>
-                  <span className="trace__what">{line.what}</span>
-                </li>
-              ))}
-            </ol>
-          </figure>
+        <ol className="stages">
+          {STAGES.map((stage, i) => (
+            <li key={stage.name}>
+              <span className="stages__n num" aria-hidden="true">
+                {i + 1}
+              </span>
+              <h3 className="h3">{stage.name}</h3>
+              <p>{stage.body}</p>
+            </li>
+          ))}
+        </ol>
 
-          <ol className="steps" ref={listRef}>
-            {STEPS.map((step, i) => (
-              <li key={step.title} className="steps__item" data-on={i === active}>
-                <span className="steps__n" aria-hidden="true">
-                  {i + 1}
-                </span>
-                <div>
-                  <h3 className="h3">{step.title}</h3>
-                  <p>{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+        <div className="how__sim">
+          <div className="how__sim-head">
+            <h3 className="h3">Watch both paths at once</h3>
+            <p>
+              A simulation of the key-free demo. Raise the sample rate and the evidence piles up faster; once the lower bound clears
+              90%, promote the candidate and watch part of the traffic move to it.
+            </p>
+          </div>
+          <TrafficSim />
         </div>
+
+        <details className="how__more">
+          <summary>
+            <span className="h3">Follow one request through the plugin</span>
+            <span className="how__more-hint">Seven steps, from the gateway hook to the scorecard</span>
+          </summary>
+          <Trace />
+        </details>
       </div>
     </section>
   );

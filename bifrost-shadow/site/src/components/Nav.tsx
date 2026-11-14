@@ -8,12 +8,12 @@ function useActiveSection(ids: string[]): string | null {
   const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {
-    const sections = ids.map((id) => document.getElementById(id)).filter((el): el is HTMLElement => el !== null);
     const update = () => {
       const line = window.innerHeight * 0.35;
       let current: string | null = null;
-      for (const section of sections) {
-        if (section.getBoundingClientRect().top <= line) current = section.id;
+      for (const id of ids) {
+        const section = document.getElementById(id);
+        if (section && section.getBoundingClientRect().top <= line) current = id;
       }
       setActive(current);
     };

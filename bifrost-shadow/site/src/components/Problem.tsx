@@ -3,19 +3,19 @@ import "./Problem.css";
 const METHODS = [
   {
     name: "Offline eval set",
-    rows: ["Prompts someone wrote by hand", "No", "How it does on the prompts you thought of", "The set goes stale, so you keep rebuilding it"],
+    rows: ["Prompts someone wrote by hand", "No", "How it does on the prompts you thought of", "Rebuilding the set as it goes stale"],
   },
   {
     name: "A/B test",
-    rows: ["Production traffic", "Yes, from the first request", "How users react, once they have been exposed", "Real users find the bad answers for you"],
+    rows: ["Production traffic", "Yes, from the first request", "How users react, after they have seen it", "Real users find the bad answers for you"],
   },
   {
     name: "Shadow traffic",
     rows: [
       "Production traffic",
-      "No. Every caller gets the primary model's answer",
-      "How often it agrees with the model you run today, with a 95% lower bound",
-      "A sampled share of extra model calls, capped by a daily budget",
+      "No. Everyone gets the answer from the model you run today",
+      "How often it agrees with that model, with a 95% lower bound",
+      "Extra calls on a sample of requests, capped by a daily budget",
     ],
     ours: true,
   },
@@ -28,10 +28,10 @@ export function Problem() {
     <section className="section problem" id="why">
       <div className="wrap">
         <div className="head">
-          <h2 className="h2">Switching models is the biggest cost lever, and the riskiest.</h2>
+          <h2 className="h2">Why not test it offline, or with an A/B test?</h2>
           <p className="lede">
-            Model spend is the largest line item for most AI products, and the cheapest fix is a cheaper model. Teams rarely switch,
-            because one question stays open: on our traffic, is the cheaper model as good?
+            Model spend is often the largest bill an AI product has, and a cheaper model is the quickest fix. Teams hold back because
+            they cannot answer one question: on our own traffic, is it as good?
           </p>
         </div>
 

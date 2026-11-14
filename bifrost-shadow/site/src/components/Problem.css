@@ -1,7 +1,7 @@
-/* Three ways to find out. Two lie flat on the page; the third stands up and casts a shadow. */
+/* Three ways to find out. The third column is lifted onto a lit slab. */
 
 .problem {
-  border-top: 1.5px solid var(--ink);
+  border-top: 1px solid var(--line-2);
 }
 
 .ways {
@@ -61,7 +61,6 @@
   border: 1.5px solid var(--ink);
   border-radius: var(--radius-m);
   background: var(--lit);
-  box-shadow: 12px 14px 0 rgb(var(--shade) / 0.16);
 }
 .ways__lift::before {
   content: "";
@@ -109,6 +108,5 @@
     border: 1.5px solid var(--ink);
     border-radius: var(--radius-s);
     background: var(--lit);
-    box-shadow: 5px 6px 0 rgb(var(--shade) / 0.16);
   }
 }

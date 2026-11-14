@@ -1,17 +1,156 @@
-.how__grid {
-  display: grid;
-  gap: 48px;
+.how {
+  border-top: 1px solid var(--line-2);
 }
 
-/* Trace panel */
+/* Five stages, read left to right like the sequence they are */
+
+.stages {
+  display: grid;
+  counter-reset: stage;
+}
+.stages li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 20px 0 22px;
+  border-top: 1px solid var(--line-2);
+}
+.stages__n {
+  grid-row: span 2;
+  font-size: 2.5rem;
+  font-stretch: 66%;
+  font-weight: 800;
+  line-height: 0.9;
+  color: var(--ink-3);
+}
+.stages li:first-child .stages__n {
+  color: var(--ink);
+}
+.stages p {
+  color: var(--ink-2);
+  max-width: 34em;
+  text-wrap: pretty;
+}
+
+@media (min-width: 1000px) {
+  .stages {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .stages li {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 10px;
+    padding: 26px 28px 0 0;
+    border-top: 2px solid var(--ink);
+  }
+  .stages li::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--daylight);
+  }
+  .stages li:first-child::before {
+    background: var(--sun);
+  }
+  .stages__n {
+    grid-row: auto;
+    font-size: 3.25rem;
+  }
+  .stages p {
+    font-size: var(--step-0);
+  }
+}
+
+/* The simulation */
+
+.how__sim {
+  margin-top: clamp(56px, 7vw, 96px);
+}
+.how__sim-head {
+  display: grid;
+  gap: 8px 48px;
+  margin-bottom: 22px;
+}
+.how__sim-head p {
+  max-width: 40em;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+@media (min-width: 960px) {
+  .how__sim-head {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: baseline;
+  }
+}
+
+/* The seven-step trace, folded away until asked for */
+
+.how__more {
+  margin-top: clamp(40px, 5vw, 64px);
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+}
+.how__more summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 20px;
+  padding: 20px 0;
+  cursor: pointer;
+  list-style: none;
+}
+.how__more summary::-webkit-details-marker {
+  display: none;
+}
+.how__more summary::after {
+  content: "";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background:
+    linear-gradient(var(--ink), var(--ink)) center / 12px 1.5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) center / 1.5px 12px no-repeat;
+  transition:
+    rotate 220ms var(--ease-out),
+    background-color 160ms ease;
+}
+.how__more summary:hover::after {
+  background-color: var(--lit);
+}
+.how__more[open] summary::after {
+  rotate: 45deg;
+}
+.how__more-hint {
+  font-size: var(--step-0);
+  color: var(--ink-2);
+}
+
+.trace-grid {
+  display: grid;
+  gap: 28px;
+  padding-bottom: 32px;
+}
+@media (min-width: 960px) {
+  .trace-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: 40px;
+    align-items: start;
+  }
+}
 
 .trace {
-  border: 1px solid var(--line-dark-2);
   border-radius: var(--radius-m);
-  background: var(--umbra-2);
   overflow: hidden;
 }
-
 .trace__head {
   display: flex;
   flex-wrap: wrap;
@@ -27,7 +166,6 @@
   color: var(--sun);
   font-size: inherit;
 }
-
 .trace__lines {
   padding: 10px 0;
   font-family: var(--mono);
@@ -37,13 +175,13 @@
 .trace__lines li {
   position: relative;
   display: grid;
-  grid-template-columns: 62px 104px minmax(0, 1fr);
+  grid-template-columns: 56px 100px minmax(0, 1fr);
   gap: 0 12px;
-  padding: 7px 20px;
+  padding: 6px 20px;
   color: var(--moon-3);
   transition:
-    color 260ms ease,
-    background-color 260ms ease;
+    color 200ms ease,
+    background-color 200ms ease;
 }
 .trace__lines li::before {
   content: "";
@@ -54,7 +192,7 @@
   width: 3px;
   background: var(--sun);
   scale: 1 0;
-  transition: scale 260ms var(--ease-out);
+  transition: scale 200ms var(--ease-out);
 }
 .trace__lines li[data-on="true"] {
   color: var(--moon);
@@ -69,81 +207,64 @@
 .trace__at {
   text-align: right;
   white-space: nowrap;
-  color: var(--moon-3);
 }
 .trace__who {
   color: var(--moon-2);
-  transition: color 260ms ease;
 }
 
-/* Steps */
-
-.steps {
+.trace-steps {
   display: grid;
+  gap: 2px;
 }
-.steps__item {
+.trace-steps button {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: 20px;
-  padding-block: 26px;
-  border-top: 1px solid var(--line-dark);
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  text-align: left;
+  transition: background-color 160ms ease;
 }
-.steps__item:first-child {
-  border-top: 0;
-  padding-top: 0;
+.trace-steps button:hover,
+.trace-steps button[aria-pressed="true"] {
+  background: var(--lit);
 }
-.steps__n {
-  font-size: 3.25rem;
-  font-stretch: 66%;
+.trace-steps button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.trace-steps__n {
+  font-size: 1.25rem;
+  font-stretch: 70%;
   font-weight: 800;
-  line-height: 0.82;
-  color: var(--moon-3);
-  transition: color 260ms ease;
+  line-height: 1.2;
+  color: var(--ink-3);
 }
-.steps__item p {
-  margin-top: 10px;
-  max-width: 34em;
-  color: var(--moon-2);
-  text-wrap: pretty;
+.trace-steps button[aria-pressed="true"] .trace-steps__n {
+  color: var(--ink);
 }
-
-@media (min-width: 960px) {
-  .how__grid {
-    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
-    gap: 72px;
-    align-items: start;
-  }
-  .trace {
-    position: sticky;
-    top: 104px;
-  }
-  .steps__item {
-    padding-block: 34px;
-    opacity: 0.5;
-    transition: opacity 260ms ease;
-  }
-  .steps__item[data-on="true"] {
-    opacity: 1;
-  }
-  .steps__item[data-on="true"] .steps__n {
-    color: var(--sun);
-  }
+.trace-steps b {
+  display: block;
+  font-weight: 650;
+}
+.trace-steps__body {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--step-0);
+  line-height: 1.45;
+  color: var(--ink-2);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .trace__lines li {
-    grid-template-columns: 50px minmax(0, 1fr);
+    grid-template-columns: 44px minmax(0, 1fr);
     padding-inline: 12px;
     font-size: 0.76rem;
   }
   .trace__what {
     grid-column: 2;
   }
-  .steps__item {
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: 14px;
-  }
-  .steps__n {
-    font-size: 2.5rem;
+  .trace__head {
+    padding-inline: 12px;
   }
 }
