@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { IconCheck, IconClose, IconCopy } from "../components/Icons";
 import { wilsonLowerBound } from "../lib/stats";
 import { count, errorText, pct, saveBlob, useConnection } from "./backend";
@@ -149,7 +149,8 @@ export function Setup({ data, summary }: { data: RecordsState; summary?: Summary
   const [detail, setDetail] = useState<Detail>(initial.detail ?? "changes");
   const [gateway, setGateway] = useState(initial.gateway ?? (conn.mode === "gateway" ? conn.base : "http://localhost:8080"));
   const [auth, setAuth] = useState<RunAuth>(initial.auth ?? "token");
-  const [touched, setTouched] = useState<Set<string>>(() => new Set());
+  // A form kept from an earlier visit shows its problems straight away.
+  const [touched, setTouched] = useState<Set<string>>(() => new Set(Object.keys(check(initial.draft).errors)));
   const [measured, setMeasured] = useState<Set<string>>(() => new Set());
   const [undo, setUndo] = useState<{ draft: Draft; text: string; started?: boolean }>();
   const [experiment, setExperiment] = useState(0);
@@ -255,7 +256,7 @@ export function Setup({ data, summary }: { data: RecordsState; summary?: Summary
         <p className="muted small">
           Choose the models to compare and how strict the gate is. This page writes the plugin&rsquo;s config for Bifrost, checks it
           against the rules the plugin applies when it loads, and lists the commands to build, start and check a gateway with it.
-          Nothing you enter leaves this page.
+          Nothing you enter leaves this browser, which keeps the form for your next visit.
         </p>
       </div>
 
@@ -845,12 +846,24 @@ function Field({
 }
 
 function Switch({ checked, onChange, label, note }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; note?: ReactNode }) {
+  const id = useId();
   return (
     <label className="su-switch">
-      <input type="checkbox" role="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-labelledby={`${id}-label`}
+        aria-describedby={note ? `${id}-note` : undefined}
+      />
       <span className="su-switch__text">
-        <b>{label}</b>
-        {note && <span className="small muted">{note}</span>}
+        <b id={`${id}-label`}>{label}</b>
+        {note && (
+          <span className="small muted" id={`${id}-note`}>
+            {note}
+          </span>
+        )}
       </span>
     </label>
   );
@@ -983,7 +996,7 @@ function SpendPanel({
   const budget = num(draft.dailyBudget) ?? 0;
   const tag = (f: string) => (measured.has(f) ? <span className="su-tag">measured</span> : null);
   const cost = (f: string, label: ReactNode, value: string, onChange: (v: string) => void, hint: string) => (
-    <div className="su-cost" data-invalid={err(f) ? true : undefined}>
+    <div key={f} className="su-cost" data-invalid={err(f) ? true : undefined}>
       <label htmlFor={fieldId(f)}>
         {label} {tag(f)}
       </label>
@@ -1077,7 +1090,11 @@ function SpendPanel({
             )}
           </>
         ) : (
-          <p className="small muted">Fill in the marked numbers to see an estimate.</p>
+          <p className="small muted">
+            {Object.keys(spend.errors).length > 0
+              ? "Enter a number, 0 or more, in each box above to see an estimate."
+              : "The estimate needs a sample rate above 0 and at most 1."}
+          </p>
         )}
       </div>
     </div>

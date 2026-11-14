@@ -533,6 +533,12 @@
 .su-out:focus {
   outline: none;
 }
+/* Below the console's sticky top bar when jumped to on narrow screens. */
+@media (max-width: 999px) {
+  .su-out {
+    scroll-margin-top: 170px;
+  }
+}
 @media (min-width: 1180px) {
   .su-out {
     position: sticky;
