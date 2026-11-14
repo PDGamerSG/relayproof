@@ -480,7 +480,7 @@ export function Savings() {
                   <>
                     At {(agreement * 100).toFixed(1)}% agreement, the 95% lower bound clears 90% after{" "}
                     <b className="num">{whole.format(r.needed)}</b> comparisons. Each one costs a {candidate.model.replace(/^claude-/, "")} call and a
-                    judge call on {current.model.replace(/^claude-/, "")}: {money(r.perComparison)}.
+                    judge call on {current.model.replace(/^claude-/, "")}: ${Number(r.perComparison.toPrecision(2))}.
                   </>
                 )}
               </p>

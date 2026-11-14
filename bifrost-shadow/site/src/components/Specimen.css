@@ -366,6 +366,16 @@
   }
 }
 
+@container (max-width: 520px) {
+  .spec__tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .spec__tabs button {
+    padding-inline: 8px;
+  }
+}
+
 @container (max-width: 420px) {
   .cand-run__facts {
     gap: 12px;

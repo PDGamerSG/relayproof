@@ -109,8 +109,16 @@
   background: rgb(15 16 48 / 0.06);
 }
 
+/* The sheet hangs under the bar instead of pushing the page down. */
 .nav__sheet {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-2);
+  background: var(--daylight);
+  box-shadow: 0 12px 24px -12px rgb(var(--shade) / 0.25);
   animation: sheet-in 200ms var(--ease-out) both;
 }
 .nav__sheet[hidden] {
