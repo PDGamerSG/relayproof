@@ -6,6 +6,7 @@ import { HowItWorks } from "./components/HowItWorks";
 import { Nav } from "./components/Nav";
 import { Problem } from "./components/Problem";
 import { QuickStart } from "./components/QuickStart";
+import { Savings } from "./components/Savings";
 import { Scorecard } from "./components/Scorecard";
 import { ScrollProvider } from "./lib/scroll";
 
@@ -18,8 +19,9 @@ export function App() {
       <Nav />
       <main id="main">
         <Hero />
-        <Problem />
         <HowItWorks />
+        <Problem />
+        <Savings />
         <Scorecard />
         <Evidence />
         <Guards />
