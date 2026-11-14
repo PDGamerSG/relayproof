@@ -1,0 +1,243 @@
+/* Drift watch on the overview: newest window against the one before, per candidate. Tokens come from base.css. */
+
+.lv-drift__list {
+  container-type: inline-size;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+  overflow: hidden;
+}
+.lv-drift__row {
+  display: grid;
+  grid-template-areas: "who" "spark" "nums";
+  gap: 14px 28px;
+  padding: 18px 20px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.lv-drift__row:last-child {
+  border-bottom: 0;
+}
+.lv-drift__row[data-status="worse"] {
+  box-shadow: inset 3px 0 0 var(--fail);
+}
+@container (min-width: 620px) {
+  .lv-drift__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "who spark" "nums nums";
+  }
+}
+@container (min-width: 960px) {
+  .lv-drift__row {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.35fr);
+    grid-template-areas: "who spark nums";
+    align-items: start;
+  }
+}
+
+/* Who and what */
+
+.lv-drift__who {
+  grid-area: who;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 8px;
+  min-width: 0;
+}
+.lv-drift__title {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.lv-drift__title .model {
+  white-space: normal;
+}
+.lv-drift__say {
+  text-wrap: pretty;
+}
+.lv-drift__note {
+  font-size: var(--step--1);
+  text-wrap: pretty;
+}
+
+/* Status chip: the dot and the words, never colour alone. */
+.lv-drift__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 24px;
+  padding: 0 10px 0 9px;
+  border-radius: 999px;
+  font-size: var(--step--1);
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  background: rgb(var(--shade) / 0.08);
+  color: var(--ink-2);
+}
+.lv-drift__status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.lv-drift__status[data-status="worse"] {
+  background: rgb(208 58 64 / 0.1);
+  color: var(--fail);
+}
+.lv-drift__status[data-status="better"] {
+  background: rgb(11 138 79 / 0.12);
+  color: var(--ready);
+}
+.lv-drift__status[data-status="thin"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  color: var(--ink-3);
+}
+.lv-drift__status[data-status="thin"]::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+/* Sparkline */
+
+.lv-drift__spark {
+  grid-area: spark;
+  min-width: 0;
+}
+.lv-drift__spark svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.lv-drift__spark figcaption {
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+.lv-drift__spark--empty {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  border-radius: var(--radius-s);
+  background: var(--daylight);
+  padding: 12px;
+  text-align: center;
+}
+.lv-drift__band[data-window="before"] {
+  fill: rgb(var(--shade) / 0.07);
+}
+.lv-drift__band[data-window="recent"] {
+  fill: rgb(255 194 26 / 0.24);
+}
+.lv-drift__level {
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+.lv-drift__need {
+  stroke: var(--ink-3);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.lv-drift__axis {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  fill: var(--ink-3);
+  paint-order: stroke;
+  stroke: var(--lit);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.lv-drift__line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.lv-drift__dot {
+  fill: var(--ink);
+  stroke: var(--lit);
+  stroke-width: 1.5;
+}
+.lv-drift__event line {
+  stroke: var(--sun);
+  stroke-width: 2;
+}
+.lv-drift__event[data-action="rollback"] line,
+.lv-drift__event[data-action="auto_rollback"] line {
+  stroke: var(--fail);
+}
+.lv-drift__key::before {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 10px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  background: var(--sun);
+}
+
+/* Numbers */
+
+.lv-drift__nums {
+  grid-area: nums;
+  min-width: 0;
+}
+.lv-drift__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step-0);
+}
+.lv-drift__table th,
+.lv-drift__table td {
+  padding: 7px 0 7px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  vertical-align: top;
+}
+.lv-drift__table th:first-child,
+.lv-drift__table td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+.lv-drift__table thead th {
+  padding-top: 0;
+  white-space: nowrap;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+  border-bottom-color: var(--line-2);
+}
+.lv-drift__table tbody th {
+  font-weight: 600;
+}
+.lv-drift__table tbody td,
+.lv-drift__table thead th {
+  width: 1%;
+  white-space: nowrap;
+}
+.lv-drift__table small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--ink-3);
+}
+.lv-drift__rate {
+  font-weight: 680;
+}
+.lv-drift__change {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 10px;
+}
+
+.lv-drift__foot {
+  margin-top: 12px;
+  font-size: var(--step--1);
+  text-wrap: pretty;
+}
