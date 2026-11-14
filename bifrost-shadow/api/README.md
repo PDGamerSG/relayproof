@@ -193,7 +193,11 @@ function useShadow<T>(fetcher: () => Promise<T>, everyMs = 3000) {
 Errors use Bifrost's body: `{"is_bifrost_error": false, "status_code": 404, "error": {"message": "..."}}`.
 `404` with "shadow plugin is not enabled" means the plugin is off (`client.status()` returns
 `plugin_disabled`). Promotion's `409`s carry structured bodies (`NotReadyRefusal`,
-`ConflictRefusal` in the spec); a `409` with only a message means the requested priority is taken.
+`ConflictRefusal` in the spec); a `409` with only a message means the requested priority is taken,
+or another candidate's unfinished ramp needs the share (the message names it). A ramp that cannot
+move (its rule disabled or edited by hand) keeps `next_weight` and says why in `ramp.reason`
+("passed but cannot move to 50%: ..."). A promotion whose rollout log could not be written to disk
+still answers `200`, with a warning.
 
 ## 6. Checking the contract
 

@@ -171,7 +171,9 @@ paths:
         "409":
           description: |
             Refused. Either the candidate is not ready (`NotReadyRefusal`), an earlier rule would
-            shadow the canary (`ConflictRefusal`), or the requested priority is taken (`ErrorResponse`).
+            shadow the canary (`ConflictRefusal`), the requested priority is taken, or the shares
+            would not fit once another candidate's unfinished ramp reaches its last step (both
+            `ErrorResponse`; the message names the rule or the ramp).
           content:
             application/json:
               schema:

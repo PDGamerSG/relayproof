@@ -172,8 +172,10 @@ a candidate's share (see below), restricted to the existing rule.
 **Ramp.** With `ramp` in the body, `PlanRamp` (`rollout.go`) validates it first (2 to 20 strictly
 ascending steps at four decimals, the first equal to `weight`, `min_requests` at least
 `canary.min_requests`, `hold_seconds` from 0 to 7 days) and the promotion starts at `steps[0]`.
-The merge also checks the ramp's last step against the other candidates' shares, so a ramp that
-could never finish is refused. The promote event carries the ramp; the book stores it on the
+The merge also checks every promotion against the ramps already on the rule (`checkRampPeaks`):
+its own peak plus, for each other candidate, the larger of its current share and its unfinished
+ramp's last step must fit in 100%, so neither a new ramp nor a second candidate can leave a ramp
+unable to finish (`400` against current shares only, `409` naming the ramp otherwise). The promote event carries the ramp; the book stores it on the
 canary.
 
 **Rollback** (`rollbackShadowCanary`) removes the candidate's target from the source's canary
@@ -209,13 +211,19 @@ Promoted candidates are watched on live traffic (`rollout.go`):
   `auto_rollback` off holds its step). A done step moves on through a `RampFunc` the gateway wires
   (`NewShadowRampHook`): under the promotion lock it re-checks that the canary is the one judged
   (same state, weight, step and step start), sets the candidate's share in the existing canary
-  rule with the promotion merge, never creating a rule, and then records a `ramp` event
+  rule with the promotion merge, never creating a rule and never enabling a disabled one (it
+  holds instead), and then records a `ramp` event
   (`ramp_complete` for the last step) with the health the step rested on. Recording the event
   replaces the canary's `CanaryRamp` (ramps are never edited in place) and resets its live
-  statistics, so each step is judged on its own traffic. A promotion of the same pair replaces
+  statistics, so each step is judged on its own traffic; a response whose latency reaches back
+  before `step_started_at` was routed at the old weight and is skipped (one clock read, about
+  40 ns, for ramping canaries only). A step the hook refuses is remembered with its cause, logged
+  once, and shown in `ramp.reason` until a new step starts. A promotion of the same pair replaces
   or cancels the ramp; a rollback ends it. The ramp is persisted with the canary, so a restart
   resumes at the same step, with the step's request count back at zero.
-- **State.** The rollout log (last 500 events) and the active canaries live in a `rolloutBook`
+- **State.** An event is applied in memory before the book is saved; a failed save returns
+  `ErrRolloutNotSaved`, which callers treat as done with a warning, since the routing rule has
+  already changed. The rollout log (last 500 events) and the active canaries live in a `rolloutBook`
   shared per process and persist path, like the spend ledger, so a settings update or reload
   keeps watching. With `persist_path` they are written atomically to
   `<persist_path>.rollouts.json` after each event; live statistics restart with the process.

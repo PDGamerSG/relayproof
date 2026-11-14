@@ -22,6 +22,17 @@ on :18180.
 | Contract | promote response and three `/rollouts` payloads (at step 2, after the restart, complete) checked field by field against `api/openapi.yaml` | every field declared, types match; event actions within the enum |
 | Backward compatibility | promotion without `ramp`: response and `/rollouts` bodies (handler test), canary JSON (plugin test) | no `ramp` key anywhere |
 
+Review fixes, same day, after an independent review of the ramp commits:
+
+| Finding | Regression test | Result |
+|---|---|---|
+| A second candidate could take the share another canary's ramp still needed, leaving that ramp stuck and its reason claiming "moving to …" | `TestShadowPromoteRefusesSharesAnotherRampNeeds` (B at 50% while A ramps to 100%: `409` naming A's ramp, nothing written); `TestRampHoldsWhenTheHookFailsOrIsMissing` (a refused step reads "passed but cannot move to 50%: …") | pass |
+| A ramp step re-enabled a canary rule disabled by hand | `TestShadowRampHookHoldsWhileTheRuleIsDisabled` | pass: the step is refused, the rule stays disabled; once re-enabled the step goes through |
+| A failed rollout-log save was reported as a failed step or rollback after the change had happened | `TestRolloutSaveFailureStillApplies`, `TestShadowRolloutLogNotSavedIsAWarning` | pass: `ErrRolloutNotSaved`, counted as done, promotion answers `200` with a warning |
+| Responses routed at the old weight were counted into the new step | `TestRampIgnoresResponsesFromBeforeTheStep` | pass: responses whose latency reaches back before the step are skipped; failures (no latency) still count |
+| Cost of dating responses | `go test -bench 'PostLLMHookCanary\|PostLLMHookRampingCanary' -benchmem -count=3` | 63.6-65.7 ns per response a ramping canary counts, against 25.4-25.5 ns for a canary without a ramp (unchanged); 0 allocations |
+| Suites after the fixes | plugin and handler commands above with `-race -count=2`; `go vet`; demo `go test -race`; `SKIP_UI=1 scripts/setup.sh` (rebuilt `bifrost/tmp/bifrost-http`) | pass (plugin 108 tests, 90.0% coverage; handlers 30 tests) |
+
 ## Real Claude models on the hosted demo (14 November 2026)
 
 The hosted backend switched to `claude-opus-5-5` (primary), `claude-sonnet-5-5` and
