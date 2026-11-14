@@ -85,6 +85,110 @@ html:has(dialog[open]) {
 .lv:focus {
   outline: none;
 }
+.lv-bar__foot {
+  display: none;
+}
+.lv-tabs__icon {
+  display: none;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* From 1000 px the console's navigation is a sidebar on the left. */
+@media (min-width: 1000px) {
+  .lv-shell {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+    align-items: start;
+  }
+  .lv-bar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    background: var(--daylight);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 0;
+    border-right: 1px solid var(--line-2);
+  }
+  .lv-bar__row {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .lv-conn {
+    margin-left: 0;
+    line-height: 1.35;
+  }
+  .lv-tabs {
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px 12px;
+    overflow: visible;
+  }
+  .lv-tabs a {
+    padding: 9px 12px 9px 14px;
+    border-radius: var(--radius-m);
+    transition:
+      color 0.15s,
+      background-color 0.15s;
+  }
+  .lv-tabs a:hover {
+    background: rgb(15 16 48 / 0.05);
+  }
+  .lv-tabs a[aria-current="page"] {
+    background: var(--lit);
+    box-shadow: 0 0 0 1px var(--line-2);
+  }
+  /* The open tab is marked by a bar on its left edge instead of an underline. */
+  .lv-tabs a::after {
+    left: 0;
+    right: auto;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    height: auto;
+    border-radius: 0 3px 3px 0;
+    transform: scaleY(0);
+  }
+  .lv-tabs a[aria-current="page"]::after {
+    transform: scaleY(1);
+  }
+  .lv-tabs a {
+    gap: 10px;
+  }
+  .lv-tabs__icon {
+    display: block;
+    color: var(--ink-3);
+  }
+  .lv-tabs a[aria-current="page"] .lv-tabs__icon,
+  .lv-tabs a:hover .lv-tabs__icon {
+    color: var(--ink);
+  }
+  .lv-tabs__badge {
+    margin-left: auto;
+  }
+  .lv-bar__foot {
+    display: grid;
+    gap: 8px;
+    margin-top: auto;
+    padding: 18px 20px 24px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-2);
+  }
+  .lv-bar__foot .link {
+    justify-self: start;
+  }
+}
 
 .lv-bar__brand {
   display: inline-flex;
@@ -295,7 +399,8 @@ html:has(dialog[open]) {
   display: grid;
   gap: 22px;
 }
-@media (min-width: 960px) {
+/* Two columns once the sidebar leaves room for them. */
+@media (min-width: 1180px) {
   .lv-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -431,7 +536,8 @@ html:has(dialog[open]) {
   display: grid;
   gap: 24px;
 }
-@media (min-width: 960px) {
+/* Two columns once the sidebar leaves room for them. */
+@media (min-width: 1180px) {
   .lv-split {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   }
@@ -514,6 +620,7 @@ html:has(dialog[open]) {
 }
 .lv-incidents li {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 14px;

@@ -78,8 +78,8 @@
   }
   .lv-x__detail {
     position: sticky;
-    top: 112px;
-    max-height: calc(100vh - 128px);
+    top: 24px;
+    max-height: calc(100vh - 48px);
     overflow: auto;
     overscroll-behavior: contain;
   }

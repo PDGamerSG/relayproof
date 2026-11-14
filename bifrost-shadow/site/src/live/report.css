@@ -238,6 +238,9 @@
   body {
     background: #fff;
   }
+  .lv-shell {
+    display: block !important;
+  }
   .lv-bar,
   .lv-foot,
   .lv-toasts,
