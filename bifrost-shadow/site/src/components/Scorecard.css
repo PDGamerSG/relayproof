@@ -1,5 +1,5 @@
 .scorecard {
-  border-top: 1.5px solid var(--ink);
+  border-top: 1px solid var(--line-2);
 }
 
 /* The dashboard frame */
@@ -8,7 +8,6 @@
   border: 1.5px solid var(--ink);
   border-radius: var(--radius-l);
   background: var(--lit);
-  box-shadow: 16px 18px 0 rgb(var(--shade) / 0.14);
   overflow: hidden;
 }
 
@@ -433,8 +432,5 @@
   }
   .cand__figures dd {
     font-size: 1.6rem;
-  }
-  .board {
-    box-shadow: 8px 10px 0 rgb(var(--shade) / 0.14);
   }
 }

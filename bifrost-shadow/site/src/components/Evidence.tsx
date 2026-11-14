@@ -67,13 +67,13 @@ export function Evidence() {
   }, [rate]);
 
   return (
-    <section className="section umbra evidence" id="evidence">
+    <section className="section evidence" id="bound">
       <div className="wrap">
         <div className="head">
           <h2 className="h2">Twenty out of twenty is not proof.</h2>
           <p className="lede">
             A lucky streak should not promote a model. A candidate is ready only when the low end of the 95% Wilson interval around
-            its agreement rate clears the bar, and its error rate stays within budget.
+            its agreement clears 90% and its error rate stays within budget. Try it: change the evidence and watch the bound move.
           </p>
         </div>
 

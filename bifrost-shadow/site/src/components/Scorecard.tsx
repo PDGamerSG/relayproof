@@ -225,13 +225,14 @@ export function Scorecard() {
   const [canaries, setCanaries] = useState<Record<string, number>>({});
 
   return (
-    <section className="section scorecard" id="scorecard">
+    <section className="section scorecard" id="evidence">
       <div className="wrap">
         <div className="head">
           <h2 className="h2">Both candidates are far cheaper. Only one is safe.</h2>
           <p className="lede">
-            The key-free demo sends 300 mixed requests through a real Bifrost gateway: short answers, arithmetic, JSON mode, tool calls
-            and writing, a quarter of them streamed. Two cheaper models shadow gpt-4o. This is the scorecard it prints.
+            On the hosted gateway both Claude candidates passed. The key-free demo shows the other case: 300 mixed requests through a
+            real Bifrost gateway, where a mock upstream plays gpt-4o and two cheaper models, one of them weak. This is the scorecard
+            it prints.
           </p>
         </div>
 
