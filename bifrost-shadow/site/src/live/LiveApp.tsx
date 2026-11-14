@@ -5,8 +5,13 @@ import { ago, ConnectionContext, count, errorText, modelId, ms, pct, trialConnec
 import { AskPanel } from "./Ask";
 import { ConnectPanel } from "./Connect";
 import { DisagreementsDialog, PromoteDialog } from "./Dialogs";
+import { Explorer } from "./Explorer";
+import { JudgeCheck } from "./JudgeCheck";
+import { useRecords, type RecordsState } from "./records";
+import { Report } from "./Report";
 import { CanaryPanel, Downloads, History, IncidentPanel } from "./Rollout";
-import { poll, type PairSummary, type Rollouts, type Summary, type Verdict } from "./shadowClient";
+import { poll, type PairSummary, type RolloutEvent, type Rollouts, type Summary, type Verdict } from "./shadowClient";
+import { Trend } from "./Trend";
 
 const VERDICT_LABEL: Record<Verdict, string> = {
   collecting: "Collecting",
@@ -33,8 +38,43 @@ function useNow(): number {
   return now;
 }
 
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "ask", label: "Ask", trialOnly: true },
+  { id: "comparisons", label: "Comparisons" },
+  { id: "judge", label: "Judge check" },
+  { id: "rollout", label: "Rollout" },
+  { id: "report", label: "Report" },
+] as const;
+
+export type TabId = (typeof TABS)[number]["id"];
+
+/** Older links pointed at sections of the single-page console. */
+const LEGACY: Record<string, TabId> = { scorecards: "overview", history: "rollout" };
+
+function readTab(): TabId {
+  const h = window.location.hash.slice(1);
+  if (TABS.some((t) => t.id === h)) return h as TabId;
+  return LEGACY[h] ?? "overview";
+}
+
+/** The open tab lives in the URL hash, so tabs can be linked and the back button works. */
+function useTab(): TabId {
+  const [tab, setTab] = useState<TabId>(readTab);
+  useEffect(() => {
+    const onHash = () => {
+      setTab(readTab());
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  return tab;
+}
+
 export function LiveApp() {
   const now = useNow();
+  const tab = useTab();
   const [conn, setConn] = useState<Connection>(trialConnection);
   const [summary, setSummary] = useState<Summary>();
   const [rollouts, setRollouts] = useState<Rollouts>();
@@ -45,6 +85,8 @@ export function LiveApp() {
   const [promoting, setPromoting] = useState<PairSummary>();
   const [inspecting, setInspecting] = useState<PairSummary>();
   const noticeId = useRef(0);
+  // Records feed the trend charts, the explorer, the judge check and the report.
+  const data = useRecords(conn, tab !== "ask" && tab !== "rollout");
 
   const notify = useCallback<Notify>((tone, text) => {
     const id = ++noticeId.current;
@@ -89,75 +131,48 @@ export function LiveApp() {
   const canaryShare = (pair: PairSummary) =>
     rollouts?.canaries.find((c) => c.experiment === pair.experiment && modelId(c.candidate) === modelId(pair.candidate))?.weight;
 
+  const tabs = TABS.filter((t) => !("trialOnly" in t) || conn.demo);
+  const active: TabId = tabs.some((t) => t.id === tab) ? tab : "overview";
+  const badge: Partial<Record<TabId, string>> = {
+    comparisons: summary ? count(summary.counters.completed) : undefined,
+    rollout: rollouts && rollouts.canaries.length > 0 ? `${rollouts.canaries.length} live` : undefined,
+  };
+
   return (
     <ConnectionContext.Provider value={conn}>
-      <a className="skip" href="#scorecards">
-        Skip to the scorecards
+      <a className="skip" href="#console">
+        Skip to the console
       </a>
       <header className="lv-bar">
-        <a className="lv-bar__brand" href="./" aria-label="RelayProof home">
-          <Mark />
-          <span>RelayProof</span>
-        </a>
-        <span className="lv-bar__tag">Live console</span>
-        <p className="lv-conn" data-state={connection} role="status" aria-live="polite">
-          <span className="lv-conn__dot" aria-hidden="true" />
-          {connection === "live" && (
-            <>
-              {conn.mode === "trial" ? "Trial" : conn.label}, updated {ago(new Date(lastOk!).toISOString(), now)}
-            </>
-          )}
-          {connection === "connecting" && (conn.mode === "trial" ? "Waking the demo gateway" : `Connecting to ${conn.label}`)}
-          {connection === "stale" && "Reconnecting"}
-          {connection === "offline" && (conn.mode === "trial" ? "Demo backend offline" : `${conn.label} offline`)}
-        </p>
+        <div className="lv-bar__row">
+          <a className="lv-bar__brand" href="./" aria-label="RelayProof home">
+            <Mark />
+            <span>RelayProof</span>
+          </a>
+          <span className="lv-bar__tag">Live console</span>
+          <p className="lv-conn" data-state={connection} role="status" aria-live="polite">
+            <span className="lv-conn__dot" aria-hidden="true" />
+            {connection === "live" && (
+              <>
+                {conn.mode === "trial" ? "Hosted demo" : conn.label}, updated {ago(new Date(lastOk!).toISOString(), now)}
+              </>
+            )}
+            {connection === "connecting" && (conn.mode === "trial" ? "Waking the demo gateway" : `Connecting to ${conn.label}`)}
+            {connection === "stale" && "Reconnecting"}
+            {connection === "offline" && (conn.mode === "trial" ? "Demo backend offline" : `${conn.label} offline`)}
+          </p>
+        </div>
+        <nav className="lv-tabs" aria-label="Console">
+          {tabs.map((t) => (
+            <a key={t.id} href={`#${t.id}`} aria-current={active === t.id ? "page" : undefined}>
+              {t.label}
+              {badge[t.id] && <span className="lv-tabs__badge num">{badge[t.id]}</span>}
+            </a>
+          ))}
+        </nav>
       </header>
 
-      <main className="lv">
-        <section className="lv-intro wrap">
-          <div>
-            <p className="lv-eyebrow">A real gateway, running now</p>
-            <h1 className="lv-title">Shadow traffic, live.</h1>
-            <p className="lede">
-              {conn.mode === "trial" ? (
-                status?.upstream && status.upstream !== "mock" ? (
-                  <>
-                    The trial runs on a hosted Bifrost gateway with the RelayProof plugin, calling real Claude models.{" "}
-                    <span className="model">{status.primary_model}</span> answers every request; {status.incident_models.join(" and ")} run
-                    in its shadow, and a judge scores each pair. Ask your own question below, or watch the scorecards fill.
-                  </>
-                ) : (
-                  <>
-                    The trial runs on a hosted Bifrost gateway with the RelayProof plugin, serving a mock upstream so no provider keys are
-                    involved. Requests arrive every second; half are replayed against two cheaper models and scored.
-                  </>
-                )
-              ) : (
-                <>
-                  Signed in to <span className="model">{conn.label}</span>. Scorecards, promotion and rollback act on that gateway and its
-                  real traffic.
-                </>
-              )}
-            </p>
-            <ConnectPanel conn={conn} onConnect={connect} />
-          </div>
-          {conn.mode === "trial" ? (
-            <Walkthrough summary={summary} rollouts={rollouts} status={status} />
-          ) : (
-            <ol className="lv-walk" aria-label="On your gateway">
-              <li>
-                <span className="lv-walk__n num">1</span>Read the scorecards as traffic comes in.
-              </li>
-              <li>
-                <span className="lv-walk__n num">2</span>Promote a ready candidate to a canary.
-              </li>
-              <li>
-                <span className="lv-walk__n num">3</span>Watch its live health; roll back if needed.
-              </li>
-            </ol>
-          )}
-        </section>
-
+      <main className="lv" id="console" tabIndex={-1}>
         {connection === "offline" && (
           <div className="wrap">
             <div className="lv-offline" role="alert">
@@ -175,73 +190,133 @@ export function LiveApp() {
           </div>
         )}
 
-        {conn.demo && <AskPanel status={status} />}
+        {active === "overview" && (
+          <>
+            <section className="lv-intro wrap">
+              <div>
+                <h1 className="lv-title">Shadow traffic, live.</h1>
+                <p className="lede">
+                  {conn.mode === "trial" ? (
+                    status?.upstream && status.upstream !== "mock" ? (
+                      <>
+                        A hosted Bifrost gateway with the RelayProof plugin, calling real Claude models.{" "}
+                        <span className="model">{status.primary_model}</span> answers every request.{" "}
+                        {status.incident_models.join(" and ")} answer the same requests in its shadow, and a judge scores each pair. Nobody
+                        sees a shadow answer.
+                      </>
+                    ) : (
+                      <>
+                        A hosted Bifrost gateway with the RelayProof plugin, serving a mock upstream so no provider keys are involved.
+                        Requests are replayed against cheaper models and scored.
+                      </>
+                    )
+                  ) : (
+                    <>
+                      Signed in to <span className="model">{conn.label}</span>. Scorecards, promotion and rollback act on that gateway and
+                      its real traffic.
+                    </>
+                  )}
+                </p>
+                <ConnectPanel conn={conn} onConnect={connect} />
+              </div>
+              {conn.mode === "trial" ? (
+                <Walkthrough summary={summary} rollouts={rollouts} status={status} />
+              ) : (
+                <ol className="lv-walk" aria-label="On your gateway">
+                  <li>
+                    <span className="lv-walk__n num">1</span>Read the scorecards as traffic comes in.
+                  </li>
+                  <li>
+                    <span className="lv-walk__n num">2</span>Promote a ready candidate to a canary.
+                  </li>
+                  <li>
+                    <span className="lv-walk__n num">3</span>Watch its live health; roll back if needed.
+                  </li>
+                </ol>
+              )}
+            </section>
 
-        {summary && <Tiles summary={summary} status={status} />}
+            {summary && <Tiles summary={summary} status={status} />}
 
-        <section className="wrap lv-section" id="scorecards" aria-labelledby="scorecards-h">
-          <div className="lv-head">
-            <h2 className="lv-h2" id="scorecards-h">
-              Scorecards
-            </h2>
-            {summary && (
-              <p className="muted small">
-                Experiment <b>{summary.experiments[0]?.name ?? "–"}</b>: every candidate against{" "}
-                <span className="model">{summary.experiments[0] ? modelId(summary.experiments[0].source) : "–"}</span>. Ready needs the
-                95% lower bound at or above {pct(summary.thresholds.min_agreement, 0)} after {summary.thresholds.min_samples} scored
-                pairs, and errors at most {pct(summary.thresholds.max_error_rate, 0)}.
-              </p>
-            )}
-          </div>
-          {!summary && !failure && <p className="lv-empty">Loading scorecards…</p>}
-          {summary && summary.pairs.length === 0 && (
-            <p className="lv-empty">
-              No comparisons yet. Scorecards appear once chat traffic for an experiment&rsquo;s source model passes through this gateway
-              and is sampled.
-            </p>
-          )}
-          <div className="lv-cards">
-            {summary?.pairs.map((pair) => (
-              <PairCard
-                key={`${pair.experiment}|${modelId(pair.candidate)}`}
-                pair={pair}
-                minAgreement={summary.thresholds.min_agreement}
-                share={canaryShare(pair)}
-                onPromote={() => setPromoting(pair)}
-                onInspect={() => setInspecting(pair)}
-              />
-            ))}
-          </div>
-        </section>
+            <section className="wrap lv-section" aria-labelledby="scorecards-h">
+              <div className="lv-head">
+                <h2 className="lv-h2" id="scorecards-h">
+                  Scorecards
+                </h2>
+                {summary && (
+                  <p className="muted small">
+                    Experiment <b>{summary.experiments[0]?.name ?? "–"}</b>: every candidate against{" "}
+                    <span className="model">{summary.experiments[0] ? modelId(summary.experiments[0].source) : "–"}</span>. Ready needs
+                    the 95% lower bound at or above {pct(summary.thresholds.min_agreement, 0)} after {summary.thresholds.min_samples}{" "}
+                    scored pairs, and errors at most {pct(summary.thresholds.max_error_rate, 0)}.
+                  </p>
+                )}
+              </div>
+              {!summary && !failure && <p className="lv-empty">Loading scorecards…</p>}
+              {summary && summary.pairs.length === 0 && (
+                <p className="lv-empty">
+                  No comparisons yet. Scorecards appear once chat traffic for an experiment&rsquo;s source model passes through this
+                  gateway and is sampled.
+                </p>
+              )}
+              <div className="lv-cards">
+                {summary?.pairs.map((pair) => (
+                  <PairCard
+                    key={`${pair.experiment}|${modelId(pair.candidate)}`}
+                    pair={pair}
+                    minAgreement={summary.thresholds.min_agreement}
+                    share={canaryShare(pair)}
+                    data={data}
+                    events={rollouts?.events}
+                    onPromote={() => setPromoting(pair)}
+                    onInspect={() => setInspecting(pair)}
+                  />
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
-        <section className="lv-umbra umbra" id="rollout" aria-labelledby="rollout-h">
-          <div className="wrap lv-section">
-            <div className="lv-head">
-              <h2 className="lv-h2" id="rollout-h">
-                Canary and incidents
-              </h2>
-              <p className="muted small">
-                A promotion writes one weighted routing rule on the gateway. The canary guard then compares the candidate&rsquo;s live
-                error rate and latency with the source&rsquo;s and rolls it back on its own when it fails.
-              </p>
-            </div>
-            <div className="lv-split" data-single={!conn.demo}>
-              <CanaryPanel rollouts={rollouts} status={status} now={now} notify={notify} refresh={refresh} />
-              {conn.demo && <IncidentPanel status={status} rollouts={rollouts} now={now} notify={notify} refresh={refresh} />}
-            </div>
-          </div>
-        </section>
+        {active === "ask" && conn.demo && <AskPanel status={status} />}
 
-        <section className="wrap lv-section" id="history" aria-labelledby="history-h">
-          <div className="lv-head">
-            <h2 className="lv-h2" id="history-h">
-              Rollout history
-            </h2>
-            <p className="muted small">Every promotion and rollback since the gateway started, newest first.</p>
-          </div>
-          <History rollouts={rollouts} now={now} />
-          <Downloads />
-        </section>
+        {active === "comparisons" && <Explorer data={data} summary={summary} />}
+
+        {active === "judge" && <JudgeCheck data={data} summary={summary} />}
+
+        {active === "rollout" && (
+          <>
+            <section className="lv-umbra umbra" aria-labelledby="rollout-h">
+              <div className="wrap lv-section">
+                <div className="lv-head">
+                  <h1 className="lv-h2" id="rollout-h">
+                    Canary and incidents
+                  </h1>
+                  <p className="muted small">
+                    A promotion writes one weighted routing rule on the gateway. The canary guard then compares the candidate&rsquo;s live
+                    error rate and latency with the source&rsquo;s and rolls it back on its own when it fails.
+                  </p>
+                </div>
+                <div className="lv-split" data-single={!conn.demo}>
+                  <CanaryPanel rollouts={rollouts} status={status} now={now} notify={notify} refresh={refresh} />
+                  {conn.demo && <IncidentPanel status={status} rollouts={rollouts} now={now} notify={notify} refresh={refresh} />}
+                </div>
+              </div>
+            </section>
+
+            <section className="wrap lv-section" aria-labelledby="history-h">
+              <div className="lv-head">
+                <h2 className="lv-h2" id="history-h">
+                  Rollout history
+                </h2>
+                <p className="muted small">Every promotion and rollback since the gateway started, newest first.</p>
+              </div>
+              <History rollouts={rollouts} now={now} />
+              <Downloads />
+            </section>
+          </>
+        )}
+
+        {active === "report" && <Report data={data} summary={summary} rollouts={rollouts} status={status} />}
       </main>
 
       <footer className="lv-foot wrap small muted">
@@ -266,15 +341,13 @@ export function LiveApp() {
             Connected straight to <span className="model">{conn.base}</span> from this browser. Sign out to return to the trial.
           </p>
         )}
-        <p>
+        <p className="lv-foot__links">
           <a className="link" href="./">
             Overview
-          </a>{" "}
-          ·{" "}
+          </a>
           <a className="link" href={LINKS.docs}>
             Documentation
-          </a>{" "}
-          ·{" "}
+          </a>
           <a className="link" href={LINKS.repo}>
             Source
           </a>
@@ -316,14 +389,14 @@ function Walkthrough({ summary, rollouts, status }: { summary?: Summary; rollout
   const rolledBack = rollouts?.events.some((e) => e.action === "auto_rollback") ?? false;
   const steps = [
     { done: (status?.asked ?? 0) > 0, text: "Ask your own question.", href: "#ask" },
-    { done: ready, text: "Wait for a candidate to reach Ready.", href: "#scorecards" },
+    { done: ready, text: "Wait for a candidate to reach Ready.", href: "#overview" },
     {
       done: promoted,
       text: status?.upstream && status.upstream !== "mock" ? "Promote it to a 25% canary." : "Promote it to a 10% canary.",
-      href: "#scorecards",
+      href: "#overview",
     },
     { done: broken, text: "Simulate an incident on that model.", href: "#rollout" },
-    { done: rolledBack, text: "Watch the guard roll it back.", href: "#history" },
+    { done: rolledBack, text: "Watch the guard roll it back.", href: "#rollout" },
   ];
   return (
     <ol className="lv-walk" aria-label="Try it">
@@ -385,12 +458,16 @@ function PairCard({
   pair,
   minAgreement,
   share,
+  data,
+  events,
   onPromote,
   onInspect,
 }: {
   pair: PairSummary;
   minAgreement: number;
   share?: number;
+  data: RecordsState;
+  events?: RolloutEvent[];
   onPromote: () => void;
   onInspect: () => void;
 }) {
@@ -432,6 +509,8 @@ function PairCard({
           <span>100%</span>
         </p>
       </div>
+
+      <Trend data={data} pair={pair} minAgreement={minAgreement} events={events} />
 
       <dl className="lv-metrics num">
         <div>

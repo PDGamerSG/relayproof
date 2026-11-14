@@ -10,15 +10,82 @@ html:has(dialog[open]) {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: rgb(239 241 246 / 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line-2);
+}
+.lv-bar__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 22px;
-  padding: 12px var(--gutter);
-  background: rgb(239 241 246 / 0.92);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line-2);
+  gap: 10px 18px;
+  padding: 12px var(--gutter) 6px;
 }
+
+/* Console tabs: plain links, the open one underlined in ink. */
+.lv-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 calc(var(--gutter) - 10px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lv-tabs::-webkit-scrollbar {
+  display: none;
+}
+.lv-tabs a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 10px 10px 12px;
+  font-size: var(--step-0);
+  font-weight: 560;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: var(--radius-s) var(--radius-s) 0 0;
+  transition: color 0.15s;
+}
+.lv-tabs a:hover {
+  color: var(--ink);
+}
+.lv-tabs a::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--ink);
+  transform: scaleX(0);
+  transition: transform 0.2s var(--ease-out);
+}
+.lv-tabs a[aria-current="page"] {
+  color: var(--ink);
+}
+.lv-tabs a[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+.lv-tabs__badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(15 16 48 / 0.08);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lv-tabs a::after {
+    transition: none;
+  }
+}
+.lv:focus {
+  outline: none;
+}
+
 .lv-bar__brand {
   display: inline-flex;
   align-items: center;
@@ -79,11 +146,6 @@ html:has(dialog[open]) {
   }
   100% {
     box-shadow: 0 0 0 0 rgb(12 143 82 / 0);
-  }
-}
-@media (max-width: 720px) {
-  .lv-bar__links {
-    display: none;
   }
 }
 
@@ -947,4 +1009,114 @@ ul.lv-warn {
   font-size: var(--step-0);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Agreement trend */
+
+.lv-trend {
+  margin: 4px 0 18px;
+}
+.lv-trend svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.lv-trend__grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.lv-trend__axis {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--ink-3);
+}
+.lv-trend__need {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 4;
+}
+.lv-trend__need-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.lv-trend__band {
+  fill: rgb(var(--shade) / 0.1);
+}
+.lv-trend__rate {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.lv-trend__lower {
+  fill: none;
+  stroke: var(--lilac);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.lv-trend__cleared circle {
+  fill: var(--ready);
+  stroke: var(--lit);
+  stroke-width: 2;
+}
+.lv-trend__cleared text {
+  font-size: 11px;
+  font-weight: 650;
+  fill: var(--ready);
+}
+.lv-trend__event line {
+  stroke: var(--sun);
+  stroke-width: 2;
+}
+.lv-trend__event[data-action="auto_rollback"] line,
+.lv-trend__event[data-action="rollback"] line {
+  stroke: var(--fail);
+}
+.lv-trend__event text {
+  font-size: 11px;
+  font-weight: 650;
+  fill: var(--ink-2);
+}
+.lv-trend__tick {
+  fill: rgb(var(--shade) / 0.22);
+}
+.lv-trend__tick[data-outcome="fail"] {
+  fill: var(--fail);
+}
+.lv-trend__tick[data-outcome="error"] {
+  fill: var(--amber);
+}
+.lv-trend__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 6px;
+}
+.lv-trend__legend span::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 2px;
+  background: var(--ink);
+}
+.lv-trend__legend span[data-key="lower"]::before {
+  background: var(--lilac);
+}
+.lv-trend__legend span[data-key="tick"]::before {
+  width: 3px;
+  height: 10px;
+  background: var(--fail);
+}
+.lv-trend__empty {
+  margin: 8px 0 18px;
+}
+
+.lv-foot__links {
+  display: flex;
+  gap: 18px;
 }
