@@ -68,10 +68,11 @@ curl -s -X POST http://localhost:8080/api/shadow/promote \\
 
 const CONSOLE = [
   "Ask your own question and read all three answers next to the judge's verdict",
-  "Watch the scorecards fill and the lower bounds tighten",
-  "Promote a ready candidate to a canary",
+  "Watch the scorecards fill, the lower bounds tighten and drift between recent and earlier traffic",
+  "Open any comparison with the changed words marked, and check how far to trust the judge",
+  "Move the readiness bar in the policy lab and see which verdicts flip",
+  "Promote a ready candidate and let the guard ramp it from 25% to all traffic",
   "Simulate a provider outage and watch the guard roll the canary back",
-  "Open any comparison and check the judge's reasoning",
 ];
 
 function CopyButton({ text }: { text: string }) {

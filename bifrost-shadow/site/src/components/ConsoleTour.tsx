@@ -70,7 +70,7 @@ const GROUPS: { name: string; job: string; stops: Stop[] }[] = [
       {
         id: "rollout",
         name: "Rollout",
-        text: "Promote to a canary, break the candidate with a simulated outage, and watch the guard roll it back.",
+        text: "Promote to a canary and let the guard ramp it up step by step, or break it with a simulated outage and watch the guard roll it back.",
         icon: "M2.5 13.5 6.5 9l2.5 2.5 4.5-6M10 5.5h3.5V9",
       },
       {

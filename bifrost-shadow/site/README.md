@@ -31,14 +31,21 @@ Vite, React and TypeScript. Styles are plain CSS, one file per component, with t
 
 The console is split into tabs kept in the URL hash, so each can be linked:
 
+Tabs are grouped by the job: watch, decide, act. Each is kept in the URL hash, so it can be
+linked. Cmd+K (or Ctrl+K, or `/`) opens a command palette over the tabs, the loaded comparisons,
+the candidates and the downloads.
+
 | Tab | What it shows |
 |---|---|
-| Overview | Counters, one scorecard per candidate with its agreement trend (running agreement, 95% lower bound, the bar, one tick per comparison, promotions and rollbacks), and agreement split by kind of request (tool calls, JSON, short and longer answers, streamed) |
+| Overview | Counters, one scorecard per candidate with its agreement trend (running agreement, 95% lower bound, the bar, one tick per comparison, promotions, ramp steps and rollbacks), drift between the newest comparisons and the ones before, and agreement split by kind of request |
 | Ask (trial only) | Ask the hosted gateway a question and see the primary answer, then each candidate's answer and verdict; the latest traffic below it |
-| Comparisons | Every stored comparison: search, filter by candidate, outcome and deciding signal, sort by the worst judge gap; one request at a time with the candidates' answers diffed word by word against the primary. `#comparisons/<record id>` links to one |
+| Comparisons | Every stored comparison: search, filter by candidate, outcome and deciding signal, sort by the worst judge gap; one request at a time with the candidates' answers diffed word by word against the primary. `#comparisons/<record id>` links to one; j and k step through the list |
+| Performance | Latency distributions and percentiles per model, paired latency on the same requests, output tokens, cost per request, whether the evaluation pays for itself, quality against cost, and traffic over time by outcome |
 | Judge check | How far to trust the LLM judge: position and length effects, same-family warning, score gaps, and a blind labelling loop that measures your agreement with the judge |
-| Rollout | Live canaries and their health, simulated provider incidents (trial), rollout history, CSV and JSON downloads |
-| Report | A readiness report per candidate: verdict and next step, key numbers, monthly cost at your volume, the evidence trend, worst disagreements, rollout history and method. Prints to PDF and copies as Markdown |
+| Policy lab | The loaded comparisons decided again under another gate (agreement bar, minimum samples, error budget, judge tolerance): which verdicts and pairs would flip, a verdict map, and the thresholds as config |
+| Report | A readiness report per candidate (`#report/<candidate>`): verdict and next step, key numbers, monthly cost at your volume, the evidence trend, judge findings, worst disagreements, rollout history and method. Prints to PDF and copies as Markdown |
+| Rollout | Live canaries, their health and ramp progress, simulated provider incidents (trial), rollout history, CSV and JSON downloads. The promote dialog can ask the guard to ramp the canary step by step; a gateway without ramp support is detected on the dry run |
+| Set up | A configuration builder for your own gateway: the plugin's JSON (checked against the plugin's rules), the whole config.json or an API call, an evaluation spend estimate, and the commands to build, start and check it |
 
 The record-level views (trend, segments, comparisons, judge check, report) load the newest 500
 records from `GET /api/shadow/records` every 15 seconds, so they cover the gateway's recent window
@@ -65,6 +72,8 @@ pnpm dev        # Vite proxies /api/shadow and /api/demo to localhost:10000 (SHA
 | `src/data/hosted.ts` | Records and prices copied from the hosted gateway on 14 Nov 2026 (the hero and the savings calculator). The landing page never calls the hosted API: any call there marks the console as watched and starts paid traffic |
 | `src/live/records.ts` | Agreement as the scorecard counts it (`passes / (scored + errors)`), record by record |
 | `src/live/judgeStats.ts` | Position, length and score-gap checks on judge verdicts, Wilson intervals, Cohen's kappa for the labelling loop |
+| `src/live/policy.ts` | The plugin's pass rules (`plugins/shadow/worker.go`) and verdict order (`store.go`), applied again under other thresholds |
+| `src/live/configBuilder.ts` | The plugin's config fields, defaults and validation (`plugins/shadow/config.go`) |
 
 If the plugin's thresholds, verdict rules or demo numbers change, update those files.
 
