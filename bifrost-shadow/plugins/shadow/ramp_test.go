@@ -3,6 +3,7 @@ package shadow
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -46,13 +47,17 @@ func (r *rampRecorder) weights() []float64 {
 
 func intp(n int) *int { return &n }
 
-// promoteRamp records a promotion with a ramp, the way the gateway does.
-func promoteRamp(t *testing.T, p *Plugin, req RampRequest) RolloutEvent {
+// promoteRamp records a promotion with a ramp, the way the gateway does, at
+// time at. Tests date ramps in the past: a live response whose latency
+// reaches back before the current step started is not counted, so steps that
+// start "now" would ignore the 300 ms responses serveLive sends.
+func promoteRamp(t *testing.T, p *Plugin, req RampRequest, at time.Time) RolloutEvent {
 	t.Helper()
 	plan, weight, err := p.PlanRamp(req, nil)
 	require.NoError(t, err)
 	exp := p.config.Experiments[0]
 	ev, err := p.RecordRollout(RolloutEvent{
+		At:         at,
 		Action:     RolloutPromote,
 		Experiment: exp.Name,
 		Source:     exp.Source,
@@ -65,6 +70,10 @@ func promoteRamp(t *testing.T, p *Plugin, req RampRequest) RolloutEvent {
 	require.NoError(t, err)
 	return ev
 }
+
+// anHourAgo is the start of a test's timeline: every guard pass happens at a
+// later instant that is still in the past.
+func anHourAgo() time.Time { return time.Now().Add(-time.Hour) }
 
 func onlyCanary(t *testing.T, p *Plugin) Canary {
 	t.Helper()
@@ -79,9 +88,9 @@ func TestRampAdvancesStepByStepAndCompletes(t *testing.T) {
 	p.SetRampHook(ramps.hook)
 	p.SetRollbackHook((&rollbackRecorder{}).hook)
 
-	ev := promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(60)})
+	start := anHourAgo()
+	ev := promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(60)}, start)
 	require.NotNil(t, ev.Ramp)
-	start := ev.At
 	assert.Equal(t, 0.1, ev.Weight, "the canary starts at steps[0]")
 	assert.Equal(t, 0, ev.Ramp.CurrentStep)
 	assert.Equal(t, 10, ev.Ramp.MinRequests, "defaults to canary.min_requests")
@@ -94,12 +103,14 @@ func TestRampAdvancesStepByStepAndCompletes(t *testing.T) {
 	require.NotNil(t, c.Ramp)
 	assert.Equal(t, int64(9), c.Ramp.StepRequests)
 	assert.Equal(t, "step 1 of 3 (10%): 9 of 10 candidate requests", c.Ramp.Reason)
-	rolled, advanced := p.guardPass(start.Add(time.Hour))
+	rolled, advanced := p.guardPass(start.Add(50 * time.Minute))
 	assert.Zero(t, rolled)
 	assert.Zero(t, advanced, "too few candidate requests, however long it waits")
 
 	serveLive(t, p, candidateModel, 1, 0, 300)
-	assert.Contains(t, onlyCanary(t, p).Ramp.Reason, "s left of a 60s hold")
+	exp := p.config.Experiments[0]
+	early := p.canaryView(p.rollouts.lookup(exp.Name, exp.Candidates[0].String()), nil, start.Add(30*time.Second))
+	assert.Equal(t, "step 1 of 3 (10%): 30s left of a 60s hold", early.Ramp.Reason)
 	_, advanced = p.guardPass(start.Add(30 * time.Second))
 	assert.Zero(t, advanced, "the hold has not passed")
 
@@ -164,7 +175,7 @@ func TestRampUnhealthyStepRollsBack(t *testing.T) {
 	rollbacks := &rollbackRecorder{}
 	p.SetRampHook(ramps.hook)
 	p.SetRollbackHook(rollbacks.hook)
-	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5}, HoldSeconds: intp(0)})
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5}, HoldSeconds: intp(0)}, anHourAgo())
 
 	serveLive(t, p, candidateModel, 10, 8, 300)
 	assert.Contains(t, onlyCanary(t, p).Ramp.Reason, "held at step 1 of 2 (10%): the canary is unhealthy and the guard rolls it back")
@@ -188,10 +199,11 @@ func TestRampHoldsWhenUnhealthyWithoutAutoRollback(t *testing.T) {
 	rollbacks := &rollbackRecorder{}
 	p.SetRampHook(ramps.hook)
 	p.SetRollbackHook(rollbacks.hook)
-	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)})
+	start := anHourAgo()
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)}, start)
 
 	serveLive(t, p, candidateModel, 10, 0, 300)
-	rolled, advanced := p.guardPass(time.Now())
+	rolled, advanced := p.guardPass(start.Add(time.Minute))
 	assert.Zero(t, rolled)
 	assert.Equal(t, 1, advanced)
 
@@ -211,7 +223,7 @@ func TestOperatorPromotionReplacesOrCancelsTheRamp(t *testing.T) {
 	p := newTestPlugin(t, guardConfig())
 	ramps := &rampRecorder{}
 	p.SetRampHook(ramps.hook)
-	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.25, 0.5}, HoldSeconds: intp(0)})
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.25, 0.5}, HoldSeconds: intp(0)}, anHourAgo())
 	serveLive(t, p, candidateModel, 5, 0, 300)
 
 	// A promotion without a ramp cancels it and keeps the live statistics.
@@ -226,7 +238,7 @@ func TestOperatorPromotionReplacesOrCancelsTheRamp(t *testing.T) {
 	assert.Zero(t, advanced, "a cancelled ramp does not move")
 
 	// A new ramp replaces it, and its first step starts on fresh statistics.
-	ev = promoteRamp(t, p, RampRequest{Steps: []float64{0.3, 0.6}, HoldSeconds: intp(0)})
+	ev = promoteRamp(t, p, RampRequest{Steps: []float64{0.3, 0.6}, HoldSeconds: intp(0)}, anHourAgo())
 	assert.Equal(t, 0.3, ev.Weight)
 	c = onlyCanary(t, p)
 	require.NotNil(t, c.Ramp)
@@ -247,7 +259,7 @@ func TestOperatorPromotionReplacesOrCancelsTheRamp(t *testing.T) {
 // ramp step wins, and concurrent guard passes move a step once.
 func TestRampSkipsACanaryChangedMeanwhile(t *testing.T) {
 	p := newTestPlugin(t, guardConfig())
-	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)})
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)}, anHourAgo())
 	ramps := &rampRecorder{before: func() { promote(t, p, 0.2) }}
 	p.SetRampHook(ramps.hook)
 	serveLive(t, p, candidateModel, 10, 0, 300)
@@ -261,7 +273,7 @@ func TestRampSkipsACanaryChangedMeanwhile(t *testing.T) {
 		assert.NotEqual(t, RolloutRamp, e.Action)
 	}
 
-	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)})
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)}, anHourAgo())
 	ramps.before = nil
 	serveLive(t, p, candidateModel, 10, 0, 300)
 	var total atomic.Int64
@@ -281,21 +293,29 @@ func TestRampSkipsACanaryChangedMeanwhile(t *testing.T) {
 
 func TestRampHoldsWhenTheHookFailsOrIsMissing(t *testing.T) {
 	p := newTestPlugin(t, guardConfig())
-	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5}, HoldSeconds: intp(0)})
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5}, HoldSeconds: intp(0)}, anHourAgo())
 	serveLive(t, p, candidateModel, 10, 0, 300)
 	_, advanced := p.guardPass(time.Now())
 	assert.Zero(t, advanced, "no ramp hook wired")
 
-	ramps := &rampRecorder{err: context.DeadlineExceeded}
+	// The gateway refuses the step (for example the shares no longer fit, or
+	// the rule was disabled by hand): the ramp says why instead of "moving".
+	ramps := &rampRecorder{err: errors.New("candidate shares exceed 100%: candidates would get 120.00% of openai/gpt-big traffic")}
 	p.SetRampHook(ramps.hook)
-	_, advanced = p.guardPass(time.Now())
-	assert.Zero(t, advanced)
-	assert.Equal(t, 0.1, onlyCanary(t, p).Weight)
+	for i := 0; i < 3; i++ {
+		_, advanced = p.guardPass(time.Now())
+		assert.Zero(t, advanced)
+	}
+	c := onlyCanary(t, p)
+	assert.Equal(t, 0.1, c.Weight)
+	assert.Equal(t, "step 1 of 2 (10%) passed but cannot move to 50%: candidate shares exceed 100%: candidates would get 120.00% of openai/gpt-big traffic", c.Ramp.Reason)
 
 	ramps.err = nil
 	_, advanced = p.guardPass(time.Now())
 	assert.Equal(t, 1, advanced, "the next pass tries again")
-	assert.Equal(t, 0.5, onlyCanary(t, p).Weight)
+	c = onlyCanary(t, p)
+	assert.Equal(t, 0.5, c.Weight)
+	assert.Equal(t, "complete: the canary reached the last step, 50%", c.Ramp.Reason, "a new step forgets the old refusal")
 }
 
 func TestRampSurvivesRestart(t *testing.T) {
@@ -306,9 +326,10 @@ func TestRampSurvivesRestart(t *testing.T) {
 	p, err := Init(context.Background(), cfg, testLogger)
 	require.NoError(t, err)
 	p.SetRampHook((&rampRecorder{}).hook)
-	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)})
+	start := anHourAgo()
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)}, start)
 	serveLive(t, p, candidateModel, 10, 0, 300)
-	moved := time.Now()
+	moved := start.Add(time.Minute)
 	_, advanced := p.guardPass(moved)
 	require.Equal(t, 1, advanced)
 	require.NoError(t, p.Cleanup())
@@ -438,7 +459,8 @@ func TestRampUnderConcurrentTraffic(t *testing.T) {
 	ramps := &rampRecorder{}
 	p.SetRampHook(ramps.hook)
 	steps := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
-	promoteRamp(t, p, RampRequest{Steps: steps, HoldSeconds: intp(0)})
+	start := anHourAgo()
+	promoteRamp(t, p, RampRequest{Steps: steps, HoldSeconds: intp(0)}, start)
 
 	var traffic sync.WaitGroup
 	for g := 0; g < 4; g++ {
@@ -469,12 +491,12 @@ func TestRampUnderConcurrentTraffic(t *testing.T) {
 	}()
 	go func() {
 		defer readers.Done()
-		for {
+		for i := 1; ; i++ {
 			select {
 			case <-stop:
 				return
 			default:
-				p.guardPass(time.Now())
+				p.guardPass(start.Add(time.Duration(i) * time.Millisecond))
 			}
 		}
 	}()
@@ -491,4 +513,94 @@ func TestRampUnderConcurrentTraffic(t *testing.T) {
 	c := onlyCanary(t, p)
 	assert.Equal(t, got[len(got)-1], c.Weight)
 	assert.Equal(t, len(got), c.Ramp.CurrentStep)
+}
+
+// A response that started before the current step was routed at the previous
+// weight: it does not count toward the new step. Failures carry no latency
+// and are counted.
+func TestRampIgnoresResponsesFromBeforeTheStep(t *testing.T) {
+	p := newTestPlugin(t, guardConfig())
+	promoteRamp(t, p, RampRequest{Steps: []float64{0.1, 0.5}, HoldSeconds: intp(0)}, time.Now())
+	serveLive(t, p, candidateModel, 3, 0, 5000) // started 5 s before the step
+	serveLive(t, p, primaryModel, 3, 0, 5000)
+	h := onlyCanary(t, p).Health
+	assert.Zero(t, h.Candidate.Requests)
+	assert.Zero(t, h.Source.Requests)
+
+	serveLive(t, p, candidateModel, 2, 1, 0) // undated: one failure, one response without latency
+	h = onlyCanary(t, p).Health
+	assert.Equal(t, int64(2), h.Candidate.Requests)
+	assert.Equal(t, int64(1), h.Candidate.Errors)
+
+	// A canary without a ramp counts everything, as before.
+	promote(t, p, 0.1)
+	serveLive(t, p, candidateModel, 3, 0, 5000)
+	assert.Equal(t, int64(5), onlyCanary(t, p).Health.Candidate.Requests)
+}
+
+// unsavable points the rollout book at a directory that does not exist.
+func unsavable(t *testing.T, p *Plugin) {
+	p.rollouts.mu.Lock()
+	p.rollouts.path = filepath.Join(t.TempDir(), "gone", "shadow.jsonl.rollouts.json")
+	p.rollouts.mu.Unlock()
+}
+
+// A rollout log that cannot be written does not undo or misreport a change
+// that already happened: the event is applied, and the guard counts the step
+// or rollback as done instead of retrying it.
+func TestRolloutSaveFailureStillApplies(t *testing.T) {
+	p := newTestPlugin(t, guardConfig())
+	ramps := &rampRecorder{}
+	rollbacks := &rollbackRecorder{}
+	p.SetRampHook(ramps.hook)
+	p.SetRollbackHook(rollbacks.hook)
+	unsavable(t, p)
+
+	plan, weight, err := p.PlanRamp(RampRequest{Steps: []float64{0.1, 0.5, 1}, HoldSeconds: intp(0)}, nil)
+	require.NoError(t, err)
+	exp := p.config.Experiments[0]
+	ev, err := p.RecordRollout(RolloutEvent{At: anHourAgo(), Action: RolloutPromote, Experiment: exp.Name, Source: exp.Source, Candidate: exp.Candidates[0], Weight: weight, Ramp: plan})
+	assert.ErrorIs(t, err, ErrRolloutNotSaved)
+	assert.NotEmpty(t, ev.ID)
+	require.Len(t, p.Rollouts().Canaries, 1, "applied in memory")
+
+	serveLive(t, p, candidateModel, 10, 0, 300)
+	_, advanced := p.guardPass(time.Now().Add(-time.Minute))
+	assert.Equal(t, 1, advanced, "the step happened, so it is not reported as held")
+	_, advanced = p.guardPass(time.Now().Add(-time.Minute))
+	assert.Zero(t, advanced, "and it is not taken twice")
+	assert.Equal(t, []float64{0.5}, ramps.weights())
+	assert.Equal(t, 0.5, onlyCanary(t, p).Weight)
+
+	serveLive(t, p, candidateModel, 10, 10, 300)
+	rolled, _ := p.guardPass(time.Now())
+	assert.Equal(t, 1, rolled)
+	assert.Empty(t, p.Rollouts().Canaries)
+	assert.Len(t, rollbacks.calls, 1)
+}
+
+// BenchmarkPostLLMHookRampingCanary: a response a ramping canary counts (one
+// clock read more than a plain canary, to date it against the step).
+func BenchmarkPostLLMHookRampingCanary(b *testing.B) {
+	resetLedgers()
+	p, err := Init(context.Background(), guardConfig(), testLogger)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() { _ = p.Cleanup() })
+	plan, weight, err := p.PlanRamp(RampRequest{Steps: []float64{0.1, 0.5}}, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	exp := p.config.Experiments[0]
+	if _, err := p.RecordRollout(RolloutEvent{At: time.Now().Add(-time.Hour), Action: RolloutPromote, Experiment: exp.Name, Source: exp.Source, Candidate: exp.Candidates[0], Weight: weight, Ramp: plan}); err != nil {
+		b.Fatal(err)
+	}
+	ctx := requestCtx("")
+	resp := liveResponse(primaryModel, candidateModel, 100)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = p.PostLLMHook(ctx, resp, nil)
+	}
 }

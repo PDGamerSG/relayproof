@@ -160,6 +160,10 @@ type CanaryRamp struct {
 	Completed bool `json:"completed"`
 	// Reason says what the ramp is waiting for. Live views only.
 	Reason string `json:"reason,omitempty"`
+
+	// blocked is why the gateway refused to move this step on, set on live
+	// views only (see canaryState.stuck).
+	blocked string
 }
 
 func (r *CanaryRamp) clone() *CanaryRamp {
@@ -262,6 +266,11 @@ type RampFunc func(ctx context.Context, experiment, candidate string, weight flo
 // canary changed since it was judged; the guard judges it again on its next pass.
 var ErrCanaryChanged = errors.New("shadow: canary changed since it was judged")
 
+// ErrRolloutNotSaved is returned by RecordRollout when the event was applied
+// (the log and the active canaries changed in memory) but could not be written
+// to <persist_path>.rollouts.json. Callers treat it as done, with a warning.
+var ErrRolloutNotSaved = errors.New("shadow: rollout applied but not saved")
+
 // targetStats accumulates live traffic for one canary target.
 type targetStats struct {
 	requests int64
@@ -305,6 +314,10 @@ type canaryState struct {
 	candidate targetStats
 	// busy is set while the guard rolls the canary back or moves its ramp on.
 	busy atomic.Bool
+	// stuck is why the ramp hook last refused to move the step that started
+	// at stuckAt on; a new step clears it. Guarded by mu.
+	stuck   string
+	stuckAt time.Time
 }
 
 func (c *canaryState) key() string { return c.Experiment + "\x00" + c.Candidate.String() }
@@ -316,7 +329,10 @@ func (c *canaryState) ramping() bool {
 	return c.Ramp != nil && !c.Ramp.Completed
 }
 
-// observe counts one live response to a source-model request.
+// observe counts one live response to a source-model request. For a ramping
+// canary, a response that started before the current step (its latency
+// reaches back past step_started_at) was routed at the previous weight and
+// is not counted; failures carry no latency and are always counted.
 func (c *canaryState) observe(served ModelRef, latencyMs int64, failed bool) {
 	var t *targetStats
 	switch {
@@ -328,6 +344,10 @@ func (c *canaryState) observe(served ModelRef, latencyMs int64, failed bool) {
 		return // a fallback or another rule served it
 	}
 	c.mu.Lock()
+	if c.Ramp != nil && latencyMs > 0 && time.Now().Add(-time.Duration(latencyMs)*time.Millisecond).Before(c.Ramp.StepStartedAt) {
+		c.mu.Unlock()
+		return
+	}
 	t.observe(latencyMs, failed)
 	c.mu.Unlock()
 }
@@ -461,7 +481,8 @@ func (b *rolloutBook) publishLocked() {
 	b.active.Store(&list)
 }
 
-// record appends an event and applies it to the active canaries.
+// record appends an event and applies it to the active canaries, then saves
+// the book. The change is applied even when the save fails.
 func (b *rolloutBook) record(ev RolloutEvent) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -479,6 +500,7 @@ func (b *rolloutBook) record(ev RolloutEvent) error {
 			// and keeps the live statistics gathered so far; with one, the new
 			// ramp's first step is judged on its own traffic.
 			existing.Ramp = ev.Ramp.clone()
+			existing.stuck = ""
 			if ev.Ramp != nil {
 				existing.source, existing.candidate = targetStats{}, targetStats{}
 			}
@@ -504,6 +526,7 @@ func (b *rolloutBook) record(ev RolloutEvent) error {
 				existing.RuleID, existing.RuleName = ev.RuleID, ev.RuleName
 			}
 			existing.Ramp = ev.Ramp.clone()
+			existing.stuck = ""
 			// Each step is judged on its own traffic.
 			existing.source, existing.candidate = targetStats{}, targetStats{}
 			existing.mu.Unlock()
@@ -623,7 +646,9 @@ func (p *Plugin) lookupPair(experiment, candidate string) (*Experiment, *ModelRe
 // re-weights) a watched canary and starts, replaces or cancels its ramp; a ramp
 // event moves the canary to the ramp's next step; a rollback stops watching it.
 // An event's ramp is normalized: a promotion's starts at step 0, and every
-// step starts at the event's time.
+// step starts at the event's time. An invalid event returns an error and
+// changes nothing; ErrRolloutNotSaved means the event was applied in memory
+// but not written to disk.
 func (p *Plugin) RecordRollout(ev RolloutEvent) (RolloutEvent, error) {
 	if ev.ID == "" {
 		ev.ID = uuid.NewString()
@@ -667,7 +692,10 @@ func (p *Plugin) RecordRollout(ev RolloutEvent) (RolloutEvent, error) {
 		}
 		ev.Ramp = r
 	}
-	return ev, p.rollouts.record(ev)
+	if err := p.rollouts.record(ev); err != nil {
+		return ev, fmt.Errorf("%w: %w", ErrRolloutNotSaved, err)
+	}
+	return ev, nil
 }
 
 // Rollouts returns the active canaries with their live health, and the rollout
@@ -705,11 +733,16 @@ func (p *Plugin) canaryView(c *canaryState, verdicts map[string]string, now time
 	c.mu.Lock()
 	view := c.Canary
 	view.Health = CanaryHealth{Source: c.source.health(), Candidate: c.candidate.health()}
+	var stuck string
+	if view.Ramp != nil && c.stuck != "" && c.stuckAt.Equal(view.Ramp.StepStartedAt) {
+		stuck = c.stuck
+	}
 	c.mu.Unlock()
 	view.Health.Verdict = verdicts[c.key()]
 	view.Health.Status, view.Health.Reason = p.judgeCanary(&view.Health, view.Override)
 	if view.Ramp != nil {
 		view.Ramp = view.Ramp.clone()
+		view.Ramp.blocked = stuck
 		view.Ramp.StepRequests = view.Health.Candidate.Requests
 		_, view.Ramp.Reason = p.rampDue(&view, now)
 	}
@@ -741,6 +774,10 @@ func (p *Plugin) rampDue(view *Canary, now time.Time) (bool, string) {
 	}
 	if view.Health.Status != CanaryHealthy {
 		return false, fmt.Sprintf("%s: waiting for the guard to judge health (%s)", at, view.Health.Reason)
+	}
+	if r.blocked != "" {
+		// Still due, so the guard keeps trying; the reason says why it has not moved.
+		return true, fmt.Sprintf("%s passed but cannot move to %s: %s", at, pct(r.NextWeight), r.blocked)
 	}
 	return true, fmt.Sprintf("%s passed: moving to %s at the guard's next check", at, pct(r.NextWeight))
 }
@@ -916,7 +953,7 @@ func (p *Plugin) rollBack(c *canaryState, view Canary) bool {
 			Actor:      "canary_guard",
 			Health:     &health,
 		})
-		return err
+		return p.appliedIfOnlyUnsaved(err)
 	}
 	ctx, cancel := context.WithTimeout(p.ctx, 30*time.Second)
 	err := (*hookPtr)(ctx, view.Experiment, view.Candidate.String(), reason, current, done)
@@ -986,17 +1023,35 @@ func (p *Plugin) advanceRamp(c *canaryState, view Canary, now time.Time) bool {
 			Health:     &health,
 			Ramp:       next,
 		})
-		return err
+		return p.appliedIfOnlyUnsaved(err)
 	}
 	ctx, cancel := context.WithTimeout(p.ctx, 30*time.Second)
 	err := (*hookPtr)(ctx, view.Experiment, view.Candidate.String(), weight, current, done)
 	cancel()
 	if err != nil {
-		if !errors.Is(err, ErrCanaryChanged) {
+		if errors.Is(err, ErrCanaryChanged) {
+			return false
+		}
+		c.mu.Lock()
+		repeated := c.stuck == err.Error() && c.stuckAt.Equal(r.StepStartedAt)
+		c.stuck, c.stuckAt = err.Error(), r.StepStartedAt
+		c.mu.Unlock()
+		if !repeated { // log once per step and cause, not on every pass
 			p.logger.Warn("shadow: moving canary %s -> %s to %s failed, the ramp holds: %v", view.Source, view.Candidate, pct(weight), err)
 		}
 		return false
 	}
 	p.logger.Info("shadow: canary %s -> %s moved to %s (%s)", view.Source, view.Candidate, pct(weight), action)
 	return true
+}
+
+// appliedIfOnlyUnsaved turns ErrRolloutNotSaved from a guard's done callback
+// into success: the rule and the book already changed, so the guard must not
+// report the action as failed or try it again.
+func (p *Plugin) appliedIfOnlyUnsaved(err error) error {
+	if errors.Is(err, ErrRolloutNotSaved) {
+		p.logger.Warn("%v", err)
+		return nil
+	}
+	return err
 }
