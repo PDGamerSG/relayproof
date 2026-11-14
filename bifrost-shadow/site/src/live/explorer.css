@@ -1,0 +1,307 @@
+/* Comparisons explorer */
+
+.lv-x__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.lv-x__filters label {
+  display: grid;
+  gap: 4px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+.lv-x__filters select,
+.lv-x__filters input {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--step-0);
+}
+.lv-x__filters select:focus-visible,
+.lv-x__filters input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.lv-x__search {
+  flex: 1 1 260px;
+}
+.lv-x__search input {
+  width: 100%;
+}
+
+.lv-x__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  margin-bottom: 22px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--line);
+  overflow: hidden;
+}
+.lv-x__stats > div {
+  padding: 12px 16px;
+  background: var(--lit);
+}
+.lv-x__stats dt {
+  font-family: var(--font);
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+.lv-x__stats dd {
+  margin: 2px 0 0;
+  font-size: var(--step-1);
+  font-weight: 650;
+}
+.lv-x__stats small {
+  font-size: 0.75rem;
+  font-weight: 450;
+  color: var(--ink-3);
+}
+
+.lv-x__body {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 1000px) {
+  .lv-x__body {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 28px;
+  }
+  .lv-x__detail {
+    position: sticky;
+    top: 112px;
+    max-height: calc(100vh - 128px);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .lv-x__back {
+    display: none;
+  }
+}
+@media (max-width: 999px) {
+  .lv-x__body[data-open="true"] .lv-x__list,
+  .lv-x__body[data-open="false"] .lv-x__detail {
+    display: none;
+  }
+}
+
+.lv-x__rows {
+  display: grid;
+  gap: 6px;
+}
+.lv-x__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+.lv-x__row:hover {
+  border-color: var(--line-2);
+}
+.lv-x__row[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: 3px 3px 0 rgb(var(--shade) / 0.35);
+}
+.lv-x__row:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.lv-x__prompt {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--step-0);
+  line-height: 1.4;
+}
+.lv-x__meta {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--ink-2);
+}
+.lv-x__meta .model {
+  font-size: 0.75rem;
+}
+.lv-x__gap {
+  color: var(--fail);
+}
+
+.lv-x__outcome {
+  align-self: start;
+  display: inline-block;
+  min-width: 64px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-align: center;
+  background: rgb(12 143 82 / 0.12);
+  color: var(--ready);
+}
+.lv-x__outcome[data-outcome="fail"] {
+  background: rgb(217 58 64 / 0.12);
+  color: var(--fail);
+}
+.lv-x__outcome[data-outcome="error"] {
+  background: rgb(184 110 0 / 0.14);
+  color: var(--amber);
+}
+.lv-x__outcome[data-outcome="unscored"] {
+  background: rgb(15 16 48 / 0.07);
+  color: var(--ink-2);
+}
+.lv-x__more {
+  margin-top: 14px;
+}
+.lv-x__clear {
+  font-size: inherit;
+}
+
+.lv-x__hint {
+  display: grid;
+  gap: 8px;
+  padding: 28px;
+  border: 1.5px dashed var(--line-2);
+  border-radius: var(--radius-l);
+  color: var(--ink-2);
+}
+
+/* One request, every answer */
+
+.lv-x__req {
+  display: grid;
+  gap: 14px;
+  padding: clamp(16px, 2vw, 24px);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-l);
+  background: var(--lit);
+  box-shadow: 6px 6px 0 rgb(var(--shade) / 0.18);
+}
+.lv-x__req-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.lv-x__label {
+  font-weight: 650;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.lv-x__prompt-full {
+  font-size: var(--step-1);
+  font-weight: 560;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.lv-x__ans {
+  padding: 14px 16px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line);
+  background: var(--daylight);
+}
+.lv-x__ans[data-role="primary"] {
+  background: var(--lit);
+  border: 1.5px solid var(--line-2);
+}
+.lv-x__ans[data-role="candidate"] {
+  background: rgb(var(--shade) / 0.05);
+  border-color: rgb(var(--shade) / 0.18);
+}
+.lv-x__ans[data-current="true"] {
+  border-color: rgb(var(--shade) / 0.5);
+}
+.lv-x__who {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+  font-size: var(--step-0);
+  font-weight: 600;
+}
+.lv-x__text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--step-0);
+  line-height: 1.6;
+}
+.lv-x__tool {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-s);
+  background: var(--umbra);
+  color: var(--moon);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.lv-x__diff ins {
+  text-decoration: none;
+  background: rgb(255 194 26 / 0.45);
+  border-radius: 2px;
+}
+.lv-x__diff del {
+  color: var(--fail);
+  text-decoration-thickness: 1.5px;
+  opacity: 0.8;
+}
+.lv-x__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px 16px;
+  margin-top: 6px;
+}
+.lv-x__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.lv-x__check input {
+  accent-color: var(--ink);
+  width: 16px;
+  height: 16px;
+}
+.lv-x__judge {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(var(--shade) / 0.15);
+  font-size: var(--step-0);
+}
+.lv-x__judge b {
+  font-size: var(--step-1);
+}
+.lv-x__signals {
+  margin-top: 8px;
+}
+.lv-x__foot {
+  display: flex;
+  justify-content: flex-end;
+}
