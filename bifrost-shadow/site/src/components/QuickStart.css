@@ -1,14 +1,82 @@
+.start {
+  border-top: 1px solid var(--line-2);
+}
+
 .start__grid {
   display: grid;
-  gap: 40px;
+  gap: 24px;
 }
+@media (min-width: 1000px) {
+  .start__grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 28px;
+    align-items: stretch;
+  }
+}
+
+/* Two paths, side by side */
+
+.path {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-l);
+  background: var(--lit);
+}
+.path--live {
+  border: 1.5px solid var(--ink);
+}
+.path__lede {
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.path__lede .model {
+  color: var(--ink);
+}
+.path__list {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+.path__list li {
+  position: relative;
+  padding: 10px 0 10px 26px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--step-0);
+  line-height: 1.4;
+}
+.path__list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.95em;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: var(--sun);
+}
+.path__actions {
+  margin-top: 8px;
+}
+.path__fine {
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+
+/* Code panel: dark, like the terminal it stands for */
 
 .code {
   min-width: 0;
-  border: 1px solid var(--line-dark-2);
   border-radius: var(--radius-m);
-  background: var(--umbra-2);
+  background: var(--umbra);
+  color: var(--moon);
   overflow: hidden;
+}
+.code :focus-visible {
+  outline-color: var(--sun);
 }
 
 .code__bar {
@@ -29,16 +97,14 @@
 }
 .code__tabs button {
   position: relative;
-  padding: 15px 18px 14px;
+  padding: 14px 16px 13px;
   font-size: var(--step-0);
   font-weight: 560;
   color: var(--moon-2);
   white-space: nowrap;
   transition: color 160ms ease;
 }
-.code__tabs button:hover {
-  color: var(--moon);
-}
+.code__tabs button:hover,
 .code__tabs button[aria-selected="true"] {
   color: var(--moon);
 }
@@ -87,23 +153,22 @@
 }
 
 .code__panel {
-  animation: panel-in 260ms var(--ease-out) both;
+  animation: panel-in 220ms var(--ease-out) both;
 }
 @keyframes panel-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
 }
 .code__file {
-  padding: 14px 22px 0;
+  padding: 14px 20px 0;
   font-size: 0.75rem;
   color: var(--moon-3);
 }
 .code__pre {
   margin: 0;
-  padding: 10px 22px 24px;
-  font-size: 0.84rem;
+  padding: 10px 20px 22px;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--moon);
   overflow-x: auto;
@@ -113,44 +178,34 @@
   color: var(--moon-3);
 }
 
-.start__side {
-  display: grid;
-  gap: 28px;
-  align-content: start;
-}
 .start__note {
-  color: var(--moon-2);
-  max-width: 34em;
-  text-wrap: pretty;
-  animation: panel-in 260ms var(--ease-out) both;
-}
-.start__needs dt {
-  margin-bottom: 8px;
-  font-size: var(--step--1);
-  font-weight: 620;
-  color: var(--moon-2);
-}
-.start__needs dd {
-  padding-block: 9px;
-  border-top: 1px solid var(--line-dark);
+  color: var(--ink-2);
   font-size: var(--step-0);
+  text-wrap: pretty;
+  animation: panel-in 220ms var(--ease-out) both;
 }
-.start__docs {
-  justify-self: start;
+.start__needs {
+  font-size: var(--step--1);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.start__needs code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgb(15 16 48 / 0.07);
+  color: var(--ink);
+}
+.start__needs .link {
   font-weight: 600;
-  color: var(--sun);
-}
-
-@media (min-width: 960px) {
-  .start__grid {
-    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
-    gap: 56px;
-  }
+  color: var(--ink);
 }
 
 @media (max-width: 560px) {
+  .path {
+    padding: 20px 16px;
+  }
   .code__tabs button {
-    padding-inline: 13px;
+    padding-inline: 12px;
   }
   .code__copy {
     padding: 0 10px;
@@ -164,6 +219,6 @@
   }
   .code__file,
   .code__pre {
-    padding-inline: 16px;
+    padding-inline: 14px;
   }
 }

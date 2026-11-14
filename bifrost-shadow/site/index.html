@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#eff1f6" />
-    <title>RelayProof: test a cheaper model on live traffic</title>
+    <meta name="theme-color" content="#f3f4f8" />
+    <title>RelayProof: prove a cheaper model is good enough before you switch</title>
     <meta
       name="description"
-      content="Shadow traffic evaluation for the Bifrost AI gateway. Replay a sample of live chat traffic against cheaper models after the answer is sent, score them against the model that answered, and promote the one that holds up to a canary."
+      content="A plugin for the Bifrost AI gateway. It re-runs a sample of your real requests on cheaper models after your users have their answers, has a judge compare every pair, and tells you, with a 95% confidence bound, when a candidate is safe to switch to. Promote it to a canary with one call; the gateway rolls it back if it misbehaves."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
