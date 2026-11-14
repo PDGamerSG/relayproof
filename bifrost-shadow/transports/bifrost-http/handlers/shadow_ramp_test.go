@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -18,11 +20,14 @@ func rampBody(candidate, ramp, extra string) string {
 	return fmt.Sprintf(`{"experiment":%q,"candidate":%q,"ramp":%s%s}`, testExp, candidate, ramp, extra)
 }
 
-// serveCanary feeds live responses for gpt-4o requests served by served.
+// serveCanary feeds live responses for gpt-4o requests served by served. They
+// carry no latency: a ramping canary skips responses whose latency reaches back
+// before its step began, and these arrive right after the promotion.
 func serveCanary(t *testing.T, p *shadow.Plugin, served string, n int) {
 	t.Helper()
 	for i := 0; i < n; i++ {
 		resp := &schemas.BifrostResponse{ChatResponse: chatResp(served, "Paris.")}
+		resp.ChatResponse.ExtraFields.Latency = 0
 		resp.ChatResponse.ExtraFields.RoutingInfo.RequestedProvider = "openai"
 		resp.ChatResponse.ExtraFields.RoutingInfo.RequestedModel = "gpt-4o"
 		_, _, err := p.PostLLMHook(schemas.NewBifrostContext(context.Background(), schemas.NoDeadline), resp, nil)
@@ -225,4 +230,106 @@ func TestShadowRampHookUsedByCanaryGuard(t *testing.T) {
 	assert.Equal(t, rules.rules[0].ID, ev.RuleID)
 	require.NotNil(t, ev.Health)
 	assert.Equal(t, int64(5), ev.Health.Candidate.Requests)
+}
+
+// Regression for the review finding "a promotion checks a ramp's peak only
+// against the other candidates' current shares": B promoted to 50% while A
+// ramps to 100% left A unable to finish. Such a promotion is now refused.
+func TestShadowPromoteRefusesSharesAnotherRampNeeds(t *testing.T) {
+	p := newRolloutPlugin(t, 40, &shadow.CanaryConfig{AutoRollback: true, MinRequests: 5})
+	rules := &memRules{}
+	h := NewShadowHandler(func() ShadowReader { return p }, rules)
+	ctx := postCtx(rampBody(testMini, `{"steps":[0.1,1]}`, ""))
+	h.promote(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+
+	ctx = postCtx(promoteBody(testLlama, 0.5, `,"override_reason":"x"`))
+	h.promote(ctx)
+	assert.Equal(t, fasthttp.StatusConflict, ctx.Response.StatusCode())
+	assert.Contains(t, string(ctx.Response.Body()), "50% for openai/llama-3.1-8b plus 100% that the other candidates of openai/gpt-4o will hold comes to more than 100% (openai/gpt-4o-mini is ramping to 100%)")
+	ctx = postCtx(rampBody(testLlama, `{"steps":[0.05,0.2]}`, `,"override_reason":"x"`))
+	h.promote(ctx)
+	assert.Equal(t, fasthttp.StatusConflict, ctx.Response.StatusCode())
+	assert.Contains(t, string(ctx.Response.Body()), "a ramp to 20% for openai/llama-3.1-8b")
+	assert.Equal(t, map[string]float64{testSource: 0.9, testMini: 0.1}, rules.servingShares(gpt4o), "nothing is written")
+
+	// A ramp to 50% leaves room for 50%.
+	ctx = postCtx(rampBody(testMini, `{"steps":[0.1,0.5]}`, ""))
+	h.promote(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+	ctx = postCtx(promoteBody(testLlama, 0.6, `,"override_reason":"x"`))
+	h.promote(ctx)
+	assert.Equal(t, fasthttp.StatusConflict, ctx.Response.StatusCode())
+	ctx = postCtx(promoteBody(testLlama, 0.5, `,"override_reason":"x"`))
+	h.promote(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+
+	// Once A's ramp is over (here: cancelled by a plain promotion), only its share counts.
+	ctx = postCtx(promoteBody(testMini, 0.1, ""))
+	h.promote(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+	ctx = postCtx(promoteBody(testLlama, 0.9, `,"override_reason":"x"`))
+	h.promote(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+}
+
+// A ramp step never turns a canary rule an operator disabled back on: the
+// ramp holds until the rule is enabled again.
+func TestShadowRampHookHoldsWhileTheRuleIsDisabled(t *testing.T) {
+	p := newRolloutPlugin(t, 40, &shadow.CanaryConfig{AutoRollback: true, MinRequests: 5})
+	rules := &memRules{}
+	h := NewShadowHandler(func() ShadowReader { return p }, rules)
+	ctx := postCtx(rampBody(testMini, `{"steps":[0.1,0.5]}`, ""))
+	h.promote(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+	off := false
+	rules.rules[0].Enabled = &off
+
+	hook := NewShadowRampHook(p, rules)
+	err := hook(context.Background(), testExp, testMini, 0.5, nil, func(string, string) error { return nil })
+	require.ErrorIs(t, err, errShadowRuleDisabled)
+	assert.Contains(t, err.Error(), "the ramp holds until it is enabled again")
+	assert.False(t, rules.rules[0].EnabledValue(), "still disabled")
+	assert.InDelta(t, 0.1, targetShare(rules, testMini), 1e-9)
+
+	on := true
+	rules.rules[0].Enabled = &on
+	require.NoError(t, hook(context.Background(), testExp, testMini, 0.5, nil, func(string, string) error { return nil }))
+	assert.True(t, rules.rules[0].EnabledValue())
+	assert.InDelta(t, 0.5, targetShare(rules, testMini), 1e-9)
+}
+
+func targetShare(rules *memRules, ref string) float64 {
+	rules.mu.Lock()
+	defer rules.mu.Unlock()
+	for _, t := range rules.rules[0].Targets {
+		if targetRef(t).String() == ref {
+			return t.Weight
+		}
+	}
+	return 0
+}
+
+// A rollout log that cannot be written is a warning: the promotion and the
+// rollback took effect and say so.
+func TestShadowRolloutLogNotSavedIsAWarning(t *testing.T) {
+	p := newRolloutPlugin(t, 40, nil)
+	require.NoError(t, os.RemoveAll(filepath.Dir(p.Config().PersistPath)))
+	rules := &memRules{}
+	h := NewShadowHandler(func() ShadowReader { return p }, rules)
+
+	ctx := postCtx(rampBody(testMini, `{"steps":[0.1,0.5]}`, ""))
+	h.promote(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+	body := decode(t, ctx)
+	assert.Contains(t, fmt.Sprint(body["warnings"]), "the promotion is in effect, but the rollout log could not be written to disk")
+	assert.NotNil(t, body["event"])
+	assert.NotNil(t, body["ramp"])
+	require.Len(t, p.Rollouts().Canaries, 1)
+
+	ctx = postCtx(fmt.Sprintf(`{"experiment":%q,"candidate":%q}`, testExp, testMini))
+	h.rollback(ctx)
+	require.Equal(t, fasthttp.StatusOK, ctx.Response.StatusCode(), string(ctx.Response.Body()))
+	assert.NotNil(t, decode(t, ctx)["event"])
+	assert.Empty(t, p.Rollouts().Canaries)
 }

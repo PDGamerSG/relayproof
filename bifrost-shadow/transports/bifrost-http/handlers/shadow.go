@@ -289,7 +289,7 @@ func (h *ShadowHandler) promote(ctx *fasthttp.RequestCtx) {
 			"warnings":  result.Warnings,
 			"rule":      result.Rule,
 		}, fasthttp.StatusConflict)
-	case errors.Is(err, configstore.ErrRoutingRulePriorityTaken), errors.Is(err, configstore.ErrAlreadyExists):
+	case errors.Is(err, configstore.ErrRoutingRulePriorityTaken), errors.Is(err, configstore.ErrAlreadyExists), errors.Is(err, errShadowRampConflict):
 		SendError(ctx, fasthttp.StatusConflict, err.Error())
 	case errors.Is(err, errShadowStore):
 		SendError(ctx, fasthttp.StatusInternalServerError, err.Error())
@@ -371,7 +371,8 @@ func (h *ShadowHandler) rollback(ctx *fasthttp.RequestCtx) {
 	if result.Rule != nil {
 		ev.RuleID, ev.RuleName = result.Rule.ID, result.Rule.Name
 	}
-	if recorded, recErr := p.RecordRollout(ev); recErr == nil {
+	// ErrRolloutNotSaved: the canary is closed in memory, only the file is behind.
+	if recorded, recErr := p.RecordRollout(ev); recErr == nil || errors.Is(recErr, shadow.ErrRolloutNotSaved) {
 		result.Event = &recorded
 	}
 	if result.Rule != nil {

@@ -90,6 +90,12 @@ var (
 	errShadowNoCanary     = errors.New("no canary rule found")
 	errShadowBadShares    = errors.New("candidate shares exceed 100%")
 	errShadowStore        = errors.New("routing rule store")
+	// errShadowRampConflict: the shares would fit now, but not once another
+	// candidate's ramp (or this one) reaches its last step.
+	errShadowRampConflict = errors.New("another canary's ramp needs that share")
+	// errShadowRuleDisabled: the canary rule was disabled by hand; a ramp step
+	// does not turn it back on.
+	errShadowRuleDisabled = errors.New("the canary rule is disabled")
 )
 
 // ruleOverlap is how a routing rule relates to requests for the source model.
@@ -363,25 +369,23 @@ func planShareEdit(ctx context.Context, p ShadowReader, store ShadowRoutingRules
 		if _, ok := shares[plan.Candidate.String()]; !ok {
 			return plan, fmt.Errorf("%w: no canary rule routes %s traffic to %s", errShadowNoCanary, plan.Source, plan.Candidate)
 		}
-	}
-	if e.peak > e.weight {
-		others := 0.0
-		for k, s := range shares {
-			if k != plan.Candidate.String() {
-				others += shadow.Round4(s.weight)
-			}
+		if !current.EnabledValue() {
+			return plan, fmt.Errorf("%w: %q was disabled outside the shadow API; the ramp holds until it is enabled again", errShadowRuleDisabled, current.Name)
 		}
-		if shadow.Round4(e.peak)+others > 1+1e-9 {
-			return plan, fmt.Errorf("%w: the ramp's last step (%g%%) and the other candidates' %g%% of %s traffic add up to more than 100%%", errShadowBadShares, shadow.Round4(e.peak*100), shadow.Round4(others*100), plan.Source)
-		}
+	} else if err := checkRampPeaks(p, plan, shares, e); err != nil {
+		return plan, err
 	}
 	shares[plan.Candidate.String()] = shadowShare{ref: plan.Candidate, weight: e.weight}
 	targets, names, err := buildCanaryTargets(plan.Source, shares)
 	if err != nil {
 		return plan, err
 	}
-	enabled := true
-	rule.Enabled = &enabled
+	if !e.existingOnly {
+		// A promotion turns the canary on; a ramp step never changes it (a
+		// disabled rule was refused above).
+		enabled := true
+		rule.Enabled = &enabled
+	}
 	rule.ChainRule = false
 	rule.Targets = targets
 	rule.Name = canaryRuleName(plan.Source, names)
@@ -419,6 +423,53 @@ func planShareEdit(ctx context.Context, p ShadowReader, store ShadowRoutingRules
 		return plan, err
 	}
 	return plan, nil
+}
+
+// checkRampPeaks refuses a promotion whose shares fit now but would not once
+// the ramps on the source's canary rule finish: the candidate's own ramp peak
+// (e.peak) plus, for every other candidate in the rule, the larger of its
+// current share and its unfinished ramp's last step. Without the check a
+// ramp could be accepted, or a second candidate added, that leaves a ramp
+// unable to reach its last step.
+func checkRampPeaks(p ShadowReader, plan *shadow.CanaryRule, shares map[string]shadowShare, e shareEdit) error {
+	peaks := map[string]float64{}
+	for _, c := range p.Rollouts().Canaries {
+		if c.Ramp == nil || c.Ramp.Completed || !sameRef(c.Source, plan.Source) || len(c.Ramp.Steps) == 0 {
+			continue
+		}
+		peaks[c.Candidate.String()] = c.Ramp.Steps[len(c.Ramp.Steps)-1]
+	}
+	own := shadow.Round4(e.peak)
+	total := own
+	others := 0.0
+	var ramping []string
+	for k, s := range shares {
+		if k == plan.Candidate.String() {
+			continue
+		}
+		w := shadow.Round4(s.weight)
+		if peak, ok := peaks[k]; ok && peak > w {
+			ramping = append(ramping, fmt.Sprintf("%s is ramping to %g%%", k, shadow.Round4(peak*100)))
+			w = peak
+		}
+		total += w
+		others += w
+	}
+	if total <= 1+1e-9 {
+		return nil
+	}
+	sort.Strings(ramping)
+	what := fmt.Sprintf("%g%%", shadow.Round4(e.weight*100))
+	if own > shadow.Round4(e.weight) {
+		what = fmt.Sprintf("a ramp to %g%%", shadow.Round4(own*100))
+	}
+	switch {
+	case len(ramping) > 0:
+		return fmt.Errorf("%w: %s for %s plus %g%% that the other candidates of %s will hold comes to more than 100%% (%s); roll back or re-promote that candidate first, or choose a smaller share", errShadowRampConflict, what, plan.Candidate, shadow.Round4(others*100), plan.Source, strings.Join(ramping, "; "))
+	case own > shadow.Round4(e.weight):
+		return fmt.Errorf("%w: the ramp's last step (%g%%) and the other candidates' %g%% of %s traffic add up to more than 100%%", errShadowBadShares, shadow.Round4(own*100), shadow.Round4(others*100), plan.Source)
+	}
+	return nil // current shares only: buildCanaryTargets refuses it with its own message
 }
 
 // saveShareEdit writes a planned share change to the routing-rule store.
@@ -482,7 +533,10 @@ func promoteShadowCandidate(ctx context.Context, p ShadowReader, store ShadowRou
 		Evidence:   &evidence,
 		Ramp:       in.ramp,
 	})
-	if err != nil {
+	switch {
+	case errors.Is(err, shadow.ErrRolloutNotSaved):
+		out.Warnings = append(out.Warnings, "the promotion is in effect, but the rollout log could not be written to disk: "+err.Error())
+	case err != nil:
 		out.Warnings = append(out.Warnings, "the routing rule was saved but the rollout log was not: "+err.Error())
 	}
 	out.Event = &ev
