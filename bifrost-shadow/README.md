@@ -17,11 +17,15 @@ tests, applied to `maximhq/bifrost@ed62e4b` by one script.
   runs on a hosted gateway calling real Claude models: `claude-opus-5-5` answers every request,
   `claude-sonnet-5-5` and `claude-haiku-5-5` run in its shadow, and `claude-opus-5-5` judges each
   pair. Ask your own question and see all three answers with the judge's verdict, watch the
-  scorecards fill, open the disagreements, promote a candidate to a canary, break it with a
-  simulated provider outage and watch the guard roll it back. **Sign in** points the same console
-  at your own gateway with its dashboard login or setup token.
-- [relayproof.pallabdas.me](https://relayproof.pallabdas.me): the overview, with a simulation that
-  needs no backend.
+  scorecards and their agreement trends fill, see where each candidate falls short by kind of
+  request, read any comparison with the candidate's answer diffed against the primary's, check how
+  far to trust the judge (position and length effects, a blind labelling loop that measures your
+  agreement with it), promote a candidate to a canary, break it with a simulated provider outage,
+  watch the guard roll it back, and print a readiness report for the candidate. **Sign in** points
+  the same console at your own gateway with its dashboard login or setup token.
+- [relayproof.pallabdas.me](https://relayproof.pallabdas.me): the overview: a real request from the
+  hosted gateway with all three answers, how it works with a simulation that needs no backend, a
+  savings calculator that prices the evidence a switch needs, and the demo scorecard.
 
 The hosted backend is [`deploy/`](deploy/): one container with the gateway on loopback, a fault
 proxy in front of `api.anthropic.com` (it fails a share of one model's calls on demand, so outages
@@ -207,7 +211,7 @@ upstream files are patches against `ed62e4b`.
 | `patches/0004-dashboard-api.patch` | Cache tags and API client export |
 | `patches/0005-dashboard-page.patch` | Sidebar entry, canary form schema, strings in all 11 UI languages |
 | `scripts/setup.sh` | Clone, overlay, patch, test, build |
-| `site/` | Landing page with a live simulation, the demo scorecard and the quick start (`pnpm dev`); not copied into the Bifrost tree |
+| `site/` | Landing page and the live console (`pnpm dev`); not copied into the Bifrost tree. See `site/README.md` |
 
 ## Design notes
 
