@@ -20,8 +20,10 @@ tests, applied to `maximhq/bifrost@ed62e4b` by one script.
   scorecards and their agreement trends fill, see where each candidate falls short by kind of
   request, read any comparison with the candidate's answer diffed against the primary's, check how
   far to trust the judge (position and length effects, a blind labelling loop that measures your
-  agreement with it), promote a candidate to a canary, break it with a simulated provider outage,
-  watch the guard roll it back, and print a readiness report for the candidate. **Sign in** points
+  agreement with it), watch for drift, compare latency and cost per model, re-run the readiness gate
+  under other thresholds in the policy lab, promote a candidate and let the guard ramp it up, break
+  it with a simulated provider outage, watch the guard roll it back, print a readiness report, and
+  build the plugin's config for your own gateway. **Sign in** points
   the same console at your own gateway with its dashboard login or setup token.
 - [relayproof.pallabdas.me](https://relayproof.pallabdas.me): the overview: a real request from the
   hosted gateway with all three answers, how it works with a simulation that needs no backend, a
