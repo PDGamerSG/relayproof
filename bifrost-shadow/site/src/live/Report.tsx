@@ -388,7 +388,10 @@ export function Report({
                       </p>
                     </div>
                   </div>
-                  <p className="small muted">
+                  <p className="small muted lv-rp__case-foot">
+                    <a className="link lv-rp__open" href={`#comparisons/${r.id}`}>
+                      Open this comparison
+                    </a>
                     {r.judge ? (
                       <>
                         Judge {r.judge.primary_score} vs {r.judge.candidate_score}

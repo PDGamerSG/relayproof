@@ -270,3 +270,26 @@
     display: block;
   }
 }
+@media (max-width: 640px) {
+  .lv-rp__controls label,
+  .lv-rp__controls select {
+    width: 100%;
+  }
+  .lv-rp__buttons {
+    margin-left: 0;
+  }
+}
+.lv-rp__case-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.lv-rp__open {
+  order: 2;
+  margin-left: auto;
+}
+@media print {
+  .lv-rp__open {
+    display: none;
+  }
+}

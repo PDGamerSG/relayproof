@@ -50,13 +50,15 @@ export function Feed({ data, now, limit = 8 }: { data: RecordsState; now: number
                     const o = outcomeOf(r);
                     return (
                       <li key={r.id} data-outcome={o}>
-                        <span className="model">{r.candidate.model}</span> {OUTCOME_LABEL[o]}
-                        {r.judge && (
-                          <span className="num muted">
-                            {" "}
-                            {r.judge.primary_score} vs {r.judge.candidate_score}
-                          </span>
-                        )}
+                        <a href={`#comparisons/${r.id}`}>
+                          <span className="model">{r.candidate.model}</span> {OUTCOME_LABEL[o]}
+                          {r.judge && (
+                            <span className="num muted">
+                              {" "}
+                              {r.judge.primary_score} vs {r.judge.candidate_score}
+                            </span>
+                          )}
+                        </a>
                       </li>
                     );
                   })}

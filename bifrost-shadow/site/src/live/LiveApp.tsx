@@ -55,7 +55,8 @@ export type TabId = (typeof TABS)[number]["id"];
 const LEGACY: Record<string, TabId> = { scorecards: "overview", history: "rollout" };
 
 function readTab(): TabId {
-  const h = window.location.hash.slice(1);
+  // "#comparisons/<record id>" opens one comparison.
+  const h = window.location.hash.slice(1).split("/")[0];
   if (TABS.some((t) => t.id === h)) return h as TabId;
   return LEGACY[h] ?? "overview";
 }

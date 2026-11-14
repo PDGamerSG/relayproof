@@ -67,7 +67,12 @@ export function Explorer({ data, summary }: { data: RecordsState; summary?: Summ
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("newest");
   const [shown, setShown] = useState(PAGE);
-  const [selected, setSelected] = useState<string>();
+  const [selected, setSelectedState] = useState<string | undefined>(() => window.location.hash.split("/")[1] || undefined);
+  // The open comparison lives in the hash, so it can be linked; replaceState keeps the scroll position.
+  const setSelected = (id: string | undefined) => {
+    setSelectedState(id);
+    window.history.replaceState(null, "", id ? `#comparisons/${id}` : "#comparisons");
+  };
 
   const candidates = useMemo(() => [...new Set(data.records.map((r) => modelId(r.candidate)))].sort(), [data.records]);
   const bases = useMemo(
