@@ -86,6 +86,7 @@ html:has(dialog[open]) {
   outline: none;
 }
 .lv-bar__foot,
+.lv-bar__search,
 .lv-tabs__group {
   display: none;
 }
@@ -177,6 +178,39 @@ html:has(dialog[open]) {
   }
   .lv-tabs__badge {
     margin-left: auto;
+  }
+  .lv-bar__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 12px 12px;
+    padding: 8px 8px 8px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-m);
+    background: var(--lit);
+    color: var(--ink-2);
+    font-size: var(--step--1);
+    font-weight: 560;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .lv-bar__search:hover {
+    border-color: var(--ink-3);
+    color: var(--ink);
+  }
+  .lv-bar__search svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+  .lv-bar__search kbd {
+    margin-left: auto;
+    padding: 1px 6px;
+    border: 1px solid var(--line-2);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
   }
   .lv-tabs__group {
     display: block;

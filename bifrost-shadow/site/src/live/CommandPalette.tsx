@@ -61,8 +61,6 @@ type Outcome = "pass" | "fail" | "error" | "unscored";
 const OUTCOME_LABEL: Record<Outcome, string> = { pass: "Pass", fail: "Fail", error: "Error", unscored: "Unscored" };
 const outcomeOf = (r: ShadowRecord): Outcome => (r.candidate_error ? "error" : r.pass ? "pass" : r.pass_basis === "unscored" ? "unscored" : "fail");
 
-const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent);
-
 /** True when a key press belongs to a text field rather than to the page. */
 function inField(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -194,8 +192,6 @@ export function CommandPalette({ tabs, data, summary }: { tabs: PaletteTab[]; da
   const [active, setActive] = useState(0);
   const [status, setStatus] = useState<{ tone: "busy" | "ok" | "error"; text: string }>();
   const uid = useId();
-  const mac = useMemo(isMac, []);
-  const shortcut = mac ? "⌘K" : "Ctrl K";
 
   /** Mirrors `open` for event handlers, so closing runs its clean-up once. */
   const isOpen = useRef(false);
@@ -512,19 +508,6 @@ export function CommandPalette({ tabs, data, summary }: { tabs: PaletteTab[]; da
 
   return (
     <>
-      <button
-        type="button"
-        className="cp-chip"
-        onClick={show}
-        aria-keyshortcuts={mac ? "Meta+K /" : "Control+K /"}
-        aria-label={`Search the console (${mac ? "Command K" : "Control K"})`}
-        hidden={open}
-      >
-        <SearchIcon />
-        <span>Search</span>
-        <kbd>{shortcut}</kbd>
-      </button>
-
       <dialog
         ref={dialog}
         className="cp"

@@ -73,6 +73,8 @@ const TAB_ICON: Record<TabId, string> = {
   setup: "M3 2.5h10v11H3zM5.5 5.5l2 2-2 2M8.5 10h2",
 };
 
+const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent);
+
 /** Older links pointed at sections of the single-page console. */
 const LEGACY: Record<string, TabId> = { scorecards: "overview", history: "rollout" };
 
@@ -202,6 +204,19 @@ export function LiveApp() {
               </Fragment>
             ))}
           </nav>
+          <button
+            type="button"
+            className="lv-bar__search"
+            // The palette listens for its own shortcut; the button sends it.
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: isMac, ctrlKey: !isMac }))}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" />
+              <path d="m10.5 10.5 3 3" />
+            </svg>
+            Search
+            <kbd>{isMac ? "⌘K" : "Ctrl K"}</kbd>
+          </button>
           <p className="lv-bar__foot small">
             <a className="link" href="./">
               What RelayProof is
