@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Bifrost Shadow API
-  version: 0.2.0
+  version: 0.3.0
   summary: Shadow traffic evaluation, gated promotion and canary rollouts for the Bifrost AI gateway.
   description: |
     Every route is served by the Bifrost gateway itself (default `http://localhost:8080`) once the
@@ -132,6 +132,15 @@ paths:
           promotion (`409`, `kind: conflict`); rules that may match some requests, scoped rules,
           and rules the canary will now shadow come back as `warnings`.
         - `dry_run: true` returns the plan and writes nothing.
+        - With `ramp`, the canary starts at `ramp.steps[0]` and the canary guard raises it step by
+          step: a step ends once it has served `min_requests` candidate requests, `hold_seconds`
+          have passed and the canary is healthy; the guard then writes the next weight into the
+          same rule and records a `ramp` event (`ramp_complete` for the last step). Live
+          statistics restart at every step. An unhealthy step is rolled back as usual (with
+          `canary.auto_rollback`; without it the ramp holds). Promoting the same candidate again
+          replaces its ramp, or cancels it when the new promotion has none; a rollback ends it.
+          Ramp errors answer `400`, as does a ramp whose last step would not fit next to the other
+          candidates' shares.
 
         Needs the config store (it holds routing rules); without it the route answers `503`.
       requestBody:
@@ -144,6 +153,9 @@ paths:
                 value: { experiment: "gpt-4o cost-down", candidate: "openai/gpt-4o-mini", weight: 0.1 }
               override:
                 value: { experiment: "gpt-4o cost-down", candidate: "openai/llama-3.1-8b", weight: 0.05, override_reason: "load test of the self-hosted model" }
+              ramp:
+                summary: Start at 10% and let the guard raise it to 100%
+                value: { experiment: "gpt-4o cost-down", candidate: "openai/gpt-4o-mini", weight: 0.1, ramp: { steps: [0.1, 0.25, 0.5, 1], min_requests: 50, hold_seconds: 300 } }
       responses:
         "200":
           description: Promotion done (or planned, for a dry run)
@@ -595,10 +607,41 @@ components:
       properties:
         experiment: { type: string }
         candidate: { type: string, description: provider/model }
-        weight: { type: number, minimum: 0.0001, maximum: 1, default: 0.1, description: Candidate's share of source traffic }
+        weight: { type: number, minimum: 0.0001, maximum: 1, default: 0.1, description: "Candidate's share of source traffic. With `ramp`, leave it out or set it to `ramp.steps[0]`." }
         priority: { type: integer, minimum: 0, description: "New rules only. Default: first free global priority from 10." }
         override_reason: { type: string, description: Required to promote a candidate that is not ready; recorded in the log }
         dry_run: { type: boolean, default: false }
+        ramp: { $ref: "#/components/schemas/RampRequest" }
+    RampRequest:
+      type: object
+      description: |
+        Lets the canary guard raise the candidate's weight step by step while it stays healthy, like
+        Argo Rollouts' `setWeight` steps with a `pause`, or Flagger's `stepWeights` with analysis.
+      required: [steps]
+      properties:
+        steps:
+          type: array
+          minItems: 2
+          maxItems: 20
+          items: { type: number, minimum: 0.0001, maximum: 1 }
+          description: Strictly ascending shares of source traffic (compared at four decimals). The first is the promoted weight.
+        min_requests: { type: integer, description: "Candidate requests each step must serve before the guard moves on. Default and minimum: the guard's `canary.min_requests`." }
+        hold_seconds: { type: integer, minimum: 0, maximum: 604800, default: 60, description: Minimum time at each step }
+    CanaryRamp:
+      type: object
+      description: A canary's ramp and the step it is at. Persisted with the canary, so a restart resumes it at the same step.
+      properties:
+        steps:
+          type: array
+          items: { type: number }
+        current_step: { type: integer, description: "Index into `steps` of the weight served now" }
+        step_started_at: { type: string, format: date-time, description: When the canary reached the current step }
+        step_requests: { type: integer, description: Live candidate requests at this step (restarts with the process; 0 in events) }
+        min_requests: { type: integer }
+        hold_seconds: { type: integer }
+        next_weight: { type: number, description: The next step's weight; absent once the ramp is complete }
+        completed: { type: boolean, description: The canary reached the last step. It stays guarded but moves no further. }
+        reason: { type: string, description: "What the ramp is waiting for, e.g. `step 1 of 4 (10%): 12 of 50 candidate requests`. Live views (`/rollouts`) only." }
     Promotion:
       type: object
       properties:
@@ -609,6 +652,9 @@ components:
           type: array
           items: { type: string }
         evidence: { $ref: "#/components/schemas/PairSummary" }
+        ramp:
+          description: The ramp as it starts (step 0). Present only when the request had one; a gateway without ramp support omits it, so check it after a dry run.
+          allOf: [{ $ref: "#/components/schemas/CanaryRamp" }]
         event: { $ref: "#/components/schemas/RolloutEvent" }
     NotReadyRefusal:
       type: object
@@ -669,12 +715,18 @@ components:
         since: { type: string, format: date-time }
         override: { type: boolean, description: Promoted without a ready verdict; guarded on live health only }
         health: { $ref: "#/components/schemas/CanaryHealth" }
+        ramp:
+          description: Present when the canary was promoted with a ramp. Health then covers the current step only.
+          allOf: [{ $ref: "#/components/schemas/CanaryRamp" }]
     RolloutEvent:
       type: object
       properties:
         id: { type: string }
         at: { type: string, format: date-time }
-        action: { type: string, enum: [promote, rollback, auto_rollback] }
+        action:
+          type: string
+          enum: [promote, rollback, auto_rollback, ramp, ramp_complete]
+          description: "`ramp`: the guard moved a ramping canary to its next step; `ramp_complete`: to its last step (instead of `ramp`)."
         experiment: { type: string }
         source: { $ref: "#/components/schemas/ModelRef" }
         candidate: { $ref: "#/components/schemas/ModelRef" }
@@ -685,7 +737,12 @@ components:
         reason: { type: string }
         actor: { type: string, enum: [api, canary_guard] }
         evidence: { $ref: "#/components/schemas/PairSummary" }
-        health: { $ref: "#/components/schemas/CanaryHealth" }
+        health:
+          description: Live health that triggered an `auto_rollback`, or that the finished step of a `ramp`/`ramp_complete` rested on
+          allOf: [{ $ref: "#/components/schemas/CanaryHealth" }]
+        ramp:
+          description: The ramp after the action, on a promotion that starts one and on `ramp`/`ramp_complete` events
+          allOf: [{ $ref: "#/components/schemas/CanaryRamp" }]
     Rollouts:
       type: object
       properties:

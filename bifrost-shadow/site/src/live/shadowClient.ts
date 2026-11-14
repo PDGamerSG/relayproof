@@ -250,6 +250,30 @@ export interface CanaryHealth {
   verdict?: Verdict;
 }
 
+/**
+ * A canary's ramp: the weights the canary guard moves it through and the step it
+ * is at. A step ends once it has served min_requests candidate requests,
+ * hold_seconds have passed and the canary is healthy.
+ */
+export interface CanaryRamp {
+  /** Strictly ascending shares of source traffic. */
+  steps: number[];
+  /** Index into steps of the weight served now. */
+  current_step: number;
+  /** When the canary reached the current step. */
+  step_started_at: string;
+  /** Live candidate requests at this step (restarts with the gateway; 0 in events). */
+  step_requests: number;
+  min_requests: number;
+  hold_seconds: number;
+  /** The next step's weight; absent once the ramp is complete. */
+  next_weight?: number;
+  /** The canary reached the last step: still guarded, moved no further. */
+  completed: boolean;
+  /** What the ramp is waiting for, e.g. "step 1 of 4 (10%): 12 of 50 candidate requests". Live views only. */
+  reason?: string;
+}
+
 export interface Canary {
   experiment: string;
   source: ModelRef;
@@ -259,13 +283,22 @@ export interface Canary {
   rule_name: string;
   since: string;
   override?: boolean;
+  /** Live health; for a ramping canary, of the current step only. */
   health: CanaryHealth;
+  /** Present when the canary was promoted with a ramp. */
+  ramp?: CanaryRamp;
 }
+
+/**
+ * "ramp": the canary guard moved a ramping canary to its next step;
+ * "ramp_complete": to its last step (instead of "ramp").
+ */
+export type RolloutAction = "promote" | "rollback" | "auto_rollback" | "ramp" | "ramp_complete";
 
 export interface RolloutEvent {
   id: string;
   at: string;
-  action: "promote" | "rollback" | "auto_rollback";
+  action: RolloutAction;
   experiment: string;
   source: ModelRef;
   candidate: ModelRef;
@@ -277,7 +310,10 @@ export interface RolloutEvent {
   reason?: string;
   actor: "api" | "canary_guard";
   evidence?: PairSummary;
+  /** The health behind an auto_rollback, or the one a ramp step rested on. */
   health?: CanaryHealth;
+  /** The ramp after the action: on a promotion that starts one, and on ramp and ramp_complete events. */
+  ramp?: CanaryRamp;
 }
 
 export interface Rollouts {
@@ -286,17 +322,29 @@ export interface Rollouts {
   events: RolloutEvent[];
 }
 
+/** Let the canary guard raise the weight step by step while the canary stays healthy. */
+export interface RampRequest {
+  /** 2 to 20 strictly ascending shares, each 0.0001 to 1. The first is the promoted weight. */
+  steps: number[];
+  /** Candidate requests each step must serve. Default and minimum: the guard's canary.min_requests. */
+  min_requests?: number;
+  /** Minimum seconds at each step, 0 to 604800. Default 60. */
+  hold_seconds?: number;
+}
+
 export interface PromoteRequest {
   experiment: string;
   /** provider/model */
   candidate: string;
-  /** Candidate's share of source traffic, 0.0001 to 1. Default 0.1. */
+  /** Candidate's share of source traffic, 0.0001 to 1. Default 0.1. With ramp, leave it out or send ramp.steps[0]. */
   weight?: number;
   /** New rules only. Default: first free global priority from 10. */
   priority?: number;
   /** Required to promote a candidate whose verdict is not "ready". */
   override_reason?: string;
   dry_run?: boolean;
+  /** Replaces a running ramp; a promotion without one cancels it. */
+  ramp?: RampRequest;
 }
 
 export interface Promotion {
@@ -305,6 +353,11 @@ export interface Promotion {
   rule: RoutingRule;
   warnings: string[];
   evidence: PairSummary;
+  /**
+   * The ramp as it starts, when the request had one. A gateway without ramp
+   * support ignores the request's ramp and omits this, so check it on a dry run.
+   */
+  ramp?: CanaryRamp;
   event?: RolloutEvent;
 }
 

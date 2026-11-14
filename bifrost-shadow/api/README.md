@@ -122,11 +122,15 @@ const shadow = new ShadowClient({
 // Live scorecards: poll the summary.
 const stop = poll(() => shadow.summary(), 3000, (s) => render(s.pairs), console.error);
 
-// Promote with the server's checks; explain a refusal.
+// Promote with the server's checks; explain a refusal. The ramp is optional: the canary guard
+// then raises 10% to 25%, 50% and 100%, each step after 50 healthy candidate requests and 5 minutes.
 try {
-  const plan = await shadow.planPromotion({ experiment: "gpt-4o cost-down", candidate: "openai/gpt-4o-mini", weight: 0.1 });
-  showPlan(plan.rule.targets, plan.warnings);
-  await shadow.promote({ experiment: "gpt-4o cost-down", candidate: "openai/gpt-4o-mini", weight: 0.1 });
+  const req = { experiment: "gpt-4o cost-down", candidate: "openai/gpt-4o-mini", weight: 0.1,
+    ramp: { steps: [0.1, 0.25, 0.5, 1], min_requests: 50, hold_seconds: 300 } };
+  const plan = await shadow.planPromotion(req);
+  if (!plan.ramp) throw new Error("this gateway predates ramps");
+  showPlan(plan.rule.targets, plan.warnings, plan.ramp);
+  await shadow.promote(req);
 } catch (err) {
   if (err instanceof ShadowApiError) {
     const notReady = err.notReady(); // { verdict, verdict_reason, evidence }
@@ -156,9 +160,9 @@ function useShadow<T>(fetcher: () => Promise<T>, everyMs = 3000) {
 | Scorecard table | same, `pairs[]` | One row per experiment/candidate. |
 | Disagreements | `GET /api/shadow/records?experiment=&candidate=&outcome=fail` | Side-by-side `primary_answer` / `candidate_answer`, `judge.reason`, `pass_basis`. `limit` ≤ 500, `total` for paging. |
 | One comparison | `GET /api/shadow/records/{id}` | |
-| Promote dialog | `POST /api/shadow/promote` with `dry_run: true`, then without | Show `rule.targets` (the traffic split) and `warnings` before confirming. |
-| Live canaries | `GET /api/shadow/rollouts` | `canaries[].health`: candidate vs source requests, error rate, p50/p95. Poll every 2 s while any canary is live. |
-| Rollout history | same, `events[]` | Newest first; `auto_rollback` events come from the canary guard and carry the `health` that triggered them. |
+| Promote dialog | `POST /api/shadow/promote` with `dry_run: true`, then without | Show `rule.targets` (the traffic split) and `warnings` before confirming. With `ramp` the plan echoes it back as `ramp` (steps, `min_requests`, `hold_seconds`). |
+| Live canaries | `GET /api/shadow/rollouts` | `canaries[].health`: candidate vs source requests, error rate, p50/p95. Poll every 2 s while any canary is live. A ramping canary has `ramp`: `steps`, `current_step`, `step_requests` of `min_requests`, `step_started_at` + `hold_seconds`, `next_weight`, `completed`, and `reason` (what it waits for); its `health` covers the current step only. |
+| Rollout history | same, `events[]` | Newest first; `auto_rollback` events come from the canary guard and carry the `health` that triggered them. `ramp` (next step) and `ramp_complete` (last step) events also come from the guard, with the new `weight`, the `health` the finished step rested on and the new `ramp` state. |
 | Rollback button | `POST /api/shadow/rollback` | `action`: `update` (other candidates stay), `delete` (rule gone), `none` (rule was already removed). |
 | Download | `GET /api/shadow/export?format=csv&kind=scorecards` | Also `kind=records`, or `format=json` for everything. |
 | Reset | `DELETE /api/shadow/records` | Confirm first. Spend, canaries and the rollout log are kept. |
@@ -178,6 +182,11 @@ function useShadow<T>(fetcher: () => Promise<T>, everyMs = 3000) {
 - `judge_error_rate` above `thresholds.max_judge_error_rate` withholds the verdict: surface it.
 - Canary `health.status`: `watching` (fewer than `min_requests` candidate requests), `healthy`,
   `unhealthy` (rolled back automatically when `auto_rollback` is on).
+- Rollout event `action`: `promote`, `rollback`, `auto_rollback`, `ramp`, `ramp_complete`. Map all
+  five; a label table typed `Record<RolloutAction, string>` makes the compiler check it.
+- Ramps: a gateway older than ramps ignores `ramp` in a promote body and omits it from the response,
+  so send `weight: ramp.steps[0]` with it and treat a dry run without `ramp` in the answer as "not
+  supported".
 
 ### Errors
 
