@@ -145,6 +145,10 @@
     gap: 40px;
     align-items: start;
   }
+  .trace {
+    position: sticky;
+    top: calc(var(--nav-h) + 24px);
+  }
 }
 
 .trace {
