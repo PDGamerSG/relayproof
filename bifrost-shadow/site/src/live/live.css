@@ -1120,3 +1120,116 @@ ul.lv-warn {
   display: flex;
   gap: 18px;
 }
+
+/* Agreement by kind of request */
+
+.lv-seg__scroll {
+  overflow-x: auto;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+}
+.lv-seg__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+.lv-seg__table th,
+.lv-seg__table td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.lv-seg__table tr:last-child th,
+.lv-seg__table tr:last-child td {
+  border-bottom: 0;
+}
+.lv-seg__table thead th {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--daylight);
+}
+.lv-seg__table tbody th {
+  font-size: var(--step-0);
+  font-weight: 620;
+  width: 30%;
+}
+.lv-seg__table tbody th small {
+  display: block;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+.lv-seg__table td {
+  min-width: 170px;
+}
+.lv-seg__rate {
+  display: block;
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.1;
+}
+.lv-seg__n {
+  display: block;
+  color: var(--ink-3);
+}
+.lv-seg__bar {
+  position: relative;
+  display: block;
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: rgb(15 16 48 / 0.08);
+}
+.lv-seg__bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--ink-3);
+}
+.lv-seg__bar i {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--ink);
+}
+.lv-seg__table td[data-state="clear"] .lv-seg__bar span {
+  background: var(--ready);
+}
+.lv-seg__table td[data-state="close"] .lv-seg__bar span {
+  background: var(--sun);
+}
+.lv-seg__table td[data-state="short"] .lv-seg__bar span {
+  background: var(--fail);
+}
+.lv-seg__table td[data-state="short"] .lv-seg__rate {
+  color: var(--fail);
+}
+.lv-seg__table td[data-state="thin"] .lv-seg__rate {
+  color: var(--ink-3);
+}
+.lv-seg__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-top: 10px;
+}
+.lv-seg__key span::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: middle;
+  background: var(--ready);
+}
+.lv-seg__key span[data-state="close"]::before {
+  background: var(--sun);
+}
+.lv-seg__key span[data-state="short"]::before {
+  background: var(--fail);
+}

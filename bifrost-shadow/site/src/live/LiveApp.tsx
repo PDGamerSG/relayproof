@@ -9,6 +9,7 @@ import { Explorer } from "./Explorer";
 import { JudgeCheck } from "./JudgeCheck";
 import { useRecords, type RecordsState } from "./records";
 import { Report } from "./Report";
+import { Segments } from "./Segments";
 import { CanaryPanel, Downloads, History, IncidentPanel } from "./Rollout";
 import { poll, type PairSummary, type RolloutEvent, type Rollouts, type Summary, type Verdict } from "./shadowClient";
 import { Trend } from "./Trend";
@@ -274,6 +275,8 @@ export function LiveApp() {
                 ))}
               </div>
             </section>
+
+            <Segments data={data} summary={summary} />
           </>
         )}
 
