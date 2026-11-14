@@ -1,80 +1,70 @@
-/* A dark bar that floats over both grounds and casts the same hard shadow as the buttons. */
+/* A light bar that stays put. It gains a hairline once the page moves under it. */
 
 .nav {
-  position: fixed;
+  position: sticky;
   z-index: 50;
-  top: 14px;
-  left: 50%;
-  translate: -50% 0;
-  width: min(var(--wrap), 100% - 2 * var(--gutter) + 24px);
-  color: var(--moon);
-  animation: nav-in 700ms var(--ease-out) 150ms both;
+  top: 0;
+  background: rgb(243 244 248 / 0.86);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
+  box-shadow: 0 1px 0 transparent;
+  transition: box-shadow 200ms ease;
 }
-@keyframes nav-in {
-  from {
-    opacity: 0;
-    transform: translateY(-14px);
-  }
+.nav[data-scrolled="true"] {
+  box-shadow: 0 1px 0 var(--line-2);
 }
 
 .nav__bar {
   display: flex;
   align-items: center;
-  gap: 28px;
-  height: 58px;
-  padding: 0 10px 0 16px;
-  border: 1px solid rgb(169 173 255 / 0.2);
-  border-radius: 12px;
-  background: var(--umbra);
-  box-shadow: 6px 7px 0 rgb(var(--shade) / 0.2);
+  gap: 32px;
+  height: var(--nav-h);
 }
 
 .nav__brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.125rem;
-  font-stretch: 82%;
-  font-weight: 760;
+  font-size: 1.1875rem;
+  font-stretch: 80%;
+  font-weight: 780;
   letter-spacing: 0.002em;
   text-decoration: none;
   white-space: nowrap;
-  color: var(--lit);
 }
 
 .nav__links {
   display: flex;
-  gap: 4px;
-  margin-inline: auto;
+  gap: 2px;
 }
 .nav__links a {
   position: relative;
   padding: 8px 12px;
   border-radius: var(--radius-s);
   font-size: var(--step-0);
-  font-weight: 500;
-  color: var(--moon-2);
+  font-weight: 520;
+  color: var(--ink-2);
   text-decoration: none;
   transition:
     color 140ms ease,
     background-color 140ms ease;
 }
 .nav__links a:hover {
-  color: var(--lit);
-  background: rgb(169 173 255 / 0.1);
+  color: var(--ink);
+  background: rgb(15 16 48 / 0.05);
 }
 .nav__links a[aria-current] {
-  color: var(--lit);
+  color: var(--ink);
 }
 .nav__links a::after {
   content: "";
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: 3px;
+  bottom: 2px;
   height: 2px;
   border-radius: 1px;
-  background: var(--sun);
+  background: var(--ink);
   scale: 0 1;
   transform-origin: left;
   transition: scale 260ms var(--ease-out);
@@ -87,63 +77,63 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 .nav__source {
   padding: 8px 12px;
+  border-radius: var(--radius-s);
   font-size: var(--step-0);
-  font-weight: 500;
-  color: var(--moon-2);
+  font-weight: 520;
+  color: var(--ink-2);
   text-decoration: none;
-  transition: color 140ms ease;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
 }
 .nav__source:hover {
-  color: var(--lit);
+  color: var(--ink);
+  background: rgb(15 16 48 / 0.05);
 }
-.nav .btn {
-  --btn-shadow: rgb(0 0 0 / 0.5);
+.nav__cta {
+  margin-left: 6px;
 }
 
 .nav__menu {
   display: none;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-s);
-  color: var(--lit);
 }
 .nav__menu:hover {
-  background: rgb(169 173 255 / 0.12);
-}
-.nav :focus-visible {
-  outline-color: var(--sun);
+  background: rgb(15 16 48 / 0.06);
 }
 
 .nav__sheet {
-  display: grid;
-  margin-top: 8px;
-  padding: 8px;
-  border: 1px solid rgb(169 173 255 / 0.2);
-  border-radius: 12px;
-  background: var(--umbra);
-  box-shadow: 6px 7px 0 rgb(var(--shade) / 0.2);
-  animation: sheet-in 220ms var(--ease-out) both;
+  border-top: 1px solid var(--line);
+  animation: sheet-in 200ms var(--ease-out) both;
 }
 .nav__sheet[hidden] {
   display: none;
 }
+.nav__sheet .wrap {
+  display: grid;
+  padding-block: 8px 16px;
+}
 .nav__sheet a {
-  padding: 13px 12px;
-  border-radius: var(--radius-s);
-  font-weight: 550;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--step-1);
+  font-weight: 560;
   text-decoration: none;
 }
-.nav__sheet a:hover {
-  background: rgb(169 173 255 / 0.1);
+.nav__sheet a:last-child {
+  border-bottom: 0;
 }
 @keyframes sheet-in {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-4px);
   }
 }
 
@@ -152,24 +142,15 @@
   .nav__source {
     display: none;
   }
-  .nav__bar {
-    justify-content: space-between;
-  }
   .nav__menu {
     display: grid;
+  }
+  .nav__cta {
+    margin-left: 0;
   }
 }
 @media (min-width: 1021px) {
   .nav__sheet {
     display: none;
-  }
-}
-@media (max-width: 400px) {
-  .nav__brand span {
-    font-size: 1rem;
-  }
-  .nav__bar {
-    padding-left: 12px;
-    gap: 10px;
   }
 }

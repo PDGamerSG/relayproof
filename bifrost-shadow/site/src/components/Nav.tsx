@@ -29,22 +29,39 @@ function useActiveSection(ids: string[]): string | null {
   return active;
 }
 
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 8);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+  return scrolled;
+}
+
 const SECTION_IDS = NAV.map((item) => item.href.slice(1));
 
 export function Nav() {
   const active = useActiveSection(SECTION_IDS);
+  const scrolled = useScrolled();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onResize = () => window.innerWidth > 1020 && setOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+    };
   }, [open]);
 
   return (
-    <header className="nav" data-open={open}>
-      <div className="nav__bar">
+    <header className="nav" data-open={open} data-scrolled={scrolled || open}>
+      <div className="nav__bar wrap">
         <a className="nav__brand" href="./" aria-label="RelayProof home" onClick={() => setOpen(false)}>
           <Mark />
           <span>RelayProof</span>
@@ -62,8 +79,8 @@ export function Nav() {
           <a className="nav__source" href={LINKS.repo}>
             GitHub
           </a>
-          <a className="btn btn--sun btn--small" href="live.html" onClick={() => setOpen(false)}>
-            Try it live
+          <a className="btn btn--small nav__cta" href="live.html" onClick={() => setOpen(false)}>
+            Live console
           </a>
           <button
             type="button"
@@ -79,12 +96,14 @@ export function Nav() {
       </div>
 
       <nav className="nav__sheet" id="nav-sheet" aria-label="Sections" hidden={!open}>
-        {NAV.map((item) => (
-          <a key={item.href} href={item.href} onClick={() => setOpen(false)}>
-            {item.label}
-          </a>
-        ))}
-        <a href={LINKS.repo}>GitHub</a>
+        <div className="wrap">
+          {NAV.map((item) => (
+            <a key={item.href} href={item.href} onClick={() => setOpen(false)}>
+              {item.label}
+            </a>
+          ))}
+          <a href={LINKS.repo}>GitHub</a>
+        </div>
       </nav>
     </header>
   );
