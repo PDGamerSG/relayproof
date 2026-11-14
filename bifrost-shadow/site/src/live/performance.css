@@ -1,0 +1,693 @@
+/* Performance: latency, verbosity, cost and payback over the loaded comparisons. */
+
+/* One colour per model, the same in every chart: the primary in ink, candidates in scorecard order. */
+.lv-pf [data-slot="0"] {
+  --c: var(--ink);
+}
+.lv-pf [data-slot="1"] {
+  --c: var(--lilac);
+}
+.lv-pf [data-slot="2"] {
+  --c: var(--sun);
+}
+.lv-pf [data-slot="3"] {
+  --c: rgb(var(--shade));
+}
+.lv-pf [data-slot="4"] {
+  --c: var(--ink-3);
+}
+
+.lv-pf__sec {
+  margin-top: clamp(44px, 5vw, 72px);
+}
+.lv-pf__h2 {
+  font-size: var(--step-2);
+  font-stretch: 80%;
+  font-weight: 760;
+  line-height: 1.1;
+}
+/* Section heads: the heading with its explanation under it, kept to a readable measure. */
+.lv-pf__head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.lv-pf__head p {
+  max-width: 78ch;
+}
+.lv-pf__h3 {
+  font-size: var(--step-0);
+  font-weight: 650;
+  line-height: 1.3;
+}
+.lv-pf__note {
+  margin-top: 2px;
+  color: var(--ink-3);
+}
+.lv-pf__foot {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}
+.lv-pf__stale {
+  margin-bottom: 16px;
+  color: var(--amber);
+}
+
+.lv-pf__empty {
+  display: grid;
+  gap: 6px;
+  max-width: 62ch;
+  padding: 28px clamp(18px, 3vw, 28px);
+  border: 1.5px dashed var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+}
+
+/* At a glance: one ruled strip, four answers. */
+.lv-pf__readout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+}
+.lv-pf__readout > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 16px 20px 18px;
+}
+.lv-pf__readout > div + div {
+  border-top: 1px solid var(--line);
+}
+.lv-pf__readout dt {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.lv-pf__readout dd {
+  margin: 0;
+}
+.lv-pf__big {
+  font-size: var(--step-3);
+  font-stretch: 78%;
+  font-weight: 780;
+  line-height: 1.05;
+}
+@media (min-width: 640px) {
+  .lv-pf__readout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lv-pf__readout > div + div {
+    border-top: 0;
+  }
+  .lv-pf__readout > div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  .lv-pf__readout > div:nth-child(even) {
+    border-left: 1px solid var(--line);
+  }
+}
+@media (min-width: 1240px) {
+  .lv-pf__readout {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .lv-pf__readout > div:nth-child(n + 3) {
+    border-top: 0;
+  }
+  .lv-pf__readout > div + div {
+    border-left: 1px solid var(--line);
+  }
+}
+
+/* A sheet: one panel per section, its cells divided by hairlines. */
+.lv-pf__sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--radius-m);
+  background: var(--lit);
+}
+.lv-pf__sheet > * + * {
+  border-top: 1px solid var(--line);
+}
+.lv-pf__cell {
+  min-width: 0;
+  padding: 18px clamp(14px, 2vw, 22px) 20px;
+}
+.lv-pf__stack {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+}
+.lv-pf__stack > * + * {
+  border-top: 1px solid var(--line);
+}
+@media (min-width: 1180px) {
+  .lv-pf__sheet--lat {
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  }
+  .lv-pf__sheet--split {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+  .lv-pf__sheet--even {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lv-pf__sheet--lat > * + *,
+  .lv-pf__sheet--split > * + *,
+  .lv-pf__sheet--even > * + * {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+}
+
+/* Charts */
+
+.lv-pf__fig {
+  margin-top: 14px;
+}
+.lv-pf__plot {
+  position: relative;
+  width: 100%;
+}
+.lv-pf__plot svg {
+  display: block;
+  max-width: none;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.lv-pf__grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.lv-pf__grid[data-strong] {
+  stroke: var(--line-2);
+}
+.lv-pf__tick {
+  stroke: var(--line-2);
+}
+.lv-pf__axis {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  fill: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.lv-pf__axis-title {
+  font-size: 12px;
+  fill: var(--ink-3);
+}
+.lv-pf__label,
+.lv-pf__even text {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink-2);
+  paint-order: stroke;
+  stroke: var(--lit);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+/* Lines ride on a halo of the surface, so crossings stay legible. Sun gets a dark edge. */
+.lv-pf__halo {
+  fill: none;
+  stroke: var(--lit);
+  stroke-width: 6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.lv-pf__line {
+  fill: none;
+  stroke: var(--c, var(--ink));
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+[data-slot="2"] > .lv-pf__halo {
+  stroke: var(--ink);
+  stroke-width: 4;
+  stroke-opacity: 0.5;
+}
+[data-slot="3"] > .lv-pf__line {
+  stroke-dasharray: 7 4;
+}
+[data-slot="4"] > .lv-pf__line {
+  stroke-dasharray: 2 4;
+}
+.lv-pf__dot {
+  fill: var(--c, var(--ink));
+  stroke: var(--lit);
+  stroke-width: 2;
+}
+.lv-pf__dot[data-slot="2"],
+[data-slot="2"] > .lv-pf__dot {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+.lv-pf__hover line {
+  stroke: var(--ink-3);
+  stroke-width: 1;
+}
+.lv-pf__hoverline {
+  min-height: 3em;
+  margin-top: 6px;
+}
+.lv-pf__hoverline .model {
+  font-size: 0.8em;
+}
+
+/* Legend: a short line in the series colour next to its name. Names stay in ink. */
+.lv-pf__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-top: 8px;
+  color: var(--ink-2);
+}
+.lv-pf__key li {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 7px;
+}
+.lv-pf__key .model {
+  color: var(--ink);
+}
+.lv-pf__role {
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}
+.lv-pf__sw {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c, var(--ink));
+}
+.lv-pf__sw[data-slot="2"] {
+  box-shadow: 0 0 0 1px rgb(15 16 48 / 0.7);
+}
+.lv-pf__sw[data-slot="3"] {
+  background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 9px);
+}
+.lv-pf__sw[data-slot="4"] {
+  background: repeating-linear-gradient(90deg, var(--c) 0 2px, transparent 2px 5px);
+}
+.lv-pf__sw[data-kind="dot"] {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c, var(--ink));
+}
+.lv-pf__sw[data-kind="spent"] {
+  height: 0;
+  border-top: 2px dashed var(--ink);
+  background: none;
+}
+.lv-pf__sw[data-kind="keep"] {
+  height: 0;
+  border-top: 2px dotted var(--fail);
+  background: none;
+}
+.lv-pf__sw[data-kind="bar"] {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.lv-pf__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.lv-pf__name .model {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tables */
+
+.lv-pf__table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+.lv-pf__table th,
+.lv-pf__table td {
+  padding: 8px 6px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.lv-pf__table th:first-child {
+  padding-left: 0;
+}
+.lv-pf__table th:last-child,
+.lv-pf__table td:last-child {
+  padding-right: 0;
+}
+.lv-pf__table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.lv-pf__table thead th {
+  font-weight: 600;
+  color: var(--ink-3);
+  border-bottom-color: var(--line-2);
+}
+.lv-pf__table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+.lv-pf__table td.num {
+  font-size: var(--step-0);
+  font-weight: 600;
+}
+.lv-pf__table tbody th {
+  font-weight: 400;
+}
+.lv-pf__table tbody th small {
+  display: block;
+  margin-top: 1px;
+  padding-left: 16px;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+/* In a narrow cell each row stacks: the model on its own line, its figures under their headings. */
+.lv-pf__cell {
+  container-type: inline-size;
+}
+@container (max-width: 420px) {
+  .lv-pf__table tr {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+    border-bottom: 1px solid var(--line);
+  }
+  .lv-pf__table[data-cols="2"] {
+    --cols: 2;
+  }
+  .lv-pf__table[data-cols="3"] {
+    --cols: 3;
+  }
+  .lv-pf__table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .lv-pf__table th,
+  .lv-pf__table td {
+    border-bottom: 0;
+  }
+  .lv-pf__table thead th:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .lv-pf__table thead tr {
+    border-bottom-color: var(--line-2);
+  }
+  .lv-pf__table tbody th {
+    grid-column: 1 / -1;
+    padding: 10px 0 0;
+  }
+  .lv-pf__table tbody td {
+    padding-top: 4px;
+  }
+  .lv-pf__table tbody td:first-of-type,
+  .lv-pf__table thead th:nth-child(2) {
+    padding-left: 0;
+  }
+}
+.lv-pf__table td[data-thin] {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+.lv-pf__table td[data-short] {
+  color: var(--fail);
+}
+
+/* Head to head */
+
+.lv-pf__paired {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+.lv-pf__paired li {
+  display: grid;
+  gap: 6px;
+}
+.lv-pf__share {
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: rgb(var(--shade) / 0.1);
+}
+.lv-pf__share span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--c);
+}
+.lv-pf__share span[data-slot="2"] {
+  box-shadow: inset 0 0 0 1px rgb(15 16 48 / 0.5);
+}
+.lv-pf__share i {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 1.5px;
+  background: var(--ink);
+}
+.lv-pf__paired-text b {
+  font-weight: 650;
+}
+
+/* Distribution rows */
+
+.lv-pf__rowname {
+  font-family: var(--mono);
+  font-size: 12px;
+  fill: var(--ink);
+}
+.lv-pf__rownote {
+  font-size: 12px;
+  fill: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.lv-pf__jit {
+  fill: var(--c);
+  fill-opacity: 0.4;
+}
+[data-slot="0"] > .lv-pf__jit {
+  fill-opacity: 0.18;
+}
+.lv-pf__whisker {
+  stroke: var(--ink-3);
+  stroke-width: 1.25;
+}
+.lv-pf__box {
+  fill: var(--c);
+  fill-opacity: 0.32;
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+[data-slot="0"] > .lv-pf__box {
+  fill-opacity: 0.14;
+}
+.lv-pf__median {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.lv-pf__fig > figcaption.small {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}
+
+/* Payback */
+
+.lv-pf__ledger {
+  display: grid;
+  margin-top: 6px;
+}
+.lv-pf__ledger > div {
+  display: grid;
+  gap: 2px 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.lv-pf__ledger > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+@media (min-width: 520px) {
+  .lv-pf__ledger > div {
+    grid-template-columns: 9.5em minmax(0, 1fr);
+  }
+}
+.lv-pf__ledger dt {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+  padding-top: 2px;
+}
+.lv-pf__ledger dd {
+  margin: 0;
+  line-height: 1.45;
+}
+.lv-pf__ledger dd > b {
+  font-size: var(--step-0);
+  font-weight: 700;
+}
+.lv-pf__ledger [data-emphasis] dd > b {
+  font-size: var(--step-1);
+}
+.lv-pf__meter {
+  display: block;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: rgb(var(--shade) / 0.1);
+}
+.lv-pf__meter span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+.lv-pf__payback {
+  margin-top: 10px;
+}
+.lv-pf__spent {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.lv-pf__keep {
+  stroke: var(--fail);
+  stroke-width: 1.75;
+  stroke-dasharray: 1.5 4;
+  stroke-linecap: round;
+}
+.lv-pf__payback g:not([data-best]) > .lv-pf__line {
+  stroke-width: 1.5;
+}
+/* A candidate that is not ready is a what-if: drawn, but quieter. */
+.lv-pf__payback g:not([data-ready]) > * {
+  opacity: 0.5;
+}
+.lv-pf__even circle {
+  fill: var(--lit);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.lv-pf__even text {
+  font-size: 12px;
+  font-weight: 650;
+  fill: var(--ink);
+}
+.lv-pf__assume {
+  margin-top: 12px;
+  color: var(--ink-2);
+}
+.lv-pf__assume summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  width: fit-content;
+}
+.lv-pf__assume ul {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-left: 1.1em;
+  list-style: disc;
+  font-size: var(--step--1);
+}
+
+/* Quality against cost */
+
+.lv-pf__zone {
+  fill: rgb(11 138 79 / 0.07);
+}
+.lv-pf__need {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 4;
+}
+.lv-pf__frontier {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+}
+.lv-pf__range {
+  stroke: var(--c);
+  stroke-width: 2;
+}
+[data-slot="2"] > .lv-pf__range {
+  stroke: var(--amber);
+}
+.lv-pf__plabel text {
+  font-family: var(--mono);
+  font-size: 12px;
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--lit);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.lv-pf__plabel .lv-pf__plabel-sub {
+  font-family: var(--font);
+  font-size: 11.5px;
+  fill: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Traffic */
+
+.lv-pf__bar[data-outcome="pass"],
+.lv-pf__sw[data-outcome="pass"] {
+  fill: rgb(var(--shade) / 0.42);
+  background: rgb(var(--shade) / 0.42);
+}
+.lv-pf__bar[data-outcome="fail"],
+.lv-pf__sw[data-outcome="fail"] {
+  fill: var(--fail);
+  background: var(--fail);
+}
+.lv-pf__bar[data-outcome="error"],
+.lv-pf__sw[data-outcome="error"] {
+  fill: var(--amber);
+  background: var(--amber);
+}
+.lv-pf__bar[data-outcome="unscored"],
+.lv-pf__sw[data-outcome="unscored"] {
+  fill: rgb(var(--shade) / 0.14);
+  background: rgb(var(--shade) / 0.14);
+}
+.lv-pf__hit {
+  fill: transparent;
+}
+g:hover > .lv-pf__hit {
+  fill: rgb(var(--shade) / 0.06);
+}
+.lv-pf__quiet rect {
+  fill: rgb(var(--shade) / 0.035);
+}
+.lv-pf__quiet path {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 1.25;
+}
+.lv-pf__quiet text {
+  font-size: 11px;
+  fill: var(--ink-3);
+}
