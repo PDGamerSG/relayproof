@@ -110,8 +110,8 @@ export function LiveApp() {
   const [promoting, setPromoting] = useState<PairSummary>();
   const [inspecting, setInspecting] = useState<PairSummary>();
   const noticeId = useRef(0);
-  // Records feed the trend charts, the explorer, the judge check and the report.
-  const data = useRecords(conn, tab !== "rollout" && tab !== "setup");
+  // Records feed the trends, the explorer, the judge check, the policy lab, the report and the palette's search.
+  const data = useRecords(conn, true);
 
   const notify = useCallback<Notify>((tone, text) => {
     const id = ++noticeId.current;
