@@ -740,7 +740,7 @@ export function commands(d: Draft, o: RunOptions, detail: Detail): Commands {
     `  -d ${shellQuote(JSON.stringify({ experiment: experimentName(d), candidate, weight: 0.1, dry_run: true }))}`,
   ].join("\n");
 
-  const origins = formatJSON({ client: { allowed_origins: [o.origin] } });
+  const origins = `"client": {\n  "allowed_origins": [${JSON.stringify(o.origin)}]\n}`;
 
   return { build, start, apply, summary, test, promote, origins };
 }
@@ -809,6 +809,6 @@ export function dollars(n: number): string {
   if (!Number.isFinite(n)) return "–";
   if (n === 0) return "$0";
   if (n < 0.01) return `$${n.toPrecision(2)}`;
-  if (n < 100) return `$${n.toFixed(2)}`;
+  if (n < 100) return Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`;
   return `$${Math.round(n).toLocaleString("en-US")}`;
 }
