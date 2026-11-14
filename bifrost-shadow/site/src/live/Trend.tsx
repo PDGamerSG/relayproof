@@ -10,6 +10,8 @@ const EVENT_LABEL: Record<RolloutEvent["action"], string> = {
   promote: "promoted",
   rollback: "rolled back",
   auto_rollback: "guard rolled back",
+  ramp: "ramped to",
+  ramp_complete: "ramp done at",
 };
 
 /**
@@ -101,7 +103,7 @@ export function Trend({
             <line x1={x(i)} x2={x(i)} y1={PAD.top} y2={PAD.top + plotH} />
             <text x={x(i) + 4} y={PAD.top + 10}>
               {EVENT_LABEL[e.action]}
-              {e.action === "promote" ? ` ${pct(e.weight, 0)}` : ""}
+              {e.action === "promote" || e.action === "ramp" || e.action === "ramp_complete" ? ` ${pct(e.weight, 0)}` : ""}
             </text>
           </g>
         ))}

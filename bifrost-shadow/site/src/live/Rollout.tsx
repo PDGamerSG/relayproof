@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ago, clock, count, errorText, modelId, ms, pct, saveBlob, useConnection, type DemoStatus } from "./backend";
 import type { Notify } from "./LiveApp";
+import { RampTrack } from "./Ramp";
 import type { Canary, Rollouts, RolloutEvent, TargetHealth } from "./shadowClient";
 
 interface PanelProps {
@@ -63,6 +64,7 @@ function CanaryCard({ canary, now, notify, refresh }: { canary: Canary; now: num
         {canary.override && " · promoted with an override, so the guard watches live health only"}
       </p>
       {health.reason && <p className="lv-canary__reason small">{health.reason}</p>}
+      {canary.ramp && <RampTrack ramp={canary.ramp} />}
       <table className="lv-table num">
         <caption className="sr-only">Live health of the canary and its source</caption>
         <thead>
@@ -249,6 +251,8 @@ const ACTION_LABEL: Record<RolloutEvent["action"], string> = {
   promote: "Promoted",
   rollback: "Rolled back",
   auto_rollback: "Rolled back by the guard",
+  ramp: "Ramped up by the guard",
+  ramp_complete: "Ramp finished by the guard",
 };
 
 export function History({ rollouts, now }: { rollouts?: Rollouts; now: number }) {
@@ -263,15 +267,24 @@ export function History({ rollouts, now }: { rollouts?: Rollouts; now: number })
           </p>
           <p className="lv-events__what">
             <b>{ACTION_LABEL[e.action]}</b> <span className="model">{e.candidate.model}</span>
-            {e.action === "promote" ? (
+            {e.action === "promote" || e.action === "ramp" || e.action === "ramp_complete" ? (
               <>
                 {" "}
                 to <b className="num">{pct(e.weight, 0)}</b> of <span className="model">{e.source.model}</span>
                 {e.override && <span className="lv-tag">override</span>}
+                {e.action === "promote" && e.ramp && (
+                  <span className="lv-tag">ramp to {pct(e.ramp.steps[e.ramp.steps.length - 1], 0)}</span>
+                )}
               </>
             ) : null}
           </p>
           {e.reason && <p className="small muted">{e.reason}</p>}
+          {(e.action === "ramp" || e.action === "ramp_complete") && e.health && (
+            <p className="small muted num">
+              The step before served {count(e.health.candidate.requests)} candidate requests, {pct(e.health.candidate.error_rate)} failed; source{" "}
+              {pct(e.health.source.error_rate)}.
+            </p>
+          )}
           {e.action === "auto_rollback" && e.health && (
             <p className="small muted num">
               Candidate errors {pct(e.health.candidate.error_rate)} over {count(e.health.candidate.requests)} requests; source{" "}

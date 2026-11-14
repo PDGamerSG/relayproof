@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Dialog } from "../components/Dialog";
 import { count, errorText, modelId, ms, pct, useConnection } from "./backend";
-import { ShadowApiError, type Answer, type PairSummary, type Promotion, type ShadowRecord } from "./shadowClient";
+import { holdText, RampTrack, rampSteps } from "./Ramp";
+import { ShadowApiError, type Answer, type PairSummary, type Promotion, type RampRequest, type ShadowRecord } from "./shadowClient";
 
 const SHARES = [0.05, 0.1, 0.25, 0.5];
+const HOLDS = [30, 60, 300, 900];
 
 export function PromoteDialog({
   pair,
@@ -29,6 +31,13 @@ export function PromoteDialog({
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  // Ramp: let the guard raise the share step by step while the canary stays healthy.
+  const [ramping, setRamping] = useState(false);
+  const [rampEnd, setRampEnd] = useState(1);
+  const [hold, setHold] = useState(60);
+  const steps = rampSteps(weight, rampEnd);
+  const ramp: RampRequest | undefined = ramping && steps.length > 1 ? { steps, hold_seconds: hold } : undefined;
+  const rampKey = ramp ? `${ramp.steps.join(",")}|${hold}` : "";
 
   // Dry run on every change: the gateway's own plan, with its checks.
   useEffect(() => {
@@ -42,6 +51,7 @@ export function PromoteDialog({
           candidate,
           weight,
           override_reason: ready ? undefined : reason.trim() || "preview of a promotion with an override",
+          ramp,
         })
         .then((p) => live && setPlan(p))
         .catch((err) => {
@@ -56,7 +66,9 @@ export function PromoteDialog({
       live = false;
       clearTimeout(t);
     };
-  }, [client, pair.experiment, candidate, weight, ready, reason]);
+    // rampKey stands for ramp, which is rebuilt on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, pair.experiment, candidate, weight, ready, reason, rampKey]);
 
   const promote = async () => {
     setBusy(true);
@@ -67,9 +79,11 @@ export function PromoteDialog({
         candidate,
         weight,
         override_reason: ready ? undefined : reason.trim(),
+        ramp,
       });
       onDone(
-        `${pair.candidate.model} now serves ${pct(weight, 0)} of ${pair.source.model} traffic (rule ${res.action === "create" ? "created" : "updated"}).`,
+        `${pair.candidate.model} now serves ${pct(weight, 0)} of ${pair.source.model} traffic (rule ${res.action === "create" ? "created" : "updated"}).` +
+          (res.ramp ? ` The guard raises it to ${pct(res.ramp.steps[res.ramp.steps.length - 1], 0)} step by step while it stays healthy.` : ""),
       );
     } catch (err) {
       const nr = err instanceof ShadowApiError ? err.notReady() : undefined;
@@ -81,7 +95,9 @@ export function PromoteDialog({
     }
   };
 
-  const canSubmit = !busy && (ready || reason.trim().length >= 8) && !planError;
+  // A gateway without ramp support ignores the ramp, so the dry run tells.
+  const rampUnsupported = Boolean(ramp && plan && !plan.ramp);
+  const canSubmit = !busy && (ready || reason.trim().length >= 8) && !planError && !rampUnsupported;
   return (
     <Dialog
       open
@@ -112,6 +128,42 @@ export function PromoteDialog({
           ))}
         </fieldset>
 
+        <fieldset className="lv-ramp-opts">
+          <legend className="sr-only">Ramp</legend>
+          <label className="lv-ramp-opts__toggle">
+            <input type="checkbox" checked={ramping} onChange={(e) => setRamping(e.target.checked)} disabled={weight >= 1} />
+            <span>
+              <b>Ramp it up automatically.</b> The guard raises the share step by step while the canary stays healthy, and rolls it back
+              if it does not.
+            </span>
+          </label>
+          {ramping && (
+            <div className="lv-ramp-opts__row">
+              <label>
+                <span className="small">Stop at</span>
+                <select value={rampEnd} onChange={(e) => setRampEnd(Number(e.target.value))}>
+                  <option value={0.5}>50% of traffic</option>
+                  <option value={1}>All traffic</option>
+                </select>
+              </label>
+              <label>
+                <span className="small">At least, per step</span>
+                <select value={hold} onChange={(e) => setHold(Number(e.target.value))}>
+                  {HOLDS.map((h) => (
+                    <option key={h} value={h}>
+                      {holdText(h)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="small muted">
+                Steps {steps.map((s) => pct(s, 0)).join(", ")}. Each step also needs the guard&rsquo;s minimum number of candidate requests
+                before it moves on.
+              </p>
+            </div>
+          )}
+        </fieldset>
+
         {!ready && (
           <label className="lv-field">
             <span className="small">Override reason, at least 8 characters (recorded in the rollout log)</span>
@@ -140,6 +192,16 @@ export function PromoteDialog({
                 {plan.action === "create" ? "Creates" : "Updates"} routing rule <b>{plan.rule.name}</b>, priority{" "}
                 <span className="num">{plan.rule.priority}</span>, matching <code>{plan.rule.cel_expression}</code>.
               </p>
+              {plan.ramp && <RampTrack ramp={plan.ramp} compact />}
+              {plan.ramp && (
+                <p className="small">
+                  Then the guard moves it through {plan.ramp.steps.map((s) => pct(s, 0)).join(", ")}, after at least{" "}
+                  {count(plan.ramp.min_requests)} candidate requests and {holdText(plan.ramp.hold_seconds)} at each step.
+                </p>
+              )}
+              {rampUnsupported && (
+                <p className="lv-warn small">This gateway&rsquo;s plugin does not support ramps yet; promote at a fixed share instead.</p>
+              )}
               {plan.warnings.map((w) => (
                 <p key={w} className="lv-warn small">
                   {w}
@@ -169,7 +231,7 @@ export function PromoteDialog({
             Cancel
           </button>
           <button type="button" className="btn btn--sun btn--small" onClick={promote} disabled={!canSubmit}>
-            {busy ? "Promoting…" : `Send ${pct(weight, 0)} to ${pair.candidate.model}`}
+            {busy ? "Promoting…" : ramp ? `Start at ${pct(weight, 0)} and ramp` : `Send ${pct(weight, 0)} to ${pair.candidate.model}`}
           </button>
         </div>
       </div>

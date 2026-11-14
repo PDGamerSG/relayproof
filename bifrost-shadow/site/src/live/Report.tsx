@@ -23,6 +23,8 @@ const ACTION_TEXT: Record<RolloutEvent["action"], string> = {
   promote: "Promoted",
   rollback: "Rolled back by an operator",
   auto_rollback: "Rolled back by the canary guard",
+  ramp: "Raised by the canary guard",
+  ramp_complete: "Ramp finished by the canary guard",
 };
 
 const money = (v: number) => {
@@ -198,7 +200,7 @@ function toMarkdown(f: Facts, summary: Summary, gateway: string, volume: number)
   }
   if (f.events.length) {
     lines.push("", "## Rollout history", "");
-    for (const e of f.events) lines.push(`- ${e.at}: ${ACTION_TEXT[e.action]}${e.action === "promote" ? ` to ${pct(e.weight, 0)}` : ""}${e.reason ? `: ${e.reason}` : ""}`);
+    for (const e of f.events) lines.push(`- ${e.at}: ${ACTION_TEXT[e.action]}${e.action === "promote" || e.action === "ramp" || e.action === "ramp_complete" ? ` to ${pct(e.weight, 0)}` : ""}${e.reason ? `: ${e.reason}` : ""}`);
   }
   lines.push(
     "",
@@ -521,7 +523,7 @@ export function Report({
               {facts.events.map((e) => (
                 <li key={e.id}>
                   <b>{new Date(e.at).toLocaleString()}</b> {ACTION_TEXT[e.action]}
-                  {e.action === "promote" && <> to {pct(e.weight, 0)}</>}
+                  {(e.action === "promote" || e.action === "ramp" || e.action === "ramp_complete") && <> to {pct(e.weight, 0)}</>}
                   {e.reason && <>: {e.reason}</>}
                 </li>
               ))}
