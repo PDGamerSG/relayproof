@@ -6,6 +6,7 @@ import { AskPanel } from "./Ask";
 import { ConnectPanel } from "./Connect";
 import { DisagreementsDialog, PromoteDialog } from "./Dialogs";
 import { Explorer } from "./Explorer";
+import { Feed } from "./Feed";
 import { JudgeCheck } from "./JudgeCheck";
 import { useRecords, type RecordsState } from "./records";
 import { Report } from "./Report";
@@ -87,7 +88,7 @@ export function LiveApp() {
   const [inspecting, setInspecting] = useState<PairSummary>();
   const noticeId = useRef(0);
   // Records feed the trend charts, the explorer, the judge check and the report.
-  const data = useRecords(conn, tab !== "ask" && tab !== "rollout");
+  const data = useRecords(conn, tab !== "rollout");
 
   const notify = useCallback<Notify>((tone, text) => {
     const id = ++noticeId.current;
@@ -280,7 +281,12 @@ export function LiveApp() {
           </>
         )}
 
-        {active === "ask" && conn.demo && <AskPanel status={status} />}
+        {active === "ask" && conn.demo && (
+          <>
+            <AskPanel status={status} />
+            <Feed data={data} now={now} />
+          </>
+        )}
 
         {active === "comparisons" && <Explorer data={data} summary={summary} />}
 
