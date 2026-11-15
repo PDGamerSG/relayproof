@@ -133,11 +133,22 @@ echo "during the incident: gpt-4o-mini served $mini of 150 requests, $failed fai
 
 echo
 echo "==> waiting for the canary guard to roll back"
+# The guard acts on evidence: it rolls back once the 95% lower bound of the
+# candidate's live error rate clears the limit. At a 10% weight, 150 requests
+# sometimes give the candidate too few failures for that (about 3 runs in 100),
+# so live traffic keeps flowing, as it would in production, until the guard acts.
 rolled=""
-for _ in $(seq 1 30); do
-  rolled="$(api "$GATEWAY/api/shadow/rollouts" | json_field 'next((e["reason"] for e in d["events"] if e["action"] == "auto_rollback"), "")')"
-  [ -n "$rolled" ] && break
-  sleep 1
+for round in $(seq 0 8); do
+  if [ "$round" -gt 0 ]; then
+    read -r mini failed <<<"$(count_served 50)"
+    echo "  not yet: 50 more requests, gpt-4o-mini served $mini, $failed failed"
+  fi
+  # The guard checks every 5 s.
+  for _ in $(seq 1 6); do
+    rolled="$(api "$GATEWAY/api/shadow/rollouts" | json_field 'next((e["reason"] for e in d["events"] if e["action"] == "auto_rollback"), "")')"
+    [ -n "$rolled" ] && break 2
+    sleep 1
+  done
 done
 if [ -z "$rolled" ]; then
   echo "the canary guard did not roll back"
