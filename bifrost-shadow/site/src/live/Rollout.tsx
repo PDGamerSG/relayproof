@@ -12,6 +12,9 @@ interface PanelProps {
   refresh: () => Promise<void>;
 }
 
+/** "anthropic" reads as "Anthropic". */
+const providerName = (upstream: string) => (upstream === "anthropic" ? "Anthropic" : upstream);
+
 const HEALTH_LABEL = { watching: "Watching", healthy: "Healthy", unhealthy: "Unhealthy" } as const;
 
 function HealthRow({ label, h }: { label: string; h: TargetHealth }) {
@@ -60,7 +63,7 @@ function CanaryCard({ canary, now, notify, refresh }: { canary: Canary; now: num
         </span>
       </header>
       <p className="small muted">
-        Live since {ago(canary.since, now)}
+        Went live {ago(canary.since, now)}
         {canary.override && " · promoted with an override, so the guard watches live health only"}
       </p>
       {health.reason && <p className="lv-canary__reason small">{health.reason}</p>}
@@ -149,11 +152,21 @@ export function IncidentPanel({ status, rollouts, now, notify, refresh }: PanelP
   };
 
   const models = status?.incident_models ?? ["gpt-4o-mini", "llama-3.1-8b"];
+  // The live canary's share of traffic, when one is live.
+  const share = rollouts?.canaries[0]?.weight;
   return (
     <div className="lv-panel">
       <h3 className="h3">Simulate a provider incident</h3>
       <p className="small muted">
-        The mock upstream fails a share of one model&rsquo;s calls with HTTP 503. Break the model that is live as a canary and the guard
+        {!status?.upstream || status.upstream === "mock" ? (
+          <>The mock upstream fails a share of one model&rsquo;s calls with HTTP 503.</>
+        ) : (
+          <>
+            A fault proxy between the gateway and {providerName(status.upstream)} fails a share of one model&rsquo;s calls with HTTP 529, the
+            provider&rsquo;s overloaded error. The rest reach the real model.
+          </>
+        )}{" "}
+        Break the model that is live as a canary and the guard
         rolls it back once it has seen enough requests. When the incident ends, the demo clears the scorecards and replays traffic.
       </p>
       {status?.reseeding && (
@@ -208,8 +221,8 @@ export function IncidentPanel({ status, rollouts, now, notify, refresh }: PanelP
 
       <div className="lv-burst">
         <p className="small muted">
-          The guard needs a few requests to the canary before it judges; at a 10% share that takes a while of live traffic, and a burst
-          gets there sooner.
+          The guard needs a few requests to the canary before it judges; at {share !== undefined ? <>a {pct(share, 0)}</> : "a canary's"} share
+          that takes a while of live traffic, and a burst gets there sooner.
           {status?.daily_request_cap ? (
             <>
               {" "}

@@ -158,14 +158,17 @@ export function ms(value: number | undefined): string {
 
 export const count = (n: number | undefined) => (n === undefined ? "–" : n.toLocaleString("en-US"));
 
-/** "12 s ago", "3 min ago". */
+/** "12 s ago", "3 min ago", "5 h 2 min ago", "6 days ago". */
 export function ago(iso: string | undefined, now: number): string {
   if (!iso) return "–";
   const s = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
   if (s < 60) return `${s} s ago`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m} min ago`;
-  return `${Math.floor(m / 60)} h ${m % 60} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} h ${m % 60} min ago`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "1 day ago" : `${d} days ago`;
 }
 
 export function clock(iso: string): string {

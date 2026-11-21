@@ -251,6 +251,9 @@ function ProofCurve({ agreement, needed }: { agreement: number; needed: number |
 
 /* ------------------------------------------------------------------ the calculator */
 
+/** "a sonnet-5-5", "an opus-5-5". */
+const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? "an" : "a"} ${word}`;
+
 export function Savings() {
   const uid = useId();
   const [requests, setRequests] = useState(200_000);
@@ -479,7 +482,7 @@ export function Savings() {
                 ) : (
                   <>
                     At {(agreement * 100).toFixed(1)}% agreement, the 95% lower bound clears 90% after{" "}
-                    <b className="num">{whole.format(r.needed)}</b> comparisons. Each one costs a {candidate.model.replace(/^claude-/, "")} call and a
+                    <b className="num">{whole.format(r.needed)}</b> comparisons. Each one costs {withArticle(candidate.model.replace(/^claude-/, ""))} call and a
                     judge call on {current.model.replace(/^claude-/, "")}: ${Number(r.perComparison.toPrecision(2))}.
                   </>
                 )}

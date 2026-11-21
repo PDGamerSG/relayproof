@@ -109,6 +109,12 @@ function Cell({ title, note, children, className = "" }: { title: string; note?:
 
 // ---------- the page ----------
 
+/** ", 2 h of it quiet". When most of the span is quiet, ", all but 40 min of it quiet", so it never reads "6 days, 6 days of it quiet". */
+function quietWords(spanMs: number, quietMs: number): string {
+  if (quietMs <= 0) return "";
+  return quietMs > spanMs / 2 ? `, all but ${span(spanMs - quietMs)} of it quiet` : `, ${span(quietMs)} of it quiet`;
+}
+
 export function Performance({ data, summary }: { data: RecordsState; summary?: Summary }) {
   const perf = useMemo(() => analyse(data.records, summary), [data.records, summary]);
   const rate = useMemo(() => requestRate(perf, summary), [perf, summary]);
@@ -845,7 +851,7 @@ function PaybackSection({
                     <span className="small muted">
                       {" "}
                       from {count(rate.requests)} sampled requests over {span(rate.spanMs)}
-                      {rate.quietMs > 0 ? `, ${span(rate.quietMs)} of it quiet` : ""}
+                      {quietWords(rate.spanMs, rate.quietMs)}
                       {rate.scale !== 1 ? `, scaled by ${ratio(rate.scale)} for the requests not sampled` : ""}.
                       {rate.activePerDay !== undefined && <> Busy stretches alone ran at {count(Math.round(rate.activePerDay))} a day.</>}
                     </span>
