@@ -1016,6 +1016,13 @@ const GATE_TEXT: Partial<Record<string, string>> = {
   json_schema: "the candidate's JSON has a different shape",
 };
 
+/**
+ * Whether a judge reason names an answer by its letter: "Response A", "answer B",
+ * a bare "B", or a bare "A" used as a name ("A is accurate", "A's answer").
+ */
+const LETTER_REF =
+  /\b(?:[Rr]esponse|[Aa]nswer)\s+[AB]\b|\bB\b|\bA\b(?=['\u2019]s\b|\s+(?:and|or|is|was|has|gives|correctly|wrongly|incorrectly|says|states|claims|answers|misses|fails)\b)/;
+
 function Reveal({ label, record }: { label: HumanLabel; record: Judged }) {
   const v = record.judge;
   const judge = judgePreference(v, label.tolerance);
@@ -1030,7 +1037,7 @@ function Reveal({ label, record }: { label: HumanLabel; record: Judged }) {
         ? "You disagree: the judge failed a candidate answer you found acceptable."
         : "You disagree: the judge passed a candidate answer you rated worse.";
   // The judge's own A and B follow its randomized order, not the one shown here.
-  const lettersDiffer = label.candidate_as_a !== v.candidate_shown_first && /\b(response|answer)\s+[AB]\b/i.test(v.reason ?? "");
+  const lettersDiffer = label.candidate_as_a !== v.candidate_shown_first && LETTER_REF.test(v.reason ?? "");
   const gate = record.pass_basis && record.pass_basis !== "judge" ? (GATE_TEXT[record.pass_basis] ?? record.pass_basis.replace("_", " ")) : undefined;
   return (
     <div className="lv-judge-reveal__body" data-agree={agree ? "yes" : humanOk === judgeOk ? "near" : "no"}>
@@ -1040,12 +1047,13 @@ function Reveal({ label, record }: { label: HumanLabel; record: Judged }) {
         <b className="num">{v.primary_score}</b> out of 10, which rates {PREF_WORDS[judge]}, so the pair {judgeOk ? "passes" : "fails"} on the
         judge (the candidate may trail by {plural(label.tolerance, "point")}).
       </p>
-      {v.reason && (
-        <blockquote className="lv-judge-reveal__reason small">
-          &ldquo;{v.reason}&rdquo;
-          {lettersDiffer && <span className="muted"> The judge saw the answers the other way round, so its A is B here.</span>}
-        </blockquote>
+      {v.reason && lettersDiffer && (
+        <p className="small">
+          The judge saw the two answers the other way round. In its reason below, <b>A</b> is the answer shown here as B, and <b>B</b> is
+          the one shown as A.
+        </p>
       )}
+      {v.reason && <blockquote className="lv-judge-reveal__reason small">&ldquo;{v.reason}&rdquo;</blockquote>}
       <p className="small muted">
         The judge read the candidate {v.candidate_shown_first ? "first" : "second"}.
         {gate && <> The scorecard failed this pair before the judge counted: {gate}.</>}
