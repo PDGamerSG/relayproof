@@ -1,0 +1,3 @@
+User-agent: *
+# The console API starts real model calls; keep crawlers off it.
+Disallow: /api/
